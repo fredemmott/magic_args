@@ -41,7 +41,9 @@ template <class T, std::size_t N>
 auto infer_argument_definition() {
   // TODO: put the member name -> thing into the traits
   std::string name {detail::Reflection::member_name<T, N>};
-  if (name.starts_with('m') && name.size() > 1 && name[1] >= 'A' && name[1] <= 'Z') {
+  if (
+    name.starts_with('m') && name.size() > 1 && name[1] >= 'A'
+    && name[1] <= 'Z') {
     name = name.substr(1);
   }
   if (name.starts_with('_')) {
@@ -154,7 +156,7 @@ void show_usage(
     std::println(output, "{}", extraHelp.mDescription);
   }
 
-  if (!extraHelp.mExamples .empty()) {
+  if (!extraHelp.mExamples.empty()) {
     std::print(output, "\nExamples:\n\n");
     for (auto&& example: extraHelp.mExamples) {
       std::println(output, "  {}", example);
@@ -172,7 +174,7 @@ void show_usage(
   show_arg_usage<Traits>(
     output, flag {"help", "show this message", Traits::short_help_arg});
   if (!extraHelp.mVersion.empty()) {
-    show_arg_usage<Traits>(output, flag { "version", "print program version"});
+    show_arg_usage<Traits>(output, flag {"version", "print program version"});
   }
 }
 }// namespace magic_args::inline api
