@@ -3,10 +3,12 @@
 #pragma once
 
 #include <concepts>
+#include <expected>
 #include <filesystem>
 #include <format>
+#include <iostream>
 #include <print>
-#include <ranges>
+#include <span>
 
 #include "magic_args-reflection.hpp"
 
@@ -25,6 +27,15 @@ struct option final {
   std::string mName;
   std::string mHelp;
   std::string mShortName;
+  T mValue {};
+
+  option& operator=(T&& value) {
+    mValue = std::move(value);
+    return *this;
+  }
+  operator T() const noexcept {
+    return mValue;
+  }
 };
 
 struct flag final {
@@ -32,6 +43,15 @@ struct flag final {
   std::string mName;
   std::string mHelp;
   std::string mShortName;
+  bool mValue {false};
+
+  flag& operator=(bool value) {
+    mValue = value;
+    return *this;
+  }
+  operator bool() const noexcept {
+    return mValue;
+  }
 };
 
 static_assert(basic_argument<flag>);
@@ -109,7 +129,7 @@ struct ExtraHelp {
 };
 
 template <class Traits, basic_argument TArg>
-void show_arg_usage(auto output, const TArg& arg) {
+void show_arg_usage(FILE* output, const TArg& arg) {
   const auto shortArg = [&arg] {
     if constexpr (requires { arg.mShortName; }) {
       if (!arg.mShortName.empty()) {
@@ -140,11 +160,10 @@ void show_arg_usage(auto output, const TArg& arg) {
   }
   std::println(output, "{}\n{:30}{}", params, "", arg.mHelp);
 }
-
 template <class T, class Traits = gnu_style_parsing_traits>
 void show_usage(
-  auto output,
-  const char* argv0,
+  FILE* output,
+  std::string_view argv0,
   const ExtraHelp& extraHelp = {}) {
   using namespace detail::Reflection;
 
@@ -177,4 +196,138 @@ void show_usage(
     show_arg_usage<Traits>(output, flag {"version", "print program version"});
   }
 }
+
+template <class T>
+struct arg_parse_match {
+  T mValue;
+  std::size_t mConsumed;
+};
+
+template <class T>
+using arg_parse_result = std::optional<arg_parse_match<T>>;
+
+template <class Traits>
+auto parse_arg(const basic_argument auto& arg, std::span<std::string_view>)
+  -> arg_parse_result<typename std::decay_t<decltype(arg)>::value_type> {
+  return std::nullopt;
+}
+
+template <class Traits>
+auto parse_arg(const flag& arg, std::span<std::string_view> args)
+  -> arg_parse_result<bool> {
+  if (args.front() == std::format("{}{}", Traits::long_arg_prefix, arg.mName)) {
+    return {{true, 1}};
+  }
+  if constexpr (Traits::short_arg_prefix) {
+    if (
+      (!arg.mShortName.empty())
+      && args.front()
+        == std::format("{}{}", Traits::short_arg_prefix, arg.mShortName)) {
+      return {{true, 1}};
+    }
+  }
+  return std::nullopt;
+}
+
+enum class no_arguments_reason {
+  HelpRequested,
+  VersionRequested,
+  MissingRequiredArgument,
+  InvalidArgument,
+};
+
+template <class T, class Traits = gnu_style_parsing_traits>
+std::expected<T, no_arguments_reason> parse(
+  std::span<std::string_view> args,
+  const ExtraHelp& help = {},
+  FILE* outputStream = stdout,
+  FILE* errorStream = stderr) {
+  const auto longHelp = std::format("{}help", Traits::long_arg_prefix);
+  const auto shortHelp = [] {
+    if constexpr (requires {
+                    Traits::short_help_arg;
+                    Traits::short_arg_prefix;
+                  }) {
+      return std::format(
+        "{}{}", Traits::short_arg_prefix, Traits::short_help_arg);
+    } else {
+      return std::string {};
+    }
+  }();
+
+  for (auto&& arg: args) {
+    if (arg == "--") {
+      break;
+    }
+    if (arg == longHelp || (arg == shortHelp && !shortHelp.empty())) {
+      show_usage<T, Traits>(outputStream, args.front(), help);
+      return std::unexpected {no_arguments_reason::HelpRequested};
+    }
+  }
+
+  using namespace detail::Reflection;
+  T ret {};
+  auto tuple = tie_struct(ret);
+
+  constexpr auto N = count_members<T>();
+  for (std::size_t i = 0; i < args.size(); ++i) {
+    bool matched = false;
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+      (
+        [&] {
+          const auto def = get_argument_definition<T, I>();
+          if (auto result = parse_arg<Traits>(def, args.subspan(i))) {
+            matched = true;
+            get<I>(tie_struct(ret)) = std::move(result->mValue);
+            i += result->mConsumed - 1;
+          }
+        }(),
+        ...);
+    }(std::make_index_sequence<N> {});
+    if (matched) {
+      continue;
+    }
+  }
+  return ret;
+}
+
+template <class T, class Traits = gnu_style_parsing_traits>
+std::expected<T, no_arguments_reason> parse(
+  int argc,
+  char** argv,
+  const ExtraHelp& help = {},
+  FILE* outputStream = stdout,
+  FILE* errorStream = stderr) {
+  std::vector<std::string_view> args;
+  args.reserve(argc);
+  for (auto&& arg: std::span {argv, static_cast<std::size_t>(argc)}) {
+    args.emplace_back(arg);
+  }
+  return parse<T, Traits>(std::span {args}, help, outputStream, errorStream);
+}
+
+template <class T>
+auto argument_value(const T& arg) {
+  if constexpr (basic_argument<T>) {
+    return arg.mValue;
+  } else {
+    return arg;
+  }
+}
+
+template <class T>
+void dump(const T& args, FILE* output = stdout) {
+  using namespace detail::Reflection;
+  const auto tuple = tie_struct(args);
+
+  []<std::size_t... I>(
+    const auto& args, FILE* output, std::index_sequence<I...>) {
+    (std::println(
+       output, "{:29} `{}`", member_name<T, I>, argument_value(get<I>(args))),
+     ...);
+  }(tuple,
+    output,
+    std::make_index_sequence<std::tuple_size_v<decltype(tuple)>> {});
+}
+
 }// namespace magic_args::inline api
