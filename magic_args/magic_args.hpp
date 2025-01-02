@@ -41,10 +41,10 @@ template <class T, std::size_t N>
 auto infer_argument_definition() {
   // TODO: put the member name -> thing into the traits
   std::string name {detail::Reflection::member_name<T, N>};
-  if (name.starts_with("m")) {
+  if (name.starts_with('m') && name.size() > 1 && name[1] >= 'A' && name[1] <= 'Z') {
     name = name.substr(1);
   }
-  if (name.starts_with("_")) {
+  if (name.starts_with('_')) {
     name = name.substr(1);
   }
   if (name[0] >= 'A' && name[0] <= 'Z') {
