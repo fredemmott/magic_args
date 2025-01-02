@@ -1,0 +1,16 @@
+add_library(
+  magic_args
+  INTERFACE
+  magic_args.hpp
+  magic_args-reflection.hpp
+)
+target_include_directories(
+  magic_args
+  INTERFACE
+  "${CMAKE_CURRENT_LIST_DIR}/.."
+)
+target_compile_features(
+  magic_args
+  INTERFACE
+  cxx_std_23
+)
