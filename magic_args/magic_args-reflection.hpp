@@ -110,8 +110,9 @@ consteval auto demangled_name_msvc(std::string_view name) {
 
 consteval auto demangled_name_clang(std::string_view name) {
   // Mangled: auto mangled_name() [T = &external.abc]
+  // magic-args::detail::-reflection::mangled-name() [-t = apple-workaround-t<bool>{&external.m-foo}]
   auto begin = name.rfind(".") + 1;
-  auto end = name.rfind("]");
+  auto end = name.rfind("}");
   if (end > begin) {
     return name.substr(begin, end - begin);
   }
@@ -159,9 +160,16 @@ consteval auto demangled_name() {
 template <class T>
 extern T external;
 
+// Apple Clang 16.0 (XCode 16.2, latest as of 2025-01-03) won't allow
+// a raw T* as a template parameter, but it will allow one of these
+template<class T>
+struct apple_workaround_t {
+  T* ptr {nullptr};
+};
+
 template <class T, std::size_t N>
 constexpr auto member_name
-  = demangled_name<&std::get<N>(tie_struct(external<T>))>();
+  = demangled_name<apple_workaround_t{&std::get<N>(tie_struct(external<T>))}>();
 
 #ifdef __clang__
 #pragma clang diagnostic pop
