@@ -11,7 +11,6 @@
 #include <print>
 #include <span>
 #include <sstream>
-#include <variant>
 
 #include "magic_args-reflection.hpp"
 
@@ -37,30 +36,42 @@ concept vector_like = requires { typename T::value_type; }
   && (!std::same_as<T, std::string>);
 
 template <class T>
-struct single_value_type {
-  using type = T;
-};
-template <vector_like T>
-struct single_value_type<T> {
-  using type = typename T::value_type;
-};
-
-template <class T>
-using single_value_t = typename single_value_type<T>::type;
-
-template <class T>
-struct positional_argument {
-  using storage_type = T;
-  using value_type = single_value_t<T>;
+struct optional_positional_argument {
+  static constexpr bool is_required = false;
+  using value_type = T;
   std::string mName;
   std::string mHelp;
-  bool mRequired {false};
   T mValue {};
+
+  optional_positional_argument& operator=(T&& value) {
+    mValue = std::move(value);
+    return *this;
+  }
+  operator T() const noexcept {
+    return mValue;
+  }
+};
+
+template <class T>
+struct mandatory_positional_argument {
+  static constexpr bool is_required = true;
+  using value_type = T;
+  std::string mName;
+  std::string mHelp;
+  T mValue {};
+
+  mandatory_positional_argument& operator=(T&& value) {
+    mValue = std::move(value);
+    return *this;
+  }
+  operator T() const noexcept {
+    return mValue;
+  }
 };
 
 template <class T>
 struct option final {
-  using value_type = single_value_t<T>;
+  using value_type = T;
   std::string mName;
   std::string mHelp;
   std::string mShortName;
@@ -243,14 +254,14 @@ void show_usage(
             if (name.back() == 'S') {
               // Real de-pluralization requires a lookup database; we can't do
               // that, so this seems to be the only practical approach. If it's
-              // not good enough for you, specify a `positional_parameter<T>`
+              // not good enough for you, specify a `positional_argument<T>`
               // and provide a name.
               name.pop_back();
             }
-            if constexpr (vector_like<typename TArg::storage_type>) {
+            if constexpr (vector_like<typename TArg::value_type>) {
               name = std::format("{0} [{0} [...]]", name);
             }
-            if (arg.mRequired) {
+            if (TArg::is_required) {
               std::print(output, " {}", name);
             } else {
               std::print(output, " [{}]", name);
@@ -317,9 +328,14 @@ bool option_matches(const T& argDef, std::string_view arg) {
   return false;
 }
 
-enum class arg_parse_failure_reason {
-  MissingValue,
-  InvalidValue,
+enum class incomplete_parse_reason {
+  HelpRequested,
+  VersionRequested,
+  MissingRequiredArgument,
+  MissingArgumentValue,
+  InvalidArgument,
+  InvalidArgumentValue,
+  UnrecognizedArgument,
 };
 
 template <class T>
@@ -330,32 +346,46 @@ struct arg_parse_match {
 
 template <class T>
 using arg_parse_result
-  = std::optional<std::expected<arg_parse_match<T>, arg_parse_failure_reason>>;
+  = std::optional<std::expected<arg_parse_match<T>, incomplete_parse_reason>>;
+
+template <
+  class Traits,
+  basic_argument T,
+  class V = std::decay_t<typename T::value_type>>
+  requires(!basic_option<T>)
+arg_parse_result<V> parse_option(
+  const T& arg,
+  std::span<std::string_view> args) {
+  return std::nullopt;
+}
+
+template <class T>
+void from_string_arg_outer(T& out, std::string_view arg) {
+  if constexpr (requires { from_string_arg(out, arg); }) {
+    from_string_arg(out, arg);
+  } else {
+    static_assert(requires(std::stringstream ss, T v) { ss >> v; });
+    from_string_arg_fallback(out, arg);
+  }
+}
 
 template <
   class Traits,
   basic_option T,
   class V = std::decay_t<typename T::value_type>>
 arg_parse_result<V> parse_option(
-  const T& arg,
+  const T& argDef,
   std::span<std::string_view> args) {
-  using enum arg_parse_failure_reason;
-  if (!option_matches<Traits>(arg, args.front())) {
+  using enum incomplete_parse_reason;
+  if (!option_matches<Traits>(argDef, args.front())) {
     return std::nullopt;
   }
   if (args.size() == 1) {
-    return std::unexpected {MissingValue};
+    return std::unexpected {MissingArgumentValue};
   }
 
   V ret {};
-  // TODO (c++26): args.at(1)
-  const auto value = args[1];
-  if constexpr (requires { from_string_arg(ret, ret.front()); }) {
-    from_string_arg(ret, value);
-  } else {
-    static_assert(requires(std::stringstream ss, V v) { ss >> v; });
-    from_string_arg_fallback(ret, value);
-  }
+  from_string_arg_outer(ret, args[1]);
   return {arg_parse_match {ret, 2}};
 }
 
@@ -369,14 +399,92 @@ arg_parse_result<bool> parse_option(
   return std::nullopt;
 }
 
-enum class incomplete_parse_reason {
-  HelpRequested,
-  VersionRequested,
-  MissingRequiredArgument,
-  MissingArgumentValue,
-  InvalidArgument,
-  InvalidArgumentValue,
-  UnrecognizedArgument,
+template <class Traits, basic_argument T, class V = typename T::value_type>
+  requires(!basic_option<T>)
+arg_parse_result<V> parse_positional_argument(
+  const T& argDef,
+  std::string_view arg0,
+  std::span<std::string_view> args,
+  FILE* errorStream) {
+  if (args.empty()) {
+    if constexpr (T::is_required) {
+      std::println(
+        errorStream, "{}: Missing required argument `{}`", arg0, argDef.mName);
+      return std::unexpected {incomplete_parse_reason::MissingArgumentValue};
+    }
+    return std::nullopt;
+  }
+  if constexpr (vector_like<V>) {
+    V ret {};
+    ret.reserve(args.size());
+    for (auto&& arg: args) {
+      typename V::value_type v {};
+      from_string_arg_outer(v, arg);
+      ret.push_back(std::move(v));
+    }
+    return {arg_parse_match {ret, args.size()}};
+  } else {
+    V ret {};
+    from_string_arg_outer(ret, args.front());
+    return arg_parse_match {std::move(ret), 1};
+  }
+}
+
+template <class Traits, basic_option T, class V = typename T::value_type>
+arg_parse_result<V> parse_positional_argument(
+  const T& argDef,
+  std::string_view arg0,
+  std::span<std::string_view> args,
+  FILE* errorStream) {
+  return std::nullopt;
+}
+
+template <class T, std::size_t I = 0>
+constexpr bool only_last_positional_argument_may_have_multiple_values() {
+  using namespace detail::Reflection;
+  constexpr auto N = count_members<T>();
+  if constexpr (I == N) {
+    return true;
+  } else if constexpr (vector_like<decltype(get_argument_definition<T, I>())>) {
+    return I == N - 1;
+  } else {
+    return only_last_positional_argument_may_have_multiple_values<T, I + 1>();
+  }
+}
+
+template <class T, std::size_t I = 0>
+constexpr std::ptrdiff_t last_mandatory_positional_argument() {
+  using namespace detail::Reflection;
+  constexpr auto N = count_members<T>();
+  if constexpr (I == N) {
+    return -1;
+  } else {
+    const auto recurse = last_mandatory_positional_argument<T, I + 1>();
+    using TArg = std::decay_t<decltype(get_argument_definition<T, I>())>;
+    if constexpr (requires { TArg::is_required; }) {
+      if (recurse == -1 && TArg::is_required) {
+        return I;
+      }
+    }
+    return recurse;
+  }
+};
+
+template <class T, std::size_t I = 0>
+constexpr std::ptrdiff_t first_optional_positional_argument() {
+  using namespace detail::Reflection;
+  constexpr auto N = count_members<T>();
+  if constexpr (I == N) {
+    return -1;
+  } else {
+    using TArg = std::decay_t<decltype(get_argument_definition<T, I>())>;
+    if constexpr (requires { TArg::is_required; }) {
+      if (!TArg::is_required) {
+        return I;
+      }
+    }
+    return first_optional_positional_argument<T, I + 1>();
+  }
 };
 
 template <class T, class Traits = gnu_style_parsing_traits>
@@ -408,71 +516,108 @@ std::expected<T, incomplete_parse_reason> parse(
     }
   }
 
+  const auto arg0 = std::filesystem::path {args.front()}.stem().string();
   using namespace detail::Reflection;
   T ret {};
   auto tuple = tie_struct(ret);
 
   constexpr auto N = count_members<T>();
-  std::vector<std::string_view> positional;
+  std::vector<std::string_view> positionalArgs;
 
-  for (std::size_t i = 0; i < args.size(); ++i) {
-    if (args[i] == "--") {
-      if (args.size() > i + 1) {
-        positional.reserve(positional.size() + args.size() - (i + 1));
-        std::ranges::copy(args.subspan(i + 1), std::back_inserter(positional));
-      }
+  // Handle options
+  std::optional<incomplete_parse_reason> failure;
+  for (std::size_t i = 1; i < args.size();) {
+    const auto arg = args[i];
+    if (arg == "--") {
+      std::ranges::copy(
+        args.subspan(i + 1), std::back_inserter(positionalArgs));
       break;
     }
 
-    std::optional<incomplete_parse_reason> failure;
-    const auto matched = [&]<std::size_t... I>(std::index_sequence<I...>) {
-      return ([&] {
-        const auto def = get_argument_definition<T, I>();
-        if constexpr (!basic_option<std::decay_t<decltype(def)>>) {
-          return false;
-        } else {
-          auto result = parse_option<Traits>(def, args.subspan(i));
-          if (!result) {
-            return false;
-          }
-          if (!result->has_value()) {
-            using enum arg_parse_failure_reason;
-            switch (result->error()) {
-              case MissingValue:
-                failure = incomplete_parse_reason::MissingArgumentValue;
-                break;
-              case InvalidValue:
-                failure = incomplete_parse_reason::InvalidArgumentValue;
-                break;
+    const auto matchedOption
+      = [&]<std::size_t... I>(std::index_sequence<I...>) {
+          // returns bool: matched option
+          return ([&] {
+            const auto def = get_argument_definition<T, I>();
+            auto result = parse_option<Traits>(def, args.subspan(i));
+            if (!result) {
+              return false;
             }
+            if (!result->has_value()) {
+              failure = result->error();
+              return true;
+            }
+            get<I>(tuple) = std::move((*result)->mValue);
+            i += (*result)->mConsumed;
             return true;
-          }
-          get<I>(tie_struct(ret)) = std::move((*result)->mValue);
-          i += (*result)->mConsumed - 1;
-          return true;
-        }
-      }() || ...);
-    }(std::make_index_sequence<N> {});
-    if (matched) {
+          }() || ...);
+        }(std::make_index_sequence<N> {});
+
+    if (failure) {
+      return std::unexpected {failure.value()};
+    }
+    if (matchedOption) {
       continue;
     }
 
-    const auto arg = args[i];
+    // Store positional parameters for later
+    [&]<std::size_t... I>(std::index_sequence<I...>) {
+    }(std::make_index_sequence<N> {});
+
     if (arg.starts_with(Traits::long_arg_prefix)) {
-      std::print(errorStream, "Unrecognized argument: {}\n\n", arg);
+      std::print(errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
       show_usage<T, Traits>(errorStream, args.front(), help);
       return std::unexpected {incomplete_parse_reason::UnrecognizedArgument};
     }
     if constexpr (requires { Traits::short_arg_prefix; }) {
       // TODO: handle -abc where `a`, `b`, and `c` are all flags
-      if (arg.starts_with(Traits::short_arg_prefix) && arg != "-") {
-        // "-" can mean stdout
-        std::print(errorStream, "Unrecognized argument: {}\n\n", arg);
+
+      // The short prefixes have other meanings, e.g.:
+      //
+      // GNU, Powershell: `-` often means 'stdout'
+      // Classic MS: '/' can mean 'root of the filesystem
+      if (
+        arg.starts_with(Traits::short_arg_prefix)
+        && arg != Traits::short_arg_prefix) {
+        std::print(errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
         show_usage<T, Traits>(errorStream, args.front(), help);
         return std::unexpected {incomplete_parse_reason::UnrecognizedArgument};
       }
     }
+
+    positionalArgs.emplace_back(arg);
+    ++i;
   }
+
+  // Handle positional args
+  static_assert(only_last_positional_argument_may_have_multiple_values<T>());
+  static_assert(
+    first_optional_positional_argument<T>()
+    >= last_mandatory_positional_argument<T>());
+  [&]<std::size_t... I>(std::index_sequence<I...>) {
+    ([&] {
+      // returns bool: continue
+      const auto def = get_argument_definition<T, I>();
+      auto result = parse_positional_argument<Traits>(
+        def, arg0, positionalArgs, errorStream);
+      if (!result) {
+        return true;
+      }
+      if (!result->has_value()) {
+        failure = result->error();
+        return false;
+      }
+      get<I>(tuple) = std::move((*result)->mValue);
+      positionalArgs.erase(
+        positionalArgs.begin(), positionalArgs.begin() + (*result)->mConsumed);
+      return true;
+    }()
+     && ...);
+  }(std::make_index_sequence<N> {});
+  if (failure) {
+    return std::unexpected {failure.value()};
+  }
+
   return ret;
 }
 

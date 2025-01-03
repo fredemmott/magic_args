@@ -11,8 +11,8 @@ struct MyArgs {
   };
   bool mFlag {false};
   bool mOtherFlag {false};
-  magic_args::positional_argument<std::string> mOutput;
-  magic_args::positional_argument<std::vector<std::string>> mInputs;
+  magic_args::mandatory_positional_argument<std::string> mOutput;
+  magic_args::optional_positional_argument<std::vector<std::string>> mInputs;
 };
 
 int main(int argc, char** argv) {
