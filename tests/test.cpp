@@ -60,7 +60,7 @@ TEMPLATE_TEST_CASE(
   CHECK(args.error() == magic_args::incomplete_parse_reason::InvalidArgument);
   CHECK(out.empty());
   CHECK_THAT(err.get(), Catch::Matchers::StartsWith(&R"EOF(
-my_test: Invalid argument: --not-a-valid-arg
+my_test: Invalid positional argument: --not-a-valid-arg
 
 Usage: my_test [OPTIONS...]
 )EOF"[1]));
