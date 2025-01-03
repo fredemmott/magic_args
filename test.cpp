@@ -27,6 +27,8 @@ int main(int argc, char** argv) {
   }
 
   static_assert(std::same_as<MyArgs, std::decay_t<decltype(*args)>>);
+  std::println("mFlag: {}", args->mFlag ? "true" : "false");
+  std::println("\nGenerated dump:");
   magic_args::dump(*args);
 
   return 0;
