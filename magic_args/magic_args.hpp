@@ -593,6 +593,8 @@ std::expected<T, incomplete_parse_reason> parse(
         }(std::make_index_sequence<N> {});
 
     if (failure) {
+      std::println(errorStream, "");
+      show_usage<T, Traits>(errorStream, args.front(), help);
       return std::unexpected {failure.value()};
     }
     if (matchedOption) {
@@ -654,6 +656,8 @@ std::expected<T, incomplete_parse_reason> parse(
      && ...);
   }(std::make_index_sequence<N> {});
   if (failure) {
+    std::println(errorStream, "");
+    show_usage<T, Traits>(errorStream, args.front(), help);
     return std::unexpected {failure.value()};
   }
 
