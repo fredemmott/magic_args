@@ -17,7 +17,7 @@
 
 namespace magic_args::inline api {
 template <class T>
-concept basic_argument = requires(T v) {
+concept basic_option = requires(T v) {
   typename T::value_type;
   { v.mName } -> std::convertible_to<std::string>;
   { v.mHelp } -> std::convertible_to<std::string>;
@@ -57,8 +57,8 @@ struct flag final {
   }
 };
 
-static_assert(basic_argument<flag>);
-static_assert(basic_argument<option<std::string>>);
+static_assert(basic_option<flag>);
+static_assert(basic_option<option<std::string>>);
 
 template <class T, std::size_t N>
 auto infer_argument_definition() {
@@ -108,7 +108,7 @@ auto get_argument_definition() {
 
   auto value = get<N>(tie_struct(T {}));
   using TValue = std::decay_t<decltype(value)>;
-  if constexpr (basic_argument<TValue>) {
+  if constexpr (basic_option<TValue>) {
     if (value.mName.empty()) {
       value.mName = infer_argument_definition<T, N>().mName;
     }
@@ -131,7 +131,7 @@ struct ExtraHelp {
   std::string mVersion;
 };
 
-template <class Traits, basic_argument TArg>
+template <class Traits, basic_option TArg>
 void show_arg_usage(FILE* output, const TArg& arg) {
   const auto shortArg = [&arg] {
     if constexpr (requires { arg.mShortName; }) {
@@ -211,7 +211,7 @@ void from_string_arg_fallback(T& v, std::string_view arg) {
   ss >> v;
 }
 
-template <class Traits, basic_argument T>
+template <class Traits, basic_option T>
 [[nodiscard]]
 bool arg_matches(const T& argDef, std::string_view arg) {
   if (arg == std::format("{}{}", Traits::long_arg_prefix, argDef.mName)) {
@@ -245,7 +245,7 @@ using arg_parse_result
 
 template <
   class Traits,
-  basic_argument T,
+  basic_option T,
   class V = std::decay_t<typename T::value_type>>
 arg_parse_result<V> parse_arg(const T& arg, std::span<std::string_view> args) {
   using enum arg_parse_failure_reason;
@@ -398,7 +398,7 @@ std::expected<T, incomplete_parse_reason> parse(
 
 template <class T>
 auto argument_value(const T& arg) {
-  if constexpr (basic_argument<T>) {
+  if constexpr (basic_option<T>) {
     return arg.mValue;
   } else {
     return arg;
