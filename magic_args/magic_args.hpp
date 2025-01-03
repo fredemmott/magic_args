@@ -17,6 +17,13 @@
 
 namespace magic_args::inline api {
 template <class T>
+concept basic_argument = requires(T v) {
+  typename T::value_type;
+  { v.mName } -> std::convertible_to<std::string>;
+  { v.mHelp } -> std::convertible_to<std::string>;
+};
+
+template <class T>
 concept basic_option = requires(T v) {
   typename T::value_type;
   { v.mName } -> std::convertible_to<std::string>;
@@ -25,8 +32,35 @@ concept basic_option = requires(T v) {
 };
 
 template <class T>
+concept vector_like = requires { typename T::value_type; }
+  && requires(T c, typename T::value_type v) { c.push_back(v); }
+  && (!std::same_as<T, std::string>);
+
+template <class T>
+struct single_value_type {
+  using type = T;
+};
+template <vector_like T>
+struct single_value_type<T> {
+  using type = typename T::value_type;
+};
+
+template <class T>
+using single_value_t = typename single_value_type<T>::type;
+
+template <class T>
+struct positional_argument {
+  using storage_type = T;
+  using value_type = single_value_t<T>;
+  std::string mName;
+  std::string mHelp;
+  bool mRequired {false};
+  T mValue {};
+};
+
+template <class T>
 struct option final {
-  using value_type = T;
+  using value_type = single_value_t<T>;
   std::string mName;
   std::string mHelp;
   std::string mShortName;
@@ -108,7 +142,7 @@ auto get_argument_definition() {
 
   auto value = get<N>(tie_struct(T {}));
   using TValue = std::decay_t<decltype(value)>;
-  if constexpr (basic_option<TValue>) {
+  if constexpr (basic_argument<TValue>) {
     if (value.mName.empty()) {
       value.mName = infer_argument_definition<T, N>().mName;
     }
@@ -131,8 +165,12 @@ struct ExtraHelp {
   std::string mVersion;
 };
 
+template <class Traits, class TArg>
+void show_option_usage(FILE*, const TArg&) {
+}
+
 template <class Traits, basic_option TArg>
-void show_arg_usage(FILE* output, const TArg& arg) {
+void show_option_usage(FILE* output, const TArg& arg) {
   const auto shortArg = [&arg] {
     if constexpr (requires { arg.mShortName; }) {
       if (!arg.mShortName.empty()) {
@@ -163,6 +201,7 @@ void show_arg_usage(FILE* output, const TArg& arg) {
   }
   std::println(output, "{}\n{:30}{}", params, "", arg.mHelp);
 }
+
 template <class T, class Traits = gnu_style_parsing_traits>
 void show_usage(
   FILE* output,
@@ -170,10 +209,59 @@ void show_usage(
   const ExtraHelp& extraHelp = {}) {
   using namespace detail::Reflection;
 
-  std::println(
-    output,
-    "Usage: {} [OPTIONS...]",
-    std::filesystem::path {argv0}.stem().string());
+  constexpr auto N = count_members<T>();
+
+  constexpr bool hasOptions = []<std::size_t... I>(std::index_sequence<I...>) {
+    return (basic_option<decltype(get_argument_definition<T, I>())> || ...);
+  }(std::make_index_sequence<N> {});
+  constexpr bool hasPositionalArguments
+    = []<std::size_t... I>(std::index_sequence<I...>) {
+        return (
+          (basic_argument<decltype(get_argument_definition<T, I>())>
+           && !basic_option<decltype(get_argument_definition<T, I>())>)
+          || ...);
+      }(std::make_index_sequence<N> {});
+
+  const auto oneLiner = std::format(
+    "Usage: {}{}",
+    std::filesystem::path {argv0}.stem().string(),
+    hasOptions ? " [OPTIONS...]" : "");
+  if constexpr (!hasPositionalArguments) {
+    std::println(output, "{}", oneLiner);
+  } else {
+    std::print(output, "{}", oneLiner);
+    []<std::size_t... I>(auto output, std::index_sequence<I...>) {
+      (
+        [&] {
+          const auto arg = get_argument_definition<T, I>();
+          using TArg = std::decay_t<decltype(arg)>;
+          if constexpr (!(basic_option<TArg> || std::same_as<TArg, flag>)) {
+            auto name = arg.mName;
+            for (auto&& c: name) {
+              c = std::toupper(c);
+            }
+            if (name.back() == 'S') {
+              // Real de-pluralization requires a lookup database; we can't do
+              // that, so this seems to be the only practical approach. If it's
+              // not good enough for you, specify a `positional_parameter<T>`
+              // and provide a name.
+              name.pop_back();
+            }
+            if constexpr (vector_like<typename TArg::storage_type>) {
+              name = std::format("{0} [{0} [...]]", name);
+            }
+            if (arg.mRequired) {
+              std::print(output, " {}", name);
+            } else {
+              std::print(output, " [{}]", name);
+            }
+          }
+        }(),
+        ...);
+    }(output, std::make_index_sequence<N> {});
+    std::println(output, "");
+  }
+
   if (!extraHelp.mDescription.empty()) {
     std::println(output, "{}", extraHelp.mDescription);
   }
@@ -184,19 +272,20 @@ void show_usage(
       std::println(output, "  {}", example);
     }
   }
+  if (hasOptions) {
+    std::print(output, "\nOptions:\n\n");
 
-  std::print(output, "\nOptions:\n\n");
-
-  constexpr auto N = count_members<T>();
-  []<std::size_t... I>(auto output, std::index_sequence<I...>) {
-    (show_arg_usage<Traits>(output, get_argument_definition<T, I>()), ...);
-  }(output, std::make_index_sequence<N> {});
+    []<std::size_t... I>(auto output, std::index_sequence<I...>) {
+      (show_option_usage<Traits>(output, get_argument_definition<T, I>()), ...);
+    }(output, std::make_index_sequence<N> {});
+  }
 
   std::println(output, "");
-  show_arg_usage<Traits>(
+  show_option_usage<Traits>(
     output, flag {"help", "show this message", Traits::short_help_arg});
   if (!extraHelp.mVersion.empty()) {
-    show_arg_usage<Traits>(output, flag {"version", "print program version"});
+    show_option_usage<Traits>(
+      output, flag {"version", "print program version"});
   }
 }
 
@@ -213,7 +302,7 @@ void from_string_arg_fallback(T& v, std::string_view arg) {
 
 template <class Traits, basic_option T>
 [[nodiscard]]
-bool arg_matches(const T& argDef, std::string_view arg) {
+bool option_matches(const T& argDef, std::string_view arg) {
   if (arg == std::format("{}{}", Traits::long_arg_prefix, argDef.mName)) {
     return true;
   }
@@ -247,9 +336,11 @@ template <
   class Traits,
   basic_option T,
   class V = std::decay_t<typename T::value_type>>
-arg_parse_result<V> parse_arg(const T& arg, std::span<std::string_view> args) {
+arg_parse_result<V> parse_option(
+  const T& arg,
+  std::span<std::string_view> args) {
   using enum arg_parse_failure_reason;
-  if (!arg_matches<Traits>(arg, args.front())) {
+  if (!option_matches<Traits>(arg, args.front())) {
     return std::nullopt;
   }
   if (args.size() == 1) {
@@ -269,10 +360,10 @@ arg_parse_result<V> parse_arg(const T& arg, std::span<std::string_view> args) {
 }
 
 template <class Traits>
-arg_parse_result<bool> parse_arg(
+arg_parse_result<bool> parse_option(
   const flag& arg,
   std::span<std::string_view> args) {
-  if (arg_matches<Traits>(arg, args.front())) {
+  if (option_matches<Traits>(arg, args.front())) {
     return {arg_parse_match {true, 1}};
   }
   return std::nullopt;
@@ -337,25 +428,29 @@ std::expected<T, incomplete_parse_reason> parse(
     const auto matched = [&]<std::size_t... I>(std::index_sequence<I...>) {
       return ([&] {
         const auto def = get_argument_definition<T, I>();
-        auto result = parse_arg<Traits>(def, args.subspan(i));
-        if (!result) {
+        if constexpr (!basic_option<std::decay_t<decltype(def)>>) {
           return false;
-        }
-        if (!result->has_value()) {
-          using enum arg_parse_failure_reason;
-          switch (result->error()) {
-            case MissingValue:
-              failure = incomplete_parse_reason::MissingArgumentValue;
-              break;
-            case InvalidValue:
-              failure = incomplete_parse_reason::InvalidArgumentValue;
-              break;
+        } else {
+          auto result = parse_option<Traits>(def, args.subspan(i));
+          if (!result) {
+            return false;
           }
+          if (!result->has_value()) {
+            using enum arg_parse_failure_reason;
+            switch (result->error()) {
+              case MissingValue:
+                failure = incomplete_parse_reason::MissingArgumentValue;
+                break;
+              case InvalidValue:
+                failure = incomplete_parse_reason::InvalidArgumentValue;
+                break;
+            }
+            return true;
+          }
+          get<I>(tie_struct(ret)) = std::move((*result)->mValue);
+          i += (*result)->mConsumed - 1;
           return true;
         }
-        get<I>(tie_struct(ret)) = std::move((*result)->mValue);
-        i += (*result)->mConsumed - 1;
-        return true;
       }() || ...);
     }(std::make_index_sequence<N> {});
     if (matched) {
@@ -398,7 +493,7 @@ std::expected<T, incomplete_parse_reason> parse(
 
 template <class T>
 auto argument_value(const T& arg) {
-  if constexpr (basic_option<T>) {
+  if constexpr (basic_argument<T>) {
     return arg.mValue;
   } else {
     return arg;
