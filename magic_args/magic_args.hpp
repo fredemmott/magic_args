@@ -7,7 +7,6 @@
 #include <expected>
 #include <filesystem>
 #include <format>
-#include <iostream>
 #include <print>
 #include <span>
 #include <sstream>
@@ -369,7 +368,6 @@ enum class incomplete_parse_reason {
   MissingArgumentValue,
   InvalidArgument,
   InvalidArgumentValue,
-  UnrecognizedArgument,
 };
 
 template <class T>
@@ -618,7 +616,7 @@ std::expected<T, incomplete_parse_reason> parse(
     if (arg.starts_with(Traits::long_arg_prefix)) {
       std::print(errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
       show_usage<T, Traits>(errorStream, args.front(), help);
-      return std::unexpected {incomplete_parse_reason::UnrecognizedArgument};
+      return std::unexpected {incomplete_parse_reason::InvalidArgument};
     }
     if constexpr (requires { Traits::short_arg_prefix; }) {
       // TODO: handle -abc where `a`, `b`, and `c` are all flags
@@ -632,7 +630,7 @@ std::expected<T, incomplete_parse_reason> parse(
         && arg != Traits::short_arg_prefix) {
         std::print(errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
         show_usage<T, Traits>(errorStream, args.front(), help);
-        return std::unexpected {incomplete_parse_reason::UnrecognizedArgument};
+        return std::unexpected {incomplete_parse_reason::InvalidArgument};
       }
     }
 
