@@ -255,6 +255,20 @@ void show_option_usage(FILE* output, const TArg& arg) {
   magic_args::println(output, "{}\n{:30}{}", params, "", arg.mHelp);
 }
 
+template <class Traits, basic_option T>
+void show_positional_argument_usage(FILE*, const T&) {
+}
+
+template <class Traits, basic_argument T>
+  requires(!basic_option<T>)
+void show_positional_argument_usage(FILE* output, const T& arg) {
+  if (arg.mHelp.empty()) {
+    magic_args::println(output, "      {}", arg.mName);
+    return;
+  }
+  magic_args::println(output, "     {:25} {}", arg.mName, arg.mHelp);
+}
+
 template <class T, class Traits = gnu_style_parsing_traits>
 void show_usage(
   FILE* output,
@@ -327,12 +341,12 @@ void show_usage(
 
   magic_args::print(output, "\nOptions:\n\n");
   if (hasOptions) {
-    []<std::size_t... I>(auto output, std::index_sequence<I...>) {
+    [output]<std::size_t... I>(std::index_sequence<I...>) {
       (show_option_usage<Traits>(
          output, get_argument_definition<T, I, Traits>()),
        ...);
-    }(output, std::make_index_sequence<N> {});
-    magic_args::println(output, "");
+    }(std::make_index_sequence<N> {});
+    magic_args::print(output, "\n");
   }
 
   show_option_usage<Traits>(
@@ -340,6 +354,15 @@ void show_usage(
   if (!extraHelp.mVersion.empty()) {
     show_option_usage<Traits>(
       output, flag {"version", "print program version"});
+  }
+
+  if (hasPositionalArguments) {
+    magic_args::print(output, "\nArguments:\n\n");
+    [output]<std::size_t... I>(std::index_sequence<I...>) {
+      (show_positional_argument_usage<Traits>(
+         output, get_argument_definition<T, I, Traits>()),
+       ...);
+    }(std::make_index_sequence<N> {});
   }
 }
 

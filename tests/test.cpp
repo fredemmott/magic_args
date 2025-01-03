@@ -35,9 +35,23 @@ struct OptionsOnly {
   bool operator==(const OptionsOnly&) const noexcept = default;
 };
 
+struct FlagsAndParameters {
+  bool mFlag {false};
+  magic_args::optional_positional_argument<std::string> mInput;
+  magic_args::optional_positional_argument<std::string> mOutput {
+    .mHelp = "file to create",
+  };
+};
+
 constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
 
-TEMPLATE_TEST_CASE("no args", "", EmptyStruct, OptionsOnly, FlagsOnly) {
+TEMPLATE_TEST_CASE(
+  "no args",
+  "",
+  EmptyStruct,
+  OptionsOnly,
+  FlagsOnly,
+  FlagsAndParameters) {
   std::vector<std::string_view> argv {testName};
   Output out, err;
   const auto args = magic_args::parse<TestType>(argv, {}, out, err);
@@ -364,6 +378,31 @@ TEST_CASE("options only, short") {
   CHECK(err.empty());
   REQUIRE(args.has_value());
   CHECK(args->mDocumentedString == "abc");
+}
+
+TEST_CASE("parameters, --help") {
+  std::vector<std::string_view> argv {testName, "--help"};
+
+  Output out, err;
+  const auto args = magic_args::parse<FlagsAndParameters>(argv, {}, out, err);
+  REQUIRE_FALSE(args.has_value());
+  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
+Usage: my_test [OPTIONS...] [INPUT] [OUTPUT]
+
+Options:
+
+      --flag
+
+  -?, --help                   show this message
+
+Arguments:
+
+      INPUT
+     OUTPUT                    file to create
+)EOF"[1]);
 }
 
 // TODO: named parameters
