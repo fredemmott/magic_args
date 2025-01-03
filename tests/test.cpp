@@ -43,6 +43,14 @@ struct FlagsAndParameters {
   };
 };
 
+struct MandatoryParameter {
+  bool mFlag {false};
+  magic_args::mandatory_positional_argument<std::string> mInput;
+  magic_args::optional_positional_argument<std::string> mOutput {
+    .mHelp = "file to create",
+  };
+};
+
 constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
 
 TEMPLATE_TEST_CASE(
@@ -405,11 +413,15 @@ Arguments:
 )EOF"[1]);
 }
 
-TEST_CASE("parameters, all provided") {
+TEMPLATE_TEST_CASE(
+  "parameters, all provided",
+  "",
+  FlagsAndParameters,
+  MandatoryParameter) {
   std::vector<std::string_view> argv {testName, "in", "out"};
 
   Output out, err;
-  const auto args = magic_args::parse<FlagsAndParameters>(argv, {}, out, err);
+  const auto args = magic_args::parse<TestType>(argv, {}, out, err);
   REQUIRE(args.has_value());
   CHECK(out.empty());
   CHECK(err.empty());
@@ -462,10 +474,67 @@ TEST_CASE("named parameters with flag as value") {
 
   Output out, err;
   const auto args = magic_args::parse<FlagsAndParameters>(argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.empty());
+
   REQUIRE(args.has_value());
   CHECK_FALSE(args->mFlag);
   CHECK(args->mInput == "in");
   CHECK(args->mOutput == "--flag");
+}
+
+TEST_CASE("mandatory named parameter, --help") {
+  std::vector<std::string_view> argv {testName, "--help"};
+
+  Output out, err;
+  const auto args = magic_args::parse<MandatoryParameter>(argv, {}, out, err);
+  REQUIRE_FALSE(args.has_value());
+  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
+Usage: my_test [OPTIONS...] INPUT [OUTPUT]
+
+Options:
+
+      --flag
+
+  -?, --help                   show this message
+
+Arguments:
+
+      INPUT
+      OUTPUT                   file to create
+)EOF"[1]);
+}
+
+TEST_CASE("missing mandatory named parameter") {
+  std::vector<std::string_view> argv {
+    testName,
+  };
+
+  Output out, err;
+  const auto args = magic_args::parse<MandatoryParameter>(argv, {}, out, err);
+  REQUIRE_FALSE(args.has_value());
+  CHECK(
+    args.error()
+    == magic_args::incomplete_parse_reason::MissingRequiredArgument);
+  CHECK(out.empty());
+  CHECK(err.get() == &R"EOF(
+my_test: Missing required argument `INPUT`
+
+Usage: my_test [OPTIONS...] INPUT [OUTPUT]
+
+Options:
+
+      --flag
+
+  -?, --help                   show this message
+
+Arguments:
+
+      INPUT
+      OUTPUT                   file to create
+)EOF"[1]);
 }
 
 // TODO: named parameters
