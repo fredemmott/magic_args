@@ -261,9 +261,7 @@ void show_usage(
       }(std::make_index_sequence<N> {});
 
   const auto oneLiner = std::format(
-    "Usage: {}{}",
-    std::filesystem::path {argv0}.stem().string(),
-    hasOptions ? " [OPTIONS...]" : "");
+    "Usage: {} [OPTIONS...]", std::filesystem::path {argv0}.stem().string());
   if constexpr (!hasPositionalArguments) {
     std::println(output, "{}", oneLiner);
   } else {
@@ -310,17 +308,17 @@ void show_usage(
       std::println(output, "  {}", example);
     }
   }
-  if (hasOptions) {
-    std::print(output, "\nOptions:\n\n");
 
+  std::print(output, "\nOptions:\n\n");
+  if (hasOptions) {
     []<std::size_t... I>(auto output, std::index_sequence<I...>) {
       (show_option_usage<Traits>(
          output, get_argument_definition<T, I, Traits>()),
        ...);
     }(output, std::make_index_sequence<N> {});
+    std::println(output, "");
   }
 
-  std::println(output, "");
   show_option_usage<Traits>(
     output, flag {"help", "show this message", Traits::short_help_arg});
   if (!extraHelp.mVersion.empty()) {
@@ -544,6 +542,7 @@ std::expected<T, incomplete_parse_reason> parse(
       return std::string {};
     }
   }();
+  const auto versionArg = std::format("{}version", Traits::long_arg_prefix);
 
   for (auto&& arg: args) {
     if (arg == "--") {
@@ -552,6 +551,10 @@ std::expected<T, incomplete_parse_reason> parse(
     if (arg == longHelp || (arg == shortHelp && !shortHelp.empty())) {
       show_usage<T, Traits>(outputStream, args.front(), help);
       return std::unexpected {incomplete_parse_reason::HelpRequested};
+    }
+    if (arg == versionArg && !help.mVersion.empty()) {
+      std::println(outputStream, "{}", help.mVersion);
+      return std::unexpected {incomplete_parse_reason::VersionRequested};
     }
   }
 
@@ -636,7 +639,7 @@ std::expected<T, incomplete_parse_reason> parse(
     first_optional_positional_argument<T>()
     >= last_mandatory_positional_argument<T>());
   [&]<std::size_t... I>(std::index_sequence<I...>) {
-    ([&] {
+    (void)([&] {
       // returns bool: continue
       const auto def = get_argument_definition<T, I, Traits>();
       auto result = parse_positional_argument<Traits>(
@@ -652,8 +655,7 @@ std::expected<T, incomplete_parse_reason> parse(
       positionalArgs.erase(
         positionalArgs.begin(), positionalArgs.begin() + (*result)->mConsumed);
       return true;
-    }()
-     && ...);
+    }() && ...);
   }(std::make_index_sequence<N> {});
   if (failure) {
     std::println(errorStream, "");
