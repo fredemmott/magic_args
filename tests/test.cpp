@@ -302,4 +302,36 @@ Options:
 )EOF"[1]);
 }
 
-// TODO: specify options
+TEST_CASE("options only, all provided") {
+  std::vector<std::string_view> argv {
+    testName,
+    "--string",
+    "value",
+    "--int",
+    "123",
+    "--foo",
+    "abc",
+  };
+  Output out, err;
+  const auto args = magic_args::parse<OptionsOnly>(argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.empty());
+  REQUIRE(args.has_value());
+  CHECK(args->mString == "value");
+  CHECK(args->mInt == 123);
+  CHECK(args->mDocumentedString == "abc");
+}
+
+TEST_CASE("options only, short") {
+  std::vector<std::string_view> argv {
+    testName,
+    "-f",
+    "abc",
+  };
+  Output out, err;
+  const auto args = magic_args::parse<OptionsOnly>(argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.empty());
+  REQUIRE(args.has_value());
+  CHECK(args->mDocumentedString == "abc");
+}

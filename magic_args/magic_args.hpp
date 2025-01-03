@@ -88,6 +88,9 @@ struct option final {
     return mValue;
   }
   bool operator==(const option&) const noexcept = default;
+  bool operator==(const T& value) const noexcept {
+    return mValue == value;
+  }
 };
 
 struct flag final {
