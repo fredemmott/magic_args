@@ -1,11 +1,11 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
 
-#include "output-windows.hpp"
-
 #include <Windows.h>
 #include <fcntl.h>
 #include <io.h>
+
+#include "output.hpp"
 
 Output::Output() {
   HANDLE read {};
@@ -19,31 +19,4 @@ Output::Output() {
   mRead = _fdopen(readFd, "r");
   mWrite = _fdopen(writeFd, "w");
   mFuture = std::async(std::launch::async, &Output::run, this);
-}
-
-Output::~Output() {
-  wait();
-}
-
-void Output::run() {
-  char buffer[1024];
-  while (true) {
-    const auto count = fread(buffer, 1, std::size(buffer), mRead);
-    if (!count) {
-      return;
-    }
-    mData.append(buffer, count);
-  }
-}
-
-void Output::wait() {
-  if (!mWrite) {
-    return;
-  }
-  fclose(mWrite);
-  mWrite = {};
-
-  mFuture.wait();
-  fclose(mRead);
-  mRead = {};
 }

@@ -2,6 +2,35 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#if __has_include(<Windows.h>)
-#include "output-windows.hpp"
-#endif
+#include <cstdio>
+#include <future>
+#include <string>
+
+class Output {
+ public:
+  Output();
+  ~Output();
+
+  std::string get() {
+    wait();
+    return mData;
+  }
+
+  [[nodiscard]]
+  bool empty() {
+    return get().empty();
+  }
+
+  operator FILE*() const noexcept {
+    return mWrite;
+  }
+
+ private:
+  std::future<void> mFuture;
+  FILE* mRead {nullptr};
+  FILE* mWrite {nullptr};
+  std::string mData;
+
+  void wait();
+  void run();
+};

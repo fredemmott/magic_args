@@ -118,11 +118,24 @@ consteval auto demangled_name_clang(std::string_view name) {
   return name;
 }
 
+consteval auto demangled_name_gcc(std::string_view name) {
+  // auto magic-args::detail::-reflection::mangled-name() [with auto -t = (&
+  // external<-flags-only>.-flags-only::m-foo)]
+  auto begin = name.rfind("::") + 2;
+  auto end = name.rfind(")");
+  if (end > begin) {
+    return name.substr(begin, end - begin);
+  }
+  return name;
+}
+
 consteval auto demangled_name(std::string_view name) {
 #if defined(__clang__)
   return demangled_name_clang(name);
 #elif defined(_MSC_VER)
   return demangled_name_msvc(name);
+#elif defined(__GNUC__)
+  return demangled_name_gcc(name);
 #endif
   return name;
 }

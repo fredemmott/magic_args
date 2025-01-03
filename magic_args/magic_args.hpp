@@ -7,11 +7,18 @@
 #include <expected>
 #include <filesystem>
 #include <format>
-#include <print>
 #include <span>
 #include <sstream>
 
 #include "magic_args-reflection.hpp"
+#include "print.hpp"
+
+#ifndef __cpp_lib_expected
+static_assert(
+  false,
+  "Your <expected> header is not compatible with your compiler; if you are "
+  "using clang, use libc++");
+#endif
 
 namespace magic_args::inline api {
 template <class T>
@@ -237,15 +244,15 @@ void show_option_usage(FILE* output, const TArg& arg) {
 
   const auto params = std::format("  {:3} {}", shortArg, longArg);
   if (arg.mHelp.empty()) {
-    std::println(output, "{}", params);
+    magic_args::println(output, "{}", params);
     return;
   }
 
   if (params.size() < 30) {
-    std::println(output, "{:30} {}", params, arg.mHelp);
+    magic_args::println(output, "{:30} {}", params, arg.mHelp);
     return;
   }
-  std::println(output, "{}\n{:30}{}", params, "", arg.mHelp);
+  magic_args::println(output, "{}\n{:30}{}", params, "", arg.mHelp);
 }
 
 template <class T, class Traits = gnu_style_parsing_traits>
@@ -272,9 +279,9 @@ void show_usage(
   const auto oneLiner = std::format(
     "Usage: {} [OPTIONS...]", std::filesystem::path {argv0}.stem().string());
   if constexpr (!hasPositionalArguments) {
-    std::println(output, "{}", oneLiner);
+    magic_args::println(output, "{}", oneLiner);
   } else {
-    std::print(output, "{}", oneLiner);
+    magic_args::print(output, "{}", oneLiner);
     []<std::size_t... I>(auto output, std::index_sequence<I...>) {
       (
         [&] {
@@ -287,45 +294,45 @@ void show_usage(
             }
             if (name.back() == 'S') {
               // Real de-pluralization requires a lookup database; we can't do
-              // that, so this seems to be the only practical approach. If it's
-              // not good enough for you, specify a `positional_argument<T>`
-              // and provide a name.
+              // that, so this seems to be the only practical approach. If
+              // it's not good enough for you, specify a
+              // `positional_argument<T>` and provide a name.
               name.pop_back();
             }
             if constexpr (vector_like<typename TArg::value_type>) {
               name = std::format("{0} [{0} [...]]", name);
             }
             if (TArg::is_required) {
-              std::print(output, " {}", name);
+              magic_args::print(output, " {}", name);
             } else {
-              std::print(output, " [{}]", name);
+              magic_args::print(output, " [{}]", name);
             }
           }
         }(),
         ...);
     }(output, std::make_index_sequence<N> {});
-    std::println(output, "");
+    magic_args::println(output, "");
   }
 
   if (!extraHelp.mDescription.empty()) {
-    std::println(output, "{}", extraHelp.mDescription);
+    magic_args::println(output, "{}", extraHelp.mDescription);
   }
 
   if (!extraHelp.mExamples.empty()) {
-    std::print(output, "\nExamples:\n\n");
+    magic_args::print(output, "\nExamples:\n\n");
     for (auto&& example: extraHelp.mExamples) {
-      std::println(output, "  {}", example);
+      magic_args::println(output, "  {}", example);
     }
   }
 
-  std::print(output, "\nOptions:\n\n");
+  magic_args::print(output, "\nOptions:\n\n");
   if (hasOptions) {
     []<std::size_t... I>(auto output, std::index_sequence<I...>) {
       (show_option_usage<Traits>(
          output, get_argument_definition<T, I, Traits>()),
        ...);
     }(output, std::make_index_sequence<N> {});
-    std::println(output, "");
+    magic_args::println(output, "");
   }
 
   show_option_usage<Traits>(
@@ -472,7 +479,7 @@ arg_parse_result<V> parse_positional_argument(
   FILE* errorStream) {
   if (args.empty()) {
     if constexpr (T::is_required) {
-      std::println(
+      magic_args::println(
         errorStream, "{}: Missing required argument `{}`", arg0, argDef.mName);
       return std::unexpected {incomplete_parse_reason::MissingArgumentValue};
     }
@@ -590,7 +597,7 @@ std::expected<T, incomplete_parse_reason> parse(
       return std::unexpected {incomplete_parse_reason::HelpRequested};
     }
     if (arg == versionArg && !help.mVersion.empty()) {
-      std::println(outputStream, "{}", help.mVersion);
+      magic_args::println(outputStream, "{}", help.mVersion);
       return std::unexpected {incomplete_parse_reason::VersionRequested};
     }
   }
@@ -633,7 +640,7 @@ std::expected<T, incomplete_parse_reason> parse(
         }(std::make_index_sequence<N> {});
 
     if (failure) {
-      std::println(errorStream, "");
+      magic_args::println(errorStream, "");
       show_usage<T, Traits>(errorStream, args.front(), help);
       return std::unexpected {failure.value()};
     }
@@ -646,7 +653,8 @@ std::expected<T, incomplete_parse_reason> parse(
     }(std::make_index_sequence<N> {});
 
     if (arg.starts_with(Traits::long_arg_prefix)) {
-      std::print(errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
+      magic_args::print(
+        errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
       show_usage<T, Traits>(errorStream, args.front(), help);
       return std::unexpected {incomplete_parse_reason::InvalidArgument};
     }
@@ -660,7 +668,8 @@ std::expected<T, incomplete_parse_reason> parse(
       if (
         arg.starts_with(Traits::short_arg_prefix)
         && arg != Traits::short_arg_prefix) {
-        std::print(errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
+        magic_args::print(
+          errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
         show_usage<T, Traits>(errorStream, args.front(), help);
         return std::unexpected {incomplete_parse_reason::InvalidArgument};
       }
@@ -695,13 +704,13 @@ std::expected<T, incomplete_parse_reason> parse(
     }() && ...);
   }(std::make_index_sequence<N> {});
   if (failure) {
-    std::println(errorStream, "");
+    magic_args::println(errorStream, "");
     show_usage<T, Traits>(errorStream, args.front(), help);
     return std::unexpected {failure.value()};
   }
 
   if (!positionalArgs.empty()) {
-    std::print(
+    magic_args::print(
       errorStream,
       "{}: Invalid positional argument: {}\n\n",
       arg0,
@@ -744,7 +753,7 @@ void dump(const T& args, FILE* output = stdout) {
 
   []<std::size_t... I>(
     const auto& args, FILE* output, std::index_sequence<I...>) {
-    (std::println(
+    (magic_args::println(
        output, "{:29} `{}`", member_name<T, I>, argument_value(get<I>(args))),
      ...);
   }(tuple,

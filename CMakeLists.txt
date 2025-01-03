@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.22..3.29)
 
 set(
   CMAKE_TOOLCHAIN_FILE
@@ -9,12 +9,12 @@ set(
 project(magic_args VERSION 0.0.1 LANGUAGES CXX)
 
 if (MSVC)
-add_compile_options(
-  # Include content and marker in error messages
-  "/diagnostics:caret"
-  # Source is UTF-8
-  "/utf-8"
-)
+  add_compile_options(
+    # Include content and marker in error messages
+    "/diagnostics:caret"
+    # Source is UTF-8
+    "/utf-8"
+  )
 endif ()
 
 add_subdirectory(magic_args)
