@@ -347,21 +347,33 @@ void from_string_arg_fallback(T& v, std::string_view arg) {
   ss >> v;
 }
 
+enum class option_match_kind {
+  NameAndValue,
+  NameOnly,
+
+};
+
 template <class Traits, basic_option T>
 [[nodiscard]]
-bool option_matches(const T& argDef, std::string_view arg) {
-  if (arg == std::format("{}{}", Traits::long_arg_prefix, argDef.mName)) {
-    return true;
+std::optional<option_match_kind> option_matches(
+  const T& argDef,
+  std::string_view arg) {
+  const auto name = std::format("{}{}", Traits::long_arg_prefix, argDef.mName);
+  if (arg == name) {
+    return option_match_kind::NameOnly;
+  }
+  if (arg.starts_with(name + Traits::value_separator)) {
+    return option_match_kind::NameAndValue;
   }
   if constexpr (requires { Traits::short_arg_prefix; }) {
     if (
       (!argDef.mShortName.empty())
       && arg
         == std::format("{}{}", Traits::short_arg_prefix, argDef.mShortName)) {
-      return true;
+      return option_match_kind::NameOnly;
     }
   }
-  return false;
+  return std::nullopt;
 }
 
 enum class incomplete_parse_reason {
@@ -412,16 +424,33 @@ arg_parse_result<V> parse_option(
   const T& argDef,
   std::span<std::string_view> args) {
   using enum incomplete_parse_reason;
-  if (!option_matches<Traits>(argDef, args.front())) {
+  using enum option_match_kind;
+  const auto match = option_matches<Traits>(argDef, args.front());
+  if (!match) {
     return std::nullopt;
   }
-  if (args.size() == 1) {
-    return std::unexpected {MissingArgumentValue};
+
+  std::size_t consumed = 1;
+  std::string_view value;
+  switch (match.value()) {
+    case NameOnly: {
+      if (args.size() == 1) {
+        return std::unexpected {MissingArgumentValue};
+      }
+      value = args[1];
+      ++consumed;
+      break;
+    }
+    case NameAndValue: {
+      const auto it = args.front().find(Traits::value_separator);
+      value = args.front().substr(it + std::size(Traits::value_separator) - 1);
+      break;
+    }
   }
 
   V ret {};
-  from_string_arg_outer(ret, args[1]);
-  return {arg_parse_match {ret, 2}};
+  from_string_arg_outer(ret, value);
+  return {arg_parse_match {ret, consumed}};
 }
 
 template <class Traits>
