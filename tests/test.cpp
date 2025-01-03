@@ -35,7 +35,7 @@ struct OptionsOnly {
   bool operator==(const OptionsOnly&) const noexcept = default;
 };
 
-struct FlagsAndParameters {
+struct FlagsAndPositionalArguments {
   bool mFlag {false};
   magic_args::optional_positional_argument<std::string> mInput;
   magic_args::optional_positional_argument<std::string> mOutput {
@@ -43,13 +43,33 @@ struct FlagsAndParameters {
   };
 };
 
-struct MandatoryParameter {
+struct MandatoryPositionalArgument {
   bool mFlag {false};
   magic_args::mandatory_positional_argument<std::string> mInput;
   magic_args::optional_positional_argument<std::string> mOutput {
     .mHelp = "file to create",
   };
 };
+
+struct MultiValuePositionalArgument {
+  bool mFlag {false};
+  magic_args::optional_positional_argument<std::string> mOutput {
+    .mHelp = "file to create",
+  };
+  magic_args::optional_positional_argument<std::vector<std::string>> mInputs;
+};
+
+struct MandatoryMultiValuePositionalArgument {
+  bool mFlag {false};
+  magic_args::mandatory_positional_argument<std::string> mOutput {
+    .mHelp = "file to create",
+  };
+  magic_args::mandatory_positional_argument<std::vector<std::string>> mInputs;
+};
+constexpr auto x = magic_args::first_optional_positional_argument<
+  MandatoryMultiValuePositionalArgument>();
+constexpr auto y = magic_args::last_mandatory_positional_argument<
+  MandatoryMultiValuePositionalArgument>();
 
 constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
 
@@ -59,7 +79,8 @@ TEMPLATE_TEST_CASE(
   EmptyStruct,
   OptionsOnly,
   FlagsOnly,
-  FlagsAndParameters) {
+  FlagsAndPositionalArguments,
+  MultiValuePositionalArgument) {
   std::vector<std::string_view> argv {testName};
   Output out, err;
   const auto args = magic_args::parse<TestType>(argv, {}, out, err);
@@ -392,7 +413,8 @@ TEST_CASE("parameters, --help") {
   std::vector<std::string_view> argv {testName, "--help"};
 
   Output out, err;
-  const auto args = magic_args::parse<FlagsAndParameters>(argv, {}, out, err);
+  const auto args
+    = magic_args::parse<FlagsAndPositionalArguments>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
 
@@ -416,8 +438,8 @@ Arguments:
 TEMPLATE_TEST_CASE(
   "parameters, all provided",
   "",
-  FlagsAndParameters,
-  MandatoryParameter) {
+  FlagsAndPositionalArguments,
+  MandatoryPositionalArgument) {
   std::vector<std::string_view> argv {testName, "in", "out"};
 
   Output out, err;
@@ -434,7 +456,8 @@ TEST_CASE("parameters, omitted optional") {
   std::vector<std::string_view> argv {testName, "in"};
 
   Output out, err;
-  const auto args = magic_args::parse<FlagsAndParameters>(argv, {}, out, err);
+  const auto args
+    = magic_args::parse<FlagsAndPositionalArguments>(argv, {}, out, err);
   REQUIRE(args.has_value());
   CHECK(out.empty());
   CHECK(err.empty());
@@ -447,7 +470,8 @@ TEST_CASE("parameters, extra") {
   std::vector<std::string_view> argv {testName, "in", "out", "bogus"};
 
   Output out, err;
-  const auto args = magic_args::parse<FlagsAndParameters>(argv, {}, out, err);
+  const auto args
+    = magic_args::parse<FlagsAndPositionalArguments>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(args.error() == magic_args::incomplete_parse_reason::InvalidArgument);
   CHECK(out.empty());
@@ -469,11 +493,12 @@ Arguments:
 )EOF"[1]);
 }
 
-TEST_CASE("named parameters with flag as value") {
+TEST_CASE("positional parameters with flag as value") {
   std::vector<std::string_view> argv {testName, "in", "--", "--flag"};
 
   Output out, err;
-  const auto args = magic_args::parse<FlagsAndParameters>(argv, {}, out, err);
+  const auto args
+    = magic_args::parse<FlagsAndPositionalArguments>(argv, {}, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
 
@@ -487,7 +512,8 @@ TEST_CASE("mandatory named parameter, --help") {
   std::vector<std::string_view> argv {testName, "--help"};
 
   Output out, err;
-  const auto args = magic_args::parse<MandatoryParameter>(argv, {}, out, err);
+  const auto args
+    = magic_args::parse<MandatoryPositionalArgument>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
   CHECK(err.empty());
@@ -513,7 +539,8 @@ TEST_CASE("missing mandatory named parameter") {
   };
 
   Output out, err;
-  const auto args = magic_args::parse<MandatoryParameter>(argv, {}, out, err);
+  const auto args
+    = magic_args::parse<MandatoryPositionalArgument>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(
     args.error()
@@ -537,4 +564,119 @@ Arguments:
 )EOF"[1]);
 }
 
-// TODO: named parameters
+TEST_CASE("multi-value parameter - --help") {
+  std::vector<std::string_view> argv {testName, "--help"};
+
+  Output out, err;
+  const auto args
+    = magic_args::parse<MultiValuePositionalArgument>(argv, {}, out, err);
+  REQUIRE_FALSE(args.has_value());
+  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
+Usage: my_test [OPTIONS...] [OUTPUT] [INPUT [INPUT [...]]]
+
+Options:
+
+      --flag
+
+  -?, --help                   show this message
+
+Arguments:
+
+      OUTPUT                   file to create
+      INPUTS
+)EOF"[1]);
+}
+
+TEMPLATE_TEST_CASE(
+  "multi-value named argument, all specified",
+  "",
+  MultiValuePositionalArgument,
+  MandatoryMultiValuePositionalArgument) {
+  std::vector<std::string_view> argv {testName, "out", "in"};
+
+  Output out, err;
+  const auto args = magic_args::parse<TestType>(argv, {}, out, err);
+  REQUIRE(args.has_value());
+  CHECK(err.empty());
+  CHECK(out.empty());
+  CHECK_FALSE(args->mFlag);
+  CHECK(args->mOutput == "out");
+  CHECK(args->mInputs == std::vector<std::string> {"in"});
+}
+
+TEMPLATE_TEST_CASE(
+  "multi-value named argument, multiple specified",
+  "",
+  MultiValuePositionalArgument,
+  MandatoryMultiValuePositionalArgument) {
+  std::vector<std::string_view> argv {testName, "out", "in1", "in2"};
+
+  Output out, err;
+  const auto args = magic_args::parse<TestType>(argv, {}, out, err);
+  REQUIRE(args.has_value());
+  CHECK(err.empty());
+  CHECK(out.empty());
+  CHECK_FALSE(args->mFlag);
+  CHECK(args->mOutput == "out");
+  CHECK(args->mInputs == std::vector<std::string> {"in1", "in2"});
+}
+
+TEST_CASE("mandatory multi-value named argument, missing all") {
+  std::vector<std::string_view> argv {testName, "--flag"};
+
+  Output out, err;
+  const auto args = magic_args::parse<MandatoryMultiValuePositionalArgument>(
+    argv, {}, out, err);
+  REQUIRE_FALSE(args.has_value());
+  CHECK(
+    args.error()
+    == magic_args::incomplete_parse_reason::MissingRequiredArgument);
+  CHECK(out.empty());
+  CHECK(err.get() == &R"EOF(
+my_test: Missing required argument `OUTPUT`
+
+Usage: my_test [OPTIONS...] OUTPUT INPUT [INPUT [...]]
+
+Options:
+
+      --flag
+
+  -?, --help                   show this message
+
+Arguments:
+
+      OUTPUT                   file to create
+      INPUTS
+)EOF"[1]);
+}
+
+TEST_CASE("mandatory multi-value named argument, missing first") {
+  std::vector<std::string_view> argv {testName, "--flag", "OUTPUT"};
+
+  Output out, err;
+  const auto args = magic_args::parse<MandatoryMultiValuePositionalArgument>(
+    argv, {}, out, err);
+  REQUIRE_FALSE(args.has_value());
+  CHECK(
+    args.error()
+    == magic_args::incomplete_parse_reason::MissingRequiredArgument);
+  CHECK(out.empty());
+  CHECK(err.get() == &R"EOF(
+my_test: Missing required argument `INPUTS`
+
+Usage: my_test [OPTIONS...] OUTPUT INPUT [INPUT [...]]
+
+Options:
+
+      --flag
+
+  -?, --help                   show this message
+
+Arguments:
+
+      OUTPUT                   file to create
+      INPUTS
+)EOF"[1]);
+}

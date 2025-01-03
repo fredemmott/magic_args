@@ -711,8 +711,8 @@ std::expected<T, incomplete_parse_reason> parse(
   // Handle positional args
   static_assert(only_last_positional_argument_may_have_multiple_values<T>());
   static_assert(
-    first_optional_positional_argument<T>()
-    >= last_mandatory_positional_argument<T>());
+    (first_optional_positional_argument<T>() == -1)
+    || (first_optional_positional_argument<T>() >= last_mandatory_positional_argument<T>()));
   [&]<std::size_t... I>(std::index_sequence<I...>) {
     (void)([&] {
       // returns bool: continue
