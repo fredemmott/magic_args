@@ -510,7 +510,7 @@ arg_parse_result<V> parse_positional_argument(
     if constexpr (T::is_required) {
       magic_args::println(
         errorStream, "{}: Missing required argument `{}`", arg0, argDef.mName);
-      return std::unexpected {incomplete_parse_reason::MissingArgumentValue};
+      return std::unexpected {incomplete_parse_reason::MissingRequiredArgument};
     }
     return std::nullopt;
   }
