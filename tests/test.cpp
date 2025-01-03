@@ -405,4 +405,56 @@ Arguments:
 )EOF"[1]);
 }
 
+TEST_CASE("parameters, all provided") {
+  std::vector<std::string_view> argv {testName, "in", "out"};
+
+  Output out, err;
+  const auto args = magic_args::parse<FlagsAndParameters>(argv, {}, out, err);
+  REQUIRE(args.has_value());
+  CHECK(out.empty());
+  CHECK(err.empty());
+  CHECK_FALSE(args->mFlag);
+  CHECK(args->mInput == "in");
+  CHECK(args->mOutput == "out");
+}
+
+TEST_CASE("parameters, omitted optional") {
+  std::vector<std::string_view> argv {testName, "in"};
+
+  Output out, err;
+  const auto args = magic_args::parse<FlagsAndParameters>(argv, {}, out, err);
+  REQUIRE(args.has_value());
+  CHECK(out.empty());
+  CHECK(err.empty());
+  CHECK_FALSE(args->mFlag);
+  CHECK(args->mInput == "in");
+  CHECK(args->mOutput.mValue.empty());
+}
+
+TEST_CASE("parameters, extra") {
+  std::vector<std::string_view> argv {testName, "in", "out", "bogus"};
+
+  Output out, err;
+  const auto args = magic_args::parse<FlagsAndParameters>(argv, {}, out, err);
+  REQUIRE_FALSE(args.has_value());
+  CHECK(args.error() == magic_args::incomplete_parse_reason::InvalidArgument);
+  CHECK(out.empty());
+  CHECK(err.get() == &R"EOF(
+my_test: Invalid positional argument: bogus
+
+Usage: my_test [OPTIONS...] [INPUT] [OUTPUT]
+
+Options:
+
+      --flag
+
+  -?, --help                   show this message
+
+Arguments:
+
+      INPUT
+      OUTPUT                   file to create
+)EOF"[1]);
+}
+
 // TODO: named parameters

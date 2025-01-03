@@ -57,6 +57,9 @@ struct optional_positional_argument {
     return mValue;
   }
   bool operator==(const optional_positional_argument&) const noexcept = default;
+  bool operator==(const T& value) const noexcept {
+    return mValue == value;
+  }
 };
 
 template <class T>
@@ -77,6 +80,9 @@ struct mandatory_positional_argument {
 
   bool operator==(const mandatory_positional_argument&) const noexcept
     = default;
+  bool operator==(const T& value) const noexcept {
+    return mValue == value;
+  }
 };
 
 template <class T>
