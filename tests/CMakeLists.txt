@@ -14,3 +14,7 @@ find_package(catch2 CONFIG REQUIRED)
 
 add_executable(test test.cpp)
 target_link_libraries(test PRIVATE test-lib Catch2::Catch2 Catch2::Catch2WithMain)
+
+include(CTest)
+include("${catch2_DIR}/Catch.cmake")
+catch_discover_tests(test)

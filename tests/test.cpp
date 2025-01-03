@@ -1,12 +1,15 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
+#include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <magic_args/magic_args.hpp>
 #include <ranges>
 
 #include "output.hpp"
 
-struct OnlyFlags {
+struct FlagsOnly {
   bool mFoo {false};
   bool mBar {false};
   magic_args::flag mBaz {
@@ -15,7 +18,19 @@ struct OnlyFlags {
     "b",
   };
 
-  bool operator==(const OnlyFlags&) const noexcept = default;
+  bool operator==(const FlagsOnly&) const noexcept = default;
+};
+
+struct OptionsOnly {
+  std::string mString;
+  int mInt {0};
+  magic_args::option<std::string> mDocumentedString {
+    "foo",
+    "do the foo thing",
+    "f",
+  };
+
+  bool operator==(const OptionsOnly&) const noexcept = default;
 };
 
 constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
@@ -40,8 +55,8 @@ TEST_CASE("empty struct, --help") {
   REQUIRE_FALSE(args.has_value());
   CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
 
-  REQUIRE(err.empty());
-  REQUIRE(out.get() == &R"EOF(
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
@@ -64,8 +79,8 @@ TEST_CASE("empty struct, --help with description") {
   REQUIRE_FALSE(args.has_value());
   CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
 
-  REQUIRE(err.empty());
-  REQUIRE(out.get() == &R"EOF(
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
 Usage: my_test [OPTIONS...]
 Tests things.
 
@@ -92,8 +107,8 @@ TEST_CASE("empty struct, --help with examples") {
   REQUIRE_FALSE(args.has_value());
   CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
 
-  REQUIRE(err.empty());
-  REQUIRE(out.get() == &R"EOF(
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
 Usage: my_test [OPTIONS...]
 
 Examples:
@@ -125,8 +140,8 @@ TEST_CASE("empty struct, --help with description and examples") {
   REQUIRE_FALSE(args.has_value());
   CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
 
-  REQUIRE(err.empty());
-  REQUIRE(out.get() == &R"EOF(
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
 Usage: my_test [OPTIONS...]
 Tests things.
 
@@ -155,8 +170,8 @@ TEST_CASE("empty struct, --help with version") {
   REQUIRE_FALSE(args.has_value());
   CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
 
-  REQUIRE(err.empty());
-  REQUIRE(out.get() == &R"EOF(
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
@@ -180,17 +195,77 @@ TEST_CASE("empty struct, --version") {
   REQUIRE_FALSE(args.has_value());
   CHECK(args.error() == magic_args::incomplete_parse_reason::VersionRequested);
 
-  REQUIRE(err.empty());
-  REQUIRE(out.get() == "MyApp v1.2.3\n");
+  CHECK(err.empty());
+  CHECK(out.get() == "MyApp v1.2.3\n");
+}
+
+TEMPLATE_TEST_CASE(
+  "empty struct, invalid argument",
+  "",
+  EmptyStruct,
+  FlagsOnly) {
+  const auto invalid = GENERATE("--abc", "-z");
+  std::vector<std::string_view> argv {testName, invalid};
+
+  Output out, err;
+  const auto args = magic_args::parse<TestType>(argv, {}, out, err);
+  REQUIRE_FALSE(args.has_value());
+  CHECK(args.error() == magic_args::incomplete_parse_reason::InvalidArgument);
+  CHECK(out.empty());
+  CHECK_THAT(
+    err.get(),
+    Catch::Matchers::StartsWith(
+      std::format(
+        R"EOF(
+my_test: Unrecognized option: {}
+
+Usage: my_test [OPTIONS...]
+
+Options:
+)EOF",
+        invalid)
+        .substr(1)));
 }
 
 TEST_CASE("flags only, no args") {
   std::vector<std::string_view> argv {testName};
 
   Output out, err;
-  const auto args = magic_args::parse<OnlyFlags>(argv, {}, out, err);
+  const auto args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
   CHECK(args.has_value());
-  CHECK(*args == OnlyFlags {});
+  CHECK(*args == FlagsOnly {});
+  CHECK(out.empty());
+  CHECK(err.empty());
+}
+
+TEST_CASE("flags only, specifying flags") {
+  std::vector<std::string_view> argv {testName, "--foo"};
+
+  Output out, err;
+
+  auto args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
+  CHECK(args->mFoo);
+  CHECK_FALSE(args->mBar);
+  CHECK_FALSE(args->mBaz);
+
+  argv.push_back("--bar");
+  args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
+  CHECK(args->mFoo);
+  CHECK(args->mBar);
+  CHECK_FALSE(args->mBaz);
+
+  argv.push_back("--baz");
+  args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
+  CHECK(args->mFoo);
+  CHECK(args->mBar);
+  CHECK(args->mBaz);
+
+  argv = {testName, "--baz"};
+  args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
+  CHECK_FALSE(args->mFoo);
+  CHECK_FALSE(args->mBar);
+  CHECK(args->mBaz);
+
   CHECK(out.empty());
   CHECK(err.empty());
 }
@@ -199,12 +274,12 @@ TEST_CASE("flags only, --help") {
   std::vector<std::string_view> argv {testName, "--help"};
 
   Output out, err;
-  const auto args = magic_args::parse<OnlyFlags>(argv, {}, out, err);
+  const auto args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
 
-  REQUIRE(err.empty());
-  REQUIRE(out.get() == &R"EOF(
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
@@ -216,3 +291,37 @@ Options:
   -?, --help                   show this message
 )EOF"[1]);
 }
+
+TEST_CASE("options only, no args") {
+  std::vector<std::string_view> argv {testName};
+
+  Output out, err;
+  const auto args = magic_args::parse<OptionsOnly>(argv, {}, out, err);
+  CHECK(args.has_value());
+  CHECK(*args == OptionsOnly {});
+  CHECK(out.empty());
+  CHECK(err.empty());
+}
+
+TEST_CASE("options only, --help") {
+  std::vector<std::string_view> argv {testName, "--help"};
+
+  Output out, err;
+  const auto args = magic_args::parse<OptionsOnly>(argv, {}, out, err);
+  REQUIRE_FALSE(args.has_value());
+  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
+Usage: my_test [OPTIONS...]
+
+Options:
+
+      --string=VALUE
+      --int=VALUE
+  -f, --foo=VALUE              do the foo thing
+
+  -?, --help                   show this message
+)EOF"[1]);
+}
+
+// TODO: specify options
