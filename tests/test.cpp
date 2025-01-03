@@ -457,4 +457,15 @@ Arguments:
 )EOF"[1]);
 }
 
+TEST_CASE("named parameters with flag as value") {
+  std::vector<std::string_view> argv {testName, "in", "--", "--flag"};
+
+  Output out, err;
+  const auto args = magic_args::parse<FlagsAndParameters>(argv, {}, out, err);
+  REQUIRE(args.has_value());
+  CHECK_FALSE(args->mFlag);
+  CHECK(args->mInput == "in");
+  CHECK(args->mOutput == "--flag");
+}
+
 // TODO: named parameters
