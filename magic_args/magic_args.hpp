@@ -322,7 +322,17 @@ std::expected<T, incomplete_parse_reason> parse(
   auto tuple = tie_struct(ret);
 
   constexpr auto N = count_members<T>();
+  std::vector<std::string_view> positional;
+
   for (std::size_t i = 0; i < args.size(); ++i) {
+    if (args[i] == "--") {
+      if (args.size() > i + 1) {
+        positional.reserve(positional.size() + args.size() - (i + 1));
+        std::ranges::copy(args.subspan(i + 1), std::back_inserter(positional));
+      }
+      break;
+    }
+
     std::optional<incomplete_parse_reason> failure;
     const auto matched = [&]<std::size_t... I>(std::index_sequence<I...>) {
       return ([&] {
@@ -350,6 +360,22 @@ std::expected<T, incomplete_parse_reason> parse(
     }(std::make_index_sequence<N> {});
     if (matched) {
       continue;
+    }
+
+    const auto arg = args[i];
+    if (arg.starts_with(Traits::long_arg_prefix)) {
+      std::print(errorStream, "Unrecognized argument: {}\n\n", arg);
+      show_usage<T, Traits>(errorStream, args.front(), help);
+      return std::unexpected {incomplete_parse_reason::UnrecognizedArgument};
+    }
+    if constexpr (requires { Traits::short_arg_prefix; }) {
+      // TODO: handle -abc where `a`, `b`, and `c` are all flags
+      if (arg.starts_with(Traits::short_arg_prefix) && arg != "-") {
+        // "-" can mean stdout
+        std::print(errorStream, "Unrecognized argument: {}\n\n", arg);
+        show_usage<T, Traits>(errorStream, args.front(), help);
+        return std::unexpected {incomplete_parse_reason::UnrecognizedArgument};
+      }
     }
   }
   return ret;
