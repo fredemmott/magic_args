@@ -401,7 +401,7 @@ Options:
 Arguments:
 
       INPUT
-     OUTPUT                    file to create
+      OUTPUT                   file to create
 )EOF"[1]);
 }
 

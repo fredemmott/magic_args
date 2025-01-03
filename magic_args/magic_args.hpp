@@ -266,7 +266,7 @@ void show_positional_argument_usage(FILE* output, const T& arg) {
     magic_args::println(output, "      {}", arg.mName);
     return;
   }
-  magic_args::println(output, "     {:25} {}", arg.mName, arg.mHelp);
+  magic_args::println(output, "      {:25}{}", arg.mName, arg.mHelp);
 }
 
 template <class T, class Traits = gnu_style_parsing_traits>
