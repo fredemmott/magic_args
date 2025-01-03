@@ -37,12 +37,12 @@ constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
 
 struct EmptyStruct {};
 
-TEST_CASE("empty struct, no args") {
+TEMPLATE_TEST_CASE("no args", "", EmptyStruct, OptionsOnly, FlagsOnly) {
   std::vector<std::string_view> argv {testName};
   Output out, err;
-  const auto args = magic_args::parse<EmptyStruct>(argv, {}, out, err);
+  const auto args = magic_args::parse<TestType>(argv, {}, out, err);
   CHECK(args.has_value());
-  STATIC_CHECK(std::same_as<const EmptyStruct&, decltype(*args)>);
+  STATIC_CHECK(std::same_as<const TestType&, decltype(*args)>);
   CHECK(out.empty());
   CHECK(err.empty());
 }
@@ -227,17 +227,6 @@ Options:
         .substr(1)));
 }
 
-TEST_CASE("flags only, no args") {
-  std::vector<std::string_view> argv {testName};
-
-  Output out, err;
-  const auto args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
-  CHECK(args.has_value());
-  CHECK(*args == FlagsOnly {});
-  CHECK(out.empty());
-  CHECK(err.empty());
-}
-
 TEST_CASE("flags only, specifying flags") {
   std::vector<std::string_view> argv {testName, "--foo"};
 
@@ -290,17 +279,6 @@ Options:
 
   -?, --help                   show this message
 )EOF"[1]);
-}
-
-TEST_CASE("options only, no args") {
-  std::vector<std::string_view> argv {testName};
-
-  Output out, err;
-  const auto args = magic_args::parse<OptionsOnly>(argv, {}, out, err);
-  CHECK(args.has_value());
-  CHECK(*args == OptionsOnly {});
-  CHECK(out.empty());
-  CHECK(err.empty());
 }
 
 TEST_CASE("options only, --help") {
