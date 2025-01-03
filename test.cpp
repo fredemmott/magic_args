@@ -1,4 +1,4 @@
-// Copyright 2024 Fred Emmott <fred@fredemmott.com>
+// Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
 #include "magic_args/magic_args.hpp"
 
@@ -16,7 +16,7 @@ struct MyArgs {
 int main(int argc, char** argv) {
   const auto args = magic_args::parse<MyArgs>(argc, argv);
   if (!args) {
-    using enum magic_args::no_arguments_reason;
+    using enum magic_args::incomplete_parse_reason;
     switch (args.error()) {
       case HelpRequested:
       case VersionRequested:

@@ -1,7 +1,8 @@
-// Copyright 2024 Fred Emmott <fred@fredemmott.com>
+// Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <complex>
 #include <concepts>
 #include <expected>
 #include <filesystem>
@@ -9,6 +10,8 @@
 #include <iostream>
 #include <print>
 #include <span>
+#include <sstream>
+#include <variant>
 
 #include "magic_args-reflection.hpp"
 
@@ -197,6 +200,39 @@ void show_usage(
   }
 }
 
+inline void from_string_arg(std::string& v, std::string_view arg) {
+  v = std::string {arg};
+}
+
+template <class T>
+void from_string_arg_fallback(T& v, std::string_view arg) {
+  // TODO (C++26): we should be able to directly use the string_view
+  std::stringstream ss {std::string {arg}};
+  ss >> v;
+}
+
+template <class Traits, basic_argument T>
+[[nodiscard]]
+bool arg_matches(const T& argDef, std::string_view arg) {
+  if (arg == std::format("{}{}", Traits::long_arg_prefix, argDef.mName)) {
+    return true;
+  }
+  if constexpr (Traits::short_arg_prefix) {
+    if (
+      (!argDef.mShortName.empty())
+      && arg
+        == std::format("{}{}", Traits::short_arg_prefix, argDef.mShortName)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+enum class arg_parse_failure_reason {
+  MissingValue,
+  InvalidValue,
+};
+
 template <class T>
 struct arg_parse_match {
   T mValue;
@@ -204,40 +240,56 @@ struct arg_parse_match {
 };
 
 template <class T>
-using arg_parse_result = std::optional<arg_parse_match<T>>;
+using arg_parse_result
+  = std::optional<std::expected<arg_parse_match<T>, arg_parse_failure_reason>>;
 
-template <class Traits>
-auto parse_arg(const basic_argument auto& arg, std::span<std::string_view>)
-  -> arg_parse_result<typename std::decay_t<decltype(arg)>::value_type> {
-  return std::nullopt;
+template <
+  class Traits,
+  basic_argument T,
+  class V = std::decay_t<typename T::value_type>>
+arg_parse_result<V> parse_arg(const T& arg, std::span<std::string_view> args) {
+  using enum arg_parse_failure_reason;
+  if (!arg_matches<Traits>(arg, args.front())) {
+    return std::nullopt;
+  }
+  if (args.size() == 1) {
+    return std::unexpected {MissingValue};
+  }
+
+  V ret {};
+  // TODO (c++26): args.at(1)
+  const auto value = args[1];
+  if constexpr (requires { from_string_arg(ret, ret.front()); }) {
+    from_string_arg(ret, value);
+  } else {
+    static_assert(requires(std::stringstream ss, V v) { ss >> v; });
+    from_string_arg_fallback(ret, value);
+  }
+  return {arg_parse_match {ret, 2}};
 }
 
 template <class Traits>
-auto parse_arg(const flag& arg, std::span<std::string_view> args)
-  -> arg_parse_result<bool> {
-  if (args.front() == std::format("{}{}", Traits::long_arg_prefix, arg.mName)) {
-    return {{true, 1}};
-  }
-  if constexpr (Traits::short_arg_prefix) {
-    if (
-      (!arg.mShortName.empty())
-      && args.front()
-        == std::format("{}{}", Traits::short_arg_prefix, arg.mShortName)) {
-      return {{true, 1}};
-    }
+arg_parse_result<bool> parse_arg(
+  const flag& arg,
+  std::span<std::string_view> args) {
+  if (arg_matches<Traits>(arg, args.front())) {
+    return {arg_parse_match {true, 1}};
   }
   return std::nullopt;
 }
 
-enum class no_arguments_reason {
+enum class incomplete_parse_reason {
   HelpRequested,
   VersionRequested,
   MissingRequiredArgument,
+  MissingArgumentValue,
   InvalidArgument,
+  InvalidArgumentValue,
+  UnrecognizedArgument,
 };
 
 template <class T, class Traits = gnu_style_parsing_traits>
-std::expected<T, no_arguments_reason> parse(
+std::expected<T, incomplete_parse_reason> parse(
   std::span<std::string_view> args,
   const ExtraHelp& help = {},
   FILE* outputStream = stdout,
@@ -261,7 +313,7 @@ std::expected<T, no_arguments_reason> parse(
     }
     if (arg == longHelp || (arg == shortHelp && !shortHelp.empty())) {
       show_usage<T, Traits>(outputStream, args.front(), help);
-      return std::unexpected {no_arguments_reason::HelpRequested};
+      return std::unexpected {incomplete_parse_reason::HelpRequested};
     }
   }
 
@@ -271,18 +323,30 @@ std::expected<T, no_arguments_reason> parse(
 
   constexpr auto N = count_members<T>();
   for (std::size_t i = 0; i < args.size(); ++i) {
-    bool matched = false;
-    [&]<std::size_t... I>(std::index_sequence<I...>) {
-      (
-        [&] {
-          const auto def = get_argument_definition<T, I>();
-          if (auto result = parse_arg<Traits>(def, args.subspan(i))) {
-            matched = true;
-            get<I>(tie_struct(ret)) = std::move(result->mValue);
-            i += result->mConsumed - 1;
+    std::optional<incomplete_parse_reason> failure;
+    const auto matched = [&]<std::size_t... I>(std::index_sequence<I...>) {
+      return ([&] {
+        const auto def = get_argument_definition<T, I>();
+        auto result = parse_arg<Traits>(def, args.subspan(i));
+        if (!result) {
+          return false;
+        }
+        if (!result->has_value()) {
+          using enum arg_parse_failure_reason;
+          switch (result->error()) {
+            case MissingValue:
+              failure = incomplete_parse_reason::MissingArgumentValue;
+              break;
+            case InvalidValue:
+              failure = incomplete_parse_reason::InvalidArgumentValue;
+              break;
           }
-        }(),
-        ...);
+          return true;
+        }
+        get<I>(tie_struct(ret)) = std::move((*result)->mValue);
+        i += (*result)->mConsumed - 1;
+        return true;
+      }() || ...);
     }(std::make_index_sequence<N> {});
     if (matched) {
       continue;
@@ -292,7 +356,7 @@ std::expected<T, no_arguments_reason> parse(
 }
 
 template <class T, class Traits = gnu_style_parsing_traits>
-std::expected<T, no_arguments_reason> parse(
+std::expected<T, incomplete_parse_reason> parse(
   int argc,
   char** argv,
   const ExtraHelp& help = {},
