@@ -9,6 +9,8 @@
 
 #include "output.hpp"
 
+struct EmptyStruct {};
+
 struct FlagsOnly {
   bool mFoo {false};
   bool mBar {false};
@@ -35,8 +37,6 @@ struct OptionsOnly {
 
 constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
 
-struct EmptyStruct {};
-
 TEMPLATE_TEST_CASE("no args", "", EmptyStruct, OptionsOnly, FlagsOnly) {
   std::vector<std::string_view> argv {testName};
   Output out, err;
@@ -45,6 +45,25 @@ TEMPLATE_TEST_CASE("no args", "", EmptyStruct, OptionsOnly, FlagsOnly) {
   STATIC_CHECK(std::same_as<const TestType&, decltype(*args)>);
   CHECK(out.empty());
   CHECK(err.empty());
+}
+
+TEMPLATE_TEST_CASE(
+  "bogus flag after --",
+  "",
+  EmptyStruct,
+  OptionsOnly,
+  FlagsOnly) {
+  std::vector<std::string_view> argv {testName, "--", "--not-a-valid-arg"};
+  Output out, err;
+  const auto args = magic_args::parse<TestType>(argv, {}, out, err);
+  REQUIRE_FALSE(args.has_value());
+  CHECK(args.error() == magic_args::incomplete_parse_reason::InvalidArgument);
+  CHECK(out.empty());
+  CHECK_THAT(err.get(), Catch::Matchers::StartsWith(&R"EOF(
+my_test: Invalid argument: --not-a-valid-arg
+
+Usage: my_test [OPTIONS...]
+)EOF"[1]));
 }
 
 TEST_CASE("empty struct, --help") {
@@ -345,3 +364,5 @@ TEST_CASE("options only, short") {
   REQUIRE(args.has_value());
   CHECK(args->mDocumentedString == "abc");
 }
+
+// TODO: named parameters

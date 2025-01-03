@@ -700,6 +700,16 @@ std::expected<T, incomplete_parse_reason> parse(
     return std::unexpected {failure.value()};
   }
 
+  if (!positionalArgs.empty()) {
+    std::print(
+      errorStream,
+      "{}: Invalid positional argument: {}\n\n",
+      arg0,
+      positionalArgs.front());
+    show_usage<T, Traits>(errorStream, args.front(), help);
+    return std::unexpected {incomplete_parse_reason::InvalidArgument};
+  }
+
   return ret;
 }
 
