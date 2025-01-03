@@ -252,6 +252,7 @@ TEST_CASE("flags only, specifying flags") {
   Output out, err;
 
   auto args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
+  REQUIRE(args.has_value());
   CHECK(args->mFoo);
   CHECK_FALSE(args->mBar);
   CHECK_FALSE(args->mBaz);
