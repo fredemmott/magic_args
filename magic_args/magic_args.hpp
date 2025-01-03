@@ -105,10 +105,56 @@ struct flag final {
 static_assert(basic_option<flag>);
 static_assert(basic_option<option<std::string>>);
 
-template <class T, std::size_t N>
+template <class T, std::size_t N, class Traits>
 auto infer_argument_definition() {
   // TODO: put the member name -> thing into the traits
   std::string name {detail::Reflection::member_name<T, N>};
+  using TValue
+    = std::decay_t<decltype(get<N>(detail::Reflection::tie_struct(T {})))>;
+  if constexpr (basic_argument<TValue> && !basic_option<TValue>) {
+    Traits::normalize_positional_argument_name(name);
+  } else {
+    Traits::normalize_option_name(name);
+  }
+
+  if constexpr (std::same_as<TValue, bool>) {
+    return flag {
+      .mName = name,
+    };
+  } else {
+    return option<TValue> {
+      .mName = name,
+    };
+  }
+}
+
+template <class T, std::size_t N, class Traits>
+auto get_argument_definition() {
+  using namespace detail::Reflection;
+
+  auto value = get<N>(tie_struct(T {}));
+  using TValue = std::decay_t<decltype(value)>;
+  if constexpr (basic_argument<TValue>) {
+    if (value.mName.empty()) {
+      value.mName = infer_argument_definition<T, N, Traits>().mName;
+    }
+    return value;
+  } else {
+    return infer_argument_definition<T, N, Traits>();
+  }
+}
+
+struct gnu_style_parsing_traits {
+  static constexpr char long_arg_prefix[] = "--";
+  static constexpr char short_arg_prefix[] = "-";
+  static constexpr char value_separator[] = "=";
+  static constexpr char short_help_arg[] = "?";
+
+  inline static void normalize_option_name(std::string& name);
+  inline static void normalize_positional_argument_name(std::string& name);
+};
+
+inline void gnu_style_parsing_traits::normalize_option_name(std::string& name) {
   if (
     name.starts_with('m') && name.size() > 1 && name[1] >= 'A'
     && name[1] <= 'Z') {
@@ -133,42 +179,22 @@ auto infer_argument_definition() {
       continue;
     }
   }
-
-  using TValue
-    = std::decay_t<decltype(get<N>(detail::Reflection::tie_struct(T {})))>;
-  if constexpr (std::same_as<TValue, bool>) {
-    return flag {
-      .mName = name,
-    };
-  } else {
-    return option<TValue> {
-      .mName = name,
-    };
-  }
 }
 
-template <class T, std::size_t N>
-auto get_argument_definition() {
-  using namespace detail::Reflection;
-
-  auto value = get<N>(tie_struct(T {}));
-  using TValue = std::decay_t<decltype(value)>;
-  if constexpr (basic_argument<TValue>) {
-    if (value.mName.empty()) {
-      value.mName = infer_argument_definition<T, N>().mName;
+inline void gnu_style_parsing_traits::normalize_positional_argument_name(
+  std::string& name) {
+  normalize_option_name(name);
+  for (auto&& c: name) {
+    if (c >= 'a' && c <= 'z') {
+      c -= 'a' - 'A';
+      continue;
     }
-    return value;
-  } else {
-    return infer_argument_definition<T, N>();
+    if (c == '-') {
+      c = '_';
+      continue;
+    }
   }
 }
-
-struct gnu_style_parsing_traits {
-  static constexpr auto long_arg_prefix = "--";
-  static constexpr auto short_arg_prefix = "-";
-  static constexpr auto value_separator = "=";
-  static constexpr auto short_help_arg = "?";
-};
 
 struct ExtraHelp {
   std::string mDescription;
@@ -223,13 +249,14 @@ void show_usage(
   constexpr auto N = count_members<T>();
 
   constexpr bool hasOptions = []<std::size_t... I>(std::index_sequence<I...>) {
-    return (basic_option<decltype(get_argument_definition<T, I>())> || ...);
+    return (
+      basic_option<decltype(get_argument_definition<T, I, Traits>())> || ...);
   }(std::make_index_sequence<N> {});
   constexpr bool hasPositionalArguments
     = []<std::size_t... I>(std::index_sequence<I...>) {
         return (
-          (basic_argument<decltype(get_argument_definition<T, I>())>
-           && !basic_option<decltype(get_argument_definition<T, I>())>)
+          (basic_argument<decltype(get_argument_definition<T, I, Traits>())>
+           && !basic_option<decltype(get_argument_definition<T, I, Traits>())>)
           || ...);
       }(std::make_index_sequence<N> {});
 
@@ -244,7 +271,7 @@ void show_usage(
     []<std::size_t... I>(auto output, std::index_sequence<I...>) {
       (
         [&] {
-          const auto arg = get_argument_definition<T, I>();
+          const auto arg = get_argument_definition<T, I, Traits>();
           using TArg = std::decay_t<decltype(arg)>;
           if constexpr (!(basic_option<TArg> || std::same_as<TArg, flag>)) {
             auto name = arg.mName;
@@ -287,7 +314,9 @@ void show_usage(
     std::print(output, "\nOptions:\n\n");
 
     []<std::size_t... I>(auto output, std::index_sequence<I...>) {
-      (show_option_usage<Traits>(output, get_argument_definition<T, I>()), ...);
+      (show_option_usage<Traits>(
+         output, get_argument_definition<T, I, Traits>()),
+       ...);
     }(output, std::make_index_sequence<N> {});
   }
 
@@ -317,7 +346,7 @@ bool option_matches(const T& argDef, std::string_view arg) {
   if (arg == std::format("{}{}", Traits::long_arg_prefix, argDef.mName)) {
     return true;
   }
-  if constexpr (Traits::short_arg_prefix) {
+  if constexpr (requires { Traits::short_arg_prefix; }) {
     if (
       (!argDef.mShortName.empty())
       && arg
@@ -442,10 +471,15 @@ arg_parse_result<V> parse_positional_argument(
 template <class T, std::size_t I = 0>
 constexpr bool only_last_positional_argument_may_have_multiple_values() {
   using namespace detail::Reflection;
+  // Doesn't matter for this check, but we need some traits for
+  // get_argument_definition
+  using Traits = gnu_style_parsing_traits;
+
   constexpr auto N = count_members<T>();
   if constexpr (I == N) {
     return true;
-  } else if constexpr (vector_like<decltype(get_argument_definition<T, I>())>) {
+  } else if constexpr (vector_like<
+                         decltype(get_argument_definition<T, I, Traits>())>) {
     return I == N - 1;
   } else {
     return only_last_positional_argument_may_have_multiple_values<T, I + 1>();
@@ -455,12 +489,15 @@ constexpr bool only_last_positional_argument_may_have_multiple_values() {
 template <class T, std::size_t I = 0>
 constexpr std::ptrdiff_t last_mandatory_positional_argument() {
   using namespace detail::Reflection;
+  using Traits = gnu_style_parsing_traits;
+
   constexpr auto N = count_members<T>();
   if constexpr (I == N) {
     return -1;
   } else {
     const auto recurse = last_mandatory_positional_argument<T, I + 1>();
-    using TArg = std::decay_t<decltype(get_argument_definition<T, I>())>;
+    using TArg
+      = std::decay_t<decltype(get_argument_definition<T, I, Traits>())>;
     if constexpr (requires { TArg::is_required; }) {
       if (recurse == -1 && TArg::is_required) {
         return I;
@@ -473,11 +510,13 @@ constexpr std::ptrdiff_t last_mandatory_positional_argument() {
 template <class T, std::size_t I = 0>
 constexpr std::ptrdiff_t first_optional_positional_argument() {
   using namespace detail::Reflection;
+  using Traits = gnu_style_parsing_traits;
   constexpr auto N = count_members<T>();
   if constexpr (I == N) {
     return -1;
   } else {
-    using TArg = std::decay_t<decltype(get_argument_definition<T, I>())>;
+    using TArg
+      = std::decay_t<decltype(get_argument_definition<T, I, Traits>())>;
     if constexpr (requires { TArg::is_required; }) {
       if (!TArg::is_required) {
         return I;
@@ -538,7 +577,7 @@ std::expected<T, incomplete_parse_reason> parse(
       = [&]<std::size_t... I>(std::index_sequence<I...>) {
           // returns bool: matched option
           return ([&] {
-            const auto def = get_argument_definition<T, I>();
+            const auto def = get_argument_definition<T, I, Traits>();
             auto result = parse_option<Traits>(def, args.subspan(i));
             if (!result) {
               return false;
@@ -597,7 +636,7 @@ std::expected<T, incomplete_parse_reason> parse(
   [&]<std::size_t... I>(std::index_sequence<I...>) {
     ([&] {
       // returns bool: continue
-      const auto def = get_argument_definition<T, I>();
+      const auto def = get_argument_definition<T, I, Traits>();
       auto result = parse_positional_argument<Traits>(
         def, arg0, positionalArgs, errorStream);
       if (!result) {
