@@ -1,0 +1,24 @@
+name: Build all
+on: [ push, pull_request ]
+jobs:
+  call-build-single:
+    uses: ./.github/workflows/build-single.yml
+    name: ${{matrix.name}}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows - MSVC
+            runs-on: windows-2022
+          - name: Windows - clang-cl
+            runs-on: windows-2022
+            cmake-args: -T ClangCL
+          - name: Linux - GCC
+            runs-on: ubuntu-24.04
+            cmake-args: -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++
+          - name: MacOS - Apple Clang
+            runs-on: macos-15
+    with:
+      name: ${{matrix.name}}
+      runs-on: ${{matrix.runs-on}}
+      cmake-args: ${{matrix.cmake-args}}

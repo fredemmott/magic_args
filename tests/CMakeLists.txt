@@ -9,7 +9,7 @@ else ()
   target_sources(test-lib PRIVATE output-posix.cpp)
 endif ()
 
-find_package(catch2 CONFIG REQUIRED)
+find_package(Catch2 CONFIG REQUIRED)
 
 add_executable(split-header-tests test.cpp)
 target_link_libraries(split-header-tests PRIVATE test-lib Catch2::Catch2 Catch2::Catch2WithMain magic_args)
@@ -17,5 +17,5 @@ target_link_libraries(split-header-tests PRIVATE test-lib Catch2::Catch2 Catch2:
 add_executable(single-header-tests test.cpp)
 target_link_libraries(single-header-tests PRIVATE test-lib Catch2::Catch2 Catch2::Catch2WithMain magic_args-single-header)
 
-include("${catch2_DIR}/Catch.cmake")
+include("${Catch2_DIR}/Catch.cmake")
 catch_discover_tests(split-header-tests single-header-tests)

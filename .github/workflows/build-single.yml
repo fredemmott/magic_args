@@ -1,0 +1,63 @@
+on:
+  workflow_call:
+    inputs:
+      name:
+        required: true
+        type: string
+      runs-on:
+        required: true
+        type: string
+      cmake-args:
+        required: false
+        type: string
+jobs:
+  build-and-test:
+    name: Build and test - ${{inputs.name}}
+    runs-on: ${{inputs.runs-on}}
+    env:
+      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+    steps:
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+      - uses: actions/checkout@v4
+        with:
+          path: source
+          fetch-depth: 0
+          submodules: true
+      - uses: maxim-lobanov/setup-xcode@v1
+        if: startsWith(inputs.runs-on, 'macos')
+        with:
+          xcode-version: latest-stable
+      - name: Configure
+        id: configure
+        run: |
+          mkdir build
+          cd build
+          cmake ../source ${{inputs.cmake-args}}
+      - name: Build
+        working-directory: build
+        shell: pwsh
+        run: |
+          cmake `
+            --build . `
+            --parallel
+      - name: Run tests
+        working-directory: build
+        env:
+          CLICOLOR_FORCE: 1
+        run: ctest . -C Debug --output-on-failure --output-log "${{runner.temp}}/ctest.log"
+      - name: Post test summary
+        if: ${{ always() }}
+        shell: pwsh
+        run: |
+          Write-Host "::notice title=🧪 Test summary - ${{inputs.name}}/::$(Get-Content -Encoding UTF8 ${{runner.temp}}/ctest.log | Select-String -Pattern 'tests passed')"
+      - name: Publish test log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctest-logs-${{inputs.name}}
+          path: "${{runner.temp}}/ctest.log"
