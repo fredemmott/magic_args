@@ -14,6 +14,7 @@ namespace magic_args::inline api {
 template <class T>
 struct optional_positional_argument {
   static constexpr bool is_required = false;
+  static constexpr bool is_std_optional = detail::std_optional<T>;
   using value_type = T;
   std::string mName;
   std::string mHelp;
@@ -29,6 +30,42 @@ struct optional_positional_argument {
   bool operator==(const optional_positional_argument&) const noexcept = default;
   bool operator==(const T& value) const noexcept {
     return mValue == value;
+  }
+
+  operator bool() const noexcept
+    requires is_std_optional
+  {
+    return mValue.has_value();
+  }
+
+  bool has_value() const noexcept
+    requires is_std_optional
+  {
+    return mValue.has_value();
+  }
+
+  decltype(auto) value() const
+    requires is_std_optional
+  {
+    return mValue.value();
+  }
+
+  decltype(auto) value()
+    requires is_std_optional
+  {
+    return mValue.value();
+  }
+
+  decltype(auto) operator*() const
+    requires is_std_optional
+  {
+    return *mValue;
+  }
+
+  decltype(auto) operator*()
+    requires is_std_optional
+  {
+    return *mValue;
   }
 };
 
@@ -71,9 +108,16 @@ struct option final {
   operator T() const noexcept {
     return mValue;
   }
+
   bool operator==(const option&) const noexcept = default;
   bool operator==(const T& value) const noexcept {
     return mValue == value;
+  }
+
+  operator bool() const noexcept
+    requires is_std_optional
+  {
+    return mValue.has_value();
   }
 
   bool has_value() const noexcept
