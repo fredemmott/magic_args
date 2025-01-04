@@ -23,3 +23,8 @@ include(CTest)
 if (BUILD_TESTING)
   add_subdirectory(tests)
 endif ()
+
+option(BUILD_EXAMPLES "Build examples" "${PROJECT_IS_TOP_LEVEL}")
+if (BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif ()
