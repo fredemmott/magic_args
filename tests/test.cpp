@@ -11,6 +11,24 @@
 
 struct EmptyStruct {};
 
+namespace MyNS {
+struct MyValueType {
+  std::string mValue;
+};
+void from_string_arg(MyValueType& v, std::string_view arg) {
+  v.mValue = std::string {arg};
+}
+}// namespace MyNS
+using MyNS::MyValueType;
+
+struct CustomArgs {
+  MyValueType mRaw;
+  magic_args::option<MyValueType> mOption {
+    .mHelp = "std::optional",
+  };
+  magic_args::optional_positional_argument<MyValueType> mPositional;
+};
+
 struct Optional {
   std::optional<std::string> mValue;
   magic_args::option<std::optional<std::string>> mDocumentedValue {
@@ -771,4 +789,18 @@ TEST_CASE("optional_positional_argument<std::optional>") {
   REQUIRE(args.has_value());
   REQUIRE(args->mPositional.has_value());
   CHECK(args->mPositional.value() == "foo");
+}
+
+TEST_CASE("custom arguments") {
+  std::vector<std::string_view> argv {
+    testName, "--raw=123", "--option=456", "789"};
+
+  Output out, err;
+  const auto args = magic_args::parse<CustomArgs>(argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.get() == "");
+  REQUIRE(args.has_value());
+  CHECK(args->mRaw.mValue == "123");
+  CHECK(args->mOption.mValue.mValue == "456");
+  CHECK(args->mPositional.mValue.mValue == "789");
 }
