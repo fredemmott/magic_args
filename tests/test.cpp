@@ -66,10 +66,6 @@ struct MandatoryMultiValuePositionalArgument {
   };
   magic_args::mandatory_positional_argument<std::vector<std::string>> mInputs;
 };
-constexpr auto x = magic_args::first_optional_positional_argument<
-  MandatoryMultiValuePositionalArgument>();
-constexpr auto y = magic_args::last_mandatory_positional_argument<
-  MandatoryMultiValuePositionalArgument>();
 
 constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
 

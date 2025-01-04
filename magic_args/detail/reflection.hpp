@@ -7,7 +7,7 @@
 #include <tuple>
 #include <utility>
 
-namespace magic_args::detail::Reflection {
+namespace magic_args::detail {
 
 struct any_t {
   template <class T>
@@ -191,4 +191,4 @@ constexpr auto member_name = demangled_name<apple_workaround_t {
 #pragma clang diagnostic pop
 #endif
 
-}// namespace magic_args::detail::Reflection
+}// namespace magic_args::detail
