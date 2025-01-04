@@ -5,7 +5,10 @@
 
 #include "output.hpp"
 
-Output::Output() {
+void Output::reset() {
+  this->wait();
+  mData.clear();
+
   int pipefd[2];
   pipe(pipefd);
   mRead = fdopen(pipefd[0], "r");

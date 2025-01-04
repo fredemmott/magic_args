@@ -7,7 +7,10 @@
 
 #include "output.hpp"
 
-Output::Output() {
+void Output::reset() {
+  this->wait();
+  mData.clear();
+
   HANDLE read {};
   HANDLE write {};
 

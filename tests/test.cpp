@@ -13,6 +13,9 @@ struct EmptyStruct {};
 
 struct Optional {
   std::optional<std::string> mValue;
+  magic_args::option<std::optional<std::string>> mDocumentedValue {
+    .mHelp = "documented value",
+  };
 };
 
 struct FlagsOnly {
@@ -705,4 +708,36 @@ TEST_CASE("std::optional") {
   REQUIRE(args.has_value());
   CHECK(args->mValue.has_value());
   CHECK(args->mValue.value() == "foo");
+}
+
+TEST_CASE("option") {
+  std::vector<std::string_view> argv {testName};
+  Output out, err;
+  auto args = magic_args::parse<Optional>(argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.empty());
+  REQUIRE(args.has_value());
+  CHECK_FALSE(args->mDocumentedValue.has_value());
+
+  argv.push_back("--documented-value=");
+  args = magic_args::parse<Optional>(argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.empty());
+  REQUIRE(args.has_value());
+  CHECK(args->mDocumentedValue.has_value());
+  CHECK(args->mDocumentedValue.value() == "");
+
+  argv.push_back("--documented-value=foo");
+  std::println(stderr, "Parsing!");
+  args = magic_args::parse<Optional>(argv, {}, out, err);
+  std::println(stderr, "Parsed!");
+  CHECK(out.empty());
+  CHECK(err.empty());
+  REQUIRE(args.has_value());
+  CHECK(args->mDocumentedValue.has_value());
+  CHECK(args->mDocumentedValue.value() == "foo");
+
+  // Check it's a mutable reference
+  *args->mDocumentedValue = "bar";
+  CHECK(args->mDocumentedValue.value() == "bar");
 }

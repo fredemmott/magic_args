@@ -6,6 +6,7 @@
 #include "detail/concepts.hpp"
 #endif
 
+#include <optional>
 #include <string>
 
 namespace magic_args::inline api {
@@ -57,6 +58,7 @@ struct mandatory_positional_argument {
 template <class T>
 struct option final {
   using value_type = T;
+  static constexpr bool is_std_optional = detail::std_optional<T>;
   std::string mName;
   std::string mHelp;
   std::string mShortName;
@@ -72,6 +74,36 @@ struct option final {
   bool operator==(const option&) const noexcept = default;
   bool operator==(const T& value) const noexcept {
     return mValue == value;
+  }
+
+  bool has_value() const noexcept
+    requires is_std_optional
+  {
+    return mValue.has_value();
+  }
+
+  decltype(auto) value() const
+    requires is_std_optional
+  {
+    return mValue.value();
+  }
+
+  decltype(auto) value()
+    requires is_std_optional
+  {
+    return mValue.value();
+  }
+
+  decltype(auto) operator*() const
+    requires is_std_optional
+  {
+    return *mValue;
+  }
+
+  decltype(auto) operator*()
+    requires is_std_optional
+  {
+    return *mValue;
   }
 };
 

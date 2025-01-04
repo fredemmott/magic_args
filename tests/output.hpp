@@ -21,9 +21,12 @@ class Output {
     return get().empty();
   }
 
-  operator FILE*() const noexcept {
+  operator FILE*() noexcept {
+    this->reset();
     return mWrite;
   }
+
+  void reset();
 
  private:
   std::future<void> mFuture;

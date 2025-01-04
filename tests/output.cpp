@@ -3,6 +3,9 @@
 
 #include "output.hpp"
 
+Output::Output() {
+}
+
 Output::~Output() {
   wait();
 }
