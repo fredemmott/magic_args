@@ -8,11 +8,28 @@
 #include "detail/reflection.hpp"
 #endif
 
+#include <ranges>
+#include <vector>
+
 namespace magic_args::detail {
 
 template <std::formattable<char> T>
 auto formattable_argument_value(const T& arg) {
   return arg;
+}
+
+template <std::formattable<char> T>
+  requires(!std::formattable<std::vector<T>, char>)
+std::string formattable_argument_value(const std::vector<T>& arg) {
+  std::string result;
+  for (auto&& v: arg) {
+    if (result.empty()) {
+      result = std::format("`{}`", v);
+    } else {
+      result = std::format("{}, `{}`", result, v);
+    }
+  }
+  return std::format("[{}]", result);
 }
 
 template <class T>
