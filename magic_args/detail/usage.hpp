@@ -4,10 +4,12 @@
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "concepts.hpp"
-#include "extra_help.hpp"
 #include "print.hpp"
+#include <magic_args/extra_help.hpp>
+#include <magic_args/gnu_style_parsing_traits.hpp>
 #endif
 
+#include <filesystem>
 #include <cstdio>
 #include <string>
 
