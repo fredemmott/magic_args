@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-namespace magic_args::inline api {
+namespace magic_args::inline public_api {
 
 enum class incomplete_parse_reason {
   HelpRequested,
@@ -15,4 +15,4 @@ enum class incomplete_parse_reason {
 };
 using enum incomplete_parse_reason;
 
-}// namespace magic_args::inline api
+}// namespace magic_args::inline public_api

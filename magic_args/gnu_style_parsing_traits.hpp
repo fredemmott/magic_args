@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace magic_args::inline api {
+namespace magic_args::inline public_api {
 
 struct gnu_style_parsing_traits {
   static constexpr char long_arg_prefix[] = "--";
@@ -58,4 +58,4 @@ inline void gnu_style_parsing_traits::normalize_positional_argument_name(
   }
 }
 
-}// namespace magic_args::inline api
+}// namespace magic_args::inline public_api

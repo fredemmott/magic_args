@@ -9,7 +9,7 @@
 #include <optional>
 #include <string>
 
-namespace magic_args::inline api {
+namespace magic_args::inline public_api {
 
 template <class T>
 struct optional_positional_argument {

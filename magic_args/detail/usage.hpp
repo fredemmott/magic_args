@@ -53,7 +53,7 @@ void show_option_usage(FILE* output, const TArg& arg) {
     detail::println(output, "{:30} {}", params, arg.mHelp);
     return;
   }
-  detail::println(output, "{}\n{:30}{}", params, "", arg.mHelp);
+  detail::println(output, "{}\n{:31}{}", params, "", arg.mHelp);
 }
 
 template <class Traits, basic_option T>

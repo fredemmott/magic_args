@@ -15,7 +15,7 @@ namespace MyNS {
 struct MyValueType {
   std::string mValue;
 };
-void from_string_arg(MyValueType& v, std::string_view arg) {
+void from_string_argument(MyValueType& v, std::string_view arg) {
   v.mValue = std::string {arg};
 }
 }// namespace MyNS

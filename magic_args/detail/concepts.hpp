@@ -6,7 +6,7 @@
 #include <optional>
 #include <string>
 
-namespace magic_args::inline api {
+namespace magic_args::inline public_api {
 template <class T>
 concept basic_argument = requires(T v) {
   typename T::value_type;

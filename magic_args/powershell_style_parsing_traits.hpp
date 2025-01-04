@@ -8,7 +8,7 @@
 
 #include <string>
 
-namespace magic_args::inline api {
+namespace magic_args::inline public_api {
 
 struct powershell_style_parsing_traits {
   static constexpr char long_arg_prefix[] = "-";
@@ -52,4 +52,4 @@ inline void powershell_style_parsing_traits::normalize_option_name(
   }
 }
 
-}// namespace magic_args::inline api
+}// namespace magic_args::inline public_api
