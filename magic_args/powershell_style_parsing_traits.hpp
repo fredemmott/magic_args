@@ -12,6 +12,8 @@ namespace magic_args::inline api {
 
 struct powershell_style_parsing_traits {
   static constexpr char long_arg_prefix[] = "-";
+  static constexpr char short_arg_prefix[] = "-";
+  static constexpr char short_help_arg[] = "?";
   static constexpr char value_separator[] = "=";
 
   inline static void normalize_option_name(std::string& name);

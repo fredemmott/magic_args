@@ -59,9 +59,9 @@ Options:
 
       -String=VALUE
       -Flag
-      -DocumentedFlag          This flag is documented
+  -d, -DocumentedFlag          This flag is documented
 
-      -Help                    show this message
+  -?, -Help                    show this message
 )EOF"[1]);
 }
 
