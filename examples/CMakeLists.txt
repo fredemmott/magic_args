@@ -5,3 +5,4 @@ endfunction()
 
 add_example(minimal minimal.cpp)
 add_example(minimal-powershell-style minimal-powershell-style.cpp)
+add_example(everything everything.cpp)
