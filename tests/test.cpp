@@ -38,6 +38,7 @@ struct OptionsOnly {
   std::string mString;
   int mInt {0};
   magic_args::option<std::string> mDocumentedString {
+    {},
     "foo",
     "do the foo thing",
     "f",

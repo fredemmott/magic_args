@@ -16,9 +16,9 @@ struct optional_positional_argument {
   static constexpr bool is_required = false;
   static constexpr bool is_std_optional = detail::std_optional<T>;
   using value_type = T;
+  T mValue {};
   std::string mName;
   std::string mHelp;
-  T mValue {};
 
   optional_positional_argument& operator=(T&& value) {
     mValue = std::move(value);
@@ -73,9 +73,9 @@ template <class T>
 struct mandatory_positional_argument {
   static constexpr bool is_required = true;
   using value_type = T;
+  T mValue {};
   std::string mName;
   std::string mHelp;
-  T mValue {};
 
   mandatory_positional_argument& operator=(T&& value) {
     mValue = std::move(value);
@@ -96,10 +96,10 @@ template <class T>
 struct option final {
   using value_type = T;
   static constexpr bool is_std_optional = detail::std_optional<T>;
+  T mValue {};
   std::string mName;
   std::string mHelp;
   std::string mShortName;
-  T mValue {};
 
   option& operator=(T&& value) {
     mValue = std::move(value);
