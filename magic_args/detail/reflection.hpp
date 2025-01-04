@@ -11,7 +11,9 @@ namespace magic_args::detail {
 
 struct any_t {
   template <class T>
-  [[maybe_unused]] constexpr operator T() const;
+  constexpr operator T() const {
+    return T {};
+  };
 };
 
 template <class T, class... Args>

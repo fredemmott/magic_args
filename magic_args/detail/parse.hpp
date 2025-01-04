@@ -94,6 +94,16 @@ void from_string_arg_outer(T& out, std::string_view arg) {
   }
 }
 
+template <class T>
+  requires requires(T v, std::string_view arg) {
+    from_string_arg_outer(v, arg);
+  }
+void from_string_arg_outer(std::optional<T>& out, std::string_view arg) {
+  T value {};
+  from_string_arg_outer(value, arg);
+  out = std::move(value);
+}
+
 template <
   class Traits,
   basic_option T,

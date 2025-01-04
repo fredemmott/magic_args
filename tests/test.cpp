@@ -11,6 +11,10 @@
 
 struct EmptyStruct {};
 
+struct Optional {
+  std::optional<std::string> mValue;
+};
+
 struct FlagsOnly {
   bool mFoo {false};
   bool mBar {false};
@@ -675,4 +679,30 @@ Arguments:
       OUTPUT                   file to create
       INPUTS
 )EOF"[1]);
+}
+
+TEST_CASE("std::optional") {
+  std::vector<std::string_view> argv {testName};
+  Output out, err;
+  auto args = magic_args::parse<Optional>(argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.empty());
+  REQUIRE(args.has_value());
+  CHECK_FALSE(args->mValue.has_value());
+
+  argv.push_back("--value=");
+  args = magic_args::parse<Optional>(argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.empty());
+  REQUIRE(args.has_value());
+  CHECK(args->mValue.has_value());
+  CHECK(args->mValue.value() == "");
+
+  argv.push_back("--value=foo");
+  args = magic_args::parse<Optional>(argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.empty());
+  REQUIRE(args.has_value());
+  CHECK(args->mValue.has_value());
+  CHECK(args->mValue.value() == "foo");
 }
