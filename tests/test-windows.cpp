@@ -35,6 +35,7 @@ TEST_CASE("wWinMain", "[windows]") {
 }
 
 TEST_CASE("winMain", "[windows]") {
+  REQUIRE(GetACP() == CP_UTF8);
   // wWinMain gives us the command line all in one active-code-page string
   constexpr auto commandLine
     = "test_app --foo 💩 --bar \"Dzień dobry\" --empty \"\" --baz test";

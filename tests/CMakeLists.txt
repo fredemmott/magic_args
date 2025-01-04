@@ -23,8 +23,8 @@ add_executable(single-header-tests test.cpp)
 target_link_libraries(single-header-tests PRIVATE test-lib Catch2::Catch2 Catch2::Catch2WithMain magic_args-single-header)
 
 if (WIN32)
-  target_sources(split-header-tests PRIVATE test-windows.cpp)
-  target_sources(single-header-tests PRIVATE test-windows.cpp)
+  target_sources(split-header-tests PRIVATE test-windows.cpp utf8-process-code-page.manifest)
+  target_sources(single-header-tests PRIVATE test-windows.cpp utf8-process-code-page.manifest)
 endif ()
 
 include("${Catch2_DIR}/Catch.cmake")
