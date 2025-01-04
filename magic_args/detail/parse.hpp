@@ -24,17 +24,6 @@ static_assert(
 
 namespace magic_args::detail {
 
-inline void from_string_arg(std::string& v, std::string_view arg) {
-  v = std::string {arg};
-}
-
-template <class T>
-void from_string_arg_fallback(T& v, std::string_view arg) {
-  // TODO (C++26): we should be able to directly use the string_view
-  std::stringstream ss {std::string {arg}};
-  ss >> v;
-}
-
 enum class option_match_kind {
   NameAndValue,
   NameOnly,
@@ -85,13 +74,25 @@ arg_parse_result<V> parse_option(
 }
 
 template <class T>
+void from_string_arg_outer(T& out, std::string_view arg)
+  requires requires { from_string_argument(out, arg); }
+{
+  from_string_argument(out, arg);
+}
+
+template <class T>
+void from_string_arg_outer(T& out, std::string_view arg)
+  requires(!std::assignable_from<T&, std::string>)
+  && requires(std::stringstream ss, T v) { ss >> v; }
+{
+  std::stringstream ss {std::string {arg}};
+  ss >> out;
+}
+
+template <class T>
+  requires std::assignable_from<T&, std::string>
 void from_string_arg_outer(T& out, std::string_view arg) {
-  if constexpr (requires { from_string_arg(out, arg); }) {
-    from_string_arg(out, arg);
-  } else {
-    static_assert(requires(std::stringstream ss, T v) { ss >> v; });
-    from_string_arg_fallback(out, arg);
-  }
+  out = std::string {arg};
 }
 
 template <class T>
