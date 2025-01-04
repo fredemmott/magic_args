@@ -7,6 +7,7 @@ add_library(
   detail/concepts.hpp
   detail/reflection.hpp
   gnu_style_parsing_traits.hpp
+  powershell_style_parsing_traits.hpp
   detail/print.hpp
   argument_definitions.hpp
   detail/get_argument_definition.hpp

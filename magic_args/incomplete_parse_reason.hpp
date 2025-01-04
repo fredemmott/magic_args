@@ -13,5 +13,6 @@ enum class incomplete_parse_reason {
   InvalidArgumentValue,
   InvalidEncoding,
 };
+using enum incomplete_parse_reason;
 
-}
+}// namespace magic_args::inline api

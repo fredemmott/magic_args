@@ -16,10 +16,10 @@ endif ()
 
 find_package(Catch2 CONFIG REQUIRED)
 
-add_executable(split-header-tests test.cpp)
+add_executable(split-header-tests test.cpp test-styles.cpp)
 target_link_libraries(split-header-tests PRIVATE test-lib Catch2::Catch2 Catch2::Catch2WithMain magic_args)
 
-add_executable(single-header-tests test.cpp)
+add_executable(single-header-tests test.cpp test-styles.cpp)
 target_link_libraries(single-header-tests PRIVATE test-lib Catch2::Catch2 Catch2::Catch2WithMain magic_args-single-header)
 
 if (WIN32)

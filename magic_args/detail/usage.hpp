@@ -3,14 +3,15 @@
 #pragma once
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
-#include "concepts.hpp"
-#include "print.hpp"
 #include <magic_args/extra_help.hpp>
 #include <magic_args/gnu_style_parsing_traits.hpp>
+
+#include "concepts.hpp"
+#include "print.hpp"
 #endif
 
-#include <filesystem>
 #include <cstdio>
+#include <filesystem>
 #include <string>
 
 namespace magic_args::detail {
@@ -22,7 +23,10 @@ void show_option_usage(FILE*, const TArg&) {
 template <class Traits, basic_option TArg>
 void show_option_usage(FILE* output, const TArg& arg) {
   const auto shortArg = [&arg] {
-    if constexpr (requires { arg.mShortName; }) {
+    if constexpr (requires {
+                    arg.mShortName;
+                    Traits::short_arg_prefix;
+                  }) {
       if (!arg.mShortName.empty()) {
         return std::format("{}{},", Traits::short_arg_prefix, arg.mShortName);
       }
@@ -72,6 +76,10 @@ void show_usage(
   std::string_view argv0,
   const extra_help& extraHelp = {}) {
   using namespace detail;
+  std::string helpName("help");
+  Traits::normalize_option_name(helpName);
+  std::string versionName("version");
+  Traits::normalize_option_name(versionName);
 
   constexpr auto N = count_members<T>();
 
@@ -146,11 +154,15 @@ void show_usage(
     detail::print(output, "\n");
   }
 
-  show_option_usage<Traits>(
-    output, flag {"help", "show this message", Traits::short_help_arg});
+  if constexpr (requires { Traits::short_help_arg; }) {
+    show_option_usage<Traits>(
+      output, flag {helpName, "show this message", Traits::short_help_arg});
+  } else {
+    show_option_usage<Traits>(output, flag {helpName, "show this message"});
+  }
   if (!extraHelp.mVersion.empty()) {
     show_option_usage<Traits>(
-      output, flag {"version", "print program version"});
+      output, flag {versionName, "print program version"});
   }
 
   if (hasPositionalArguments) {

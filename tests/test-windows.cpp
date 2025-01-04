@@ -11,12 +11,15 @@
 
 #include "output.hpp"
 
+namespace TestWindows {
 struct MyArgs {
   std::string mFoo;
   std::string mBar;
   std::string mBaz;
   std::string mEmpty;
 };
+}// namespace TestWindows
+using namespace TestWindows;
 
 TEST_CASE("wWinMain", "[windows]") {
   // wWinMain gives us the command line all in one UTF-16 string
@@ -43,7 +46,7 @@ TEST_CASE("winMain", "[windows]") {
   Output out, err;
   const auto args = magic_args::parse<MyArgs>(commandLine, {}, out, err);
   CHECK(out.empty());
-  CHECK(err.empty());
+  CHECK(err.get() == "");
   REQUIRE(args.has_value());
   CHECK(args->mFoo == "💩");
   CHECK(args->mBar == "Dzień dobry");
