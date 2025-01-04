@@ -8,7 +8,7 @@
 namespace magic_args::inline public_api {
 struct extra_help {
   std::string mDescription;
-  std::vector<std::string> mExamples;
   std::string mVersion;
+  std::vector<std::string> mExamples;
 };
-}// namespace magic_args::inline api
+}// namespace magic_args::inline public_api
