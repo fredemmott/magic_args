@@ -3,6 +3,11 @@ add_library(
   STATIC
   output.cpp output.hpp
 )
+target_compile_features(
+  test-lib
+  PUBLIC
+  cxx_std_23
+)
 if (WIN32)
   target_sources(test-lib PRIVATE output-windows.cpp)
 else ()
