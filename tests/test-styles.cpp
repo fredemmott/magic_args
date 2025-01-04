@@ -5,7 +5,10 @@
 #include <magic_args/magic_args.hpp>
 #include <string>
 
+#ifndef MAGIC_ARGS_SINGLE_FILE
 #include "magic_args/powershell_style_parsing_traits.hpp"
+#endif
+
 #include "output.hpp"
 
 namespace TestStyles {
