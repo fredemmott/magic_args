@@ -18,7 +18,11 @@ std::string formattable_argument_value(const MyCustomType& value) {
 struct MyArgs {
   bool mFlag {false};
   std::string mString;
+  option<std::string> mWithDocs {
+    .mHelp = "Here's some help",
+  };
   std::optional<std::string> mOptionalString;
+  int mNotAString {};
   MyCustomType mCustomType;
   option<std::string> mConfiguredString {
     "default",
@@ -42,7 +46,17 @@ struct MyArgs {
 };
 
 int main(int argc, char** argv) {
-  const auto args = magic_args::parse<MyArgs>(argc, argv);
+  const magic_args::extra_help extraHelp {
+    .mDescription = "This program shows all the features.",
+    .mVersion = "everything example v1.2.3",
+    .mExamples = {
+      "everything FOO",
+      "everything --flag FOO",
+      "everything --string someval FOO",
+      "everything --string=someval FOO",
+    },
+  };
+  const auto args = magic_args::parse<MyArgs>(argc, argv, extraHelp);
   if (!args.has_value()) {
     switch (args.error()) {
       case HelpRequested:
