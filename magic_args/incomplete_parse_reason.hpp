@@ -11,6 +11,7 @@ enum class incomplete_parse_reason {
   MissingArgumentValue,
   InvalidArgument,
   InvalidArgumentValue,
+  InvalidEncoding,
 };
 
 }

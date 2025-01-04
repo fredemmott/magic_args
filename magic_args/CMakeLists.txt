@@ -18,6 +18,7 @@ add_library(
   dump.hpp
   parse.hpp
   magic_args.hpp
+  windows.hpp
 )
 target_include_directories(
   magic_args

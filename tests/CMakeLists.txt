@@ -22,5 +22,10 @@ target_link_libraries(split-header-tests PRIVATE test-lib Catch2::Catch2 Catch2:
 add_executable(single-header-tests test.cpp)
 target_link_libraries(single-header-tests PRIVATE test-lib Catch2::Catch2 Catch2::Catch2WithMain magic_args-single-header)
 
+if (WIN32)
+  target_sources(split-header-tests PRIVATE test-windows.cpp)
+  target_sources(single-header-tests PRIVATE test-windows.cpp)
+endif ()
+
 include("${Catch2_DIR}/Catch.cmake")
 catch_discover_tests(split-header-tests single-header-tests)
