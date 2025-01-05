@@ -49,6 +49,21 @@ mBaz                          `123`
 
 [Help text, short flags, and positional arguments are also supported](examples/everything.cpp).
 
+Long names are inferred for struct members in the following forms:
+
+```c++
+struct MyArgs {
+  std::string mEmUpperCamel;
+  std::string m_EmUnderscoreUpperCamel;
+  std::string _UnderscoreUpperCamel;
+  std::string _underscoreLowerCamel;
+  std::string UpperCamel;
+  std::string lowerCamel;
+  std::string m_em_snake_case;
+  std::string snake_case;
+};
+```
+
 ## Requirements
 
 *magic_args* requires C++23, and is tested with:
