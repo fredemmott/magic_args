@@ -6,6 +6,7 @@
 #include "gnu_style_parsing_traits.hpp"
 #include "parse.hpp"
 #include "powershell_style_parsing_traits.hpp"
+#include "verbatim_names.hpp"
 
 #ifdef MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS
 #include "windows.hpp"

@@ -869,3 +869,57 @@ Options:
   REQUIRE(!args.has_value());
   CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
 }
+
+TEST_CASE("GNU-style verbatim names") {
+  std::vector<std::string_view> argv {testName, "--help"};
+
+  Output out, err;
+  const auto args = magic_args::parse<
+    Normalization,
+    magic_args::verbatim_names<magic_args::gnu_style_parsing_traits>>(
+    argv, {}, out, err);
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
+Usage: my_test [OPTIONS...]
+
+Options:
+
+      --mEmUpperCamel=VALUE
+      --m_EmUnderscoreUpperCamel=VALUE
+      --_UnderscoreUpperCamel=VALUE
+      --_underscoreLowerCamel=VALUE
+      --UpperCamel=VALUE
+      --lowerCamel=VALUE
+      --m_em_snake_case=VALUE
+      --snake_case=VALUE
+
+  -?, --help                   show this message
+)EOF"[1]);
+}
+
+TEST_CASE("PowerShell-style verbatim names") {
+  std::vector<std::string_view> argv {testName, "-Help"};
+
+  Output out, err;
+  const auto args = magic_args::parse<
+    Normalization,
+    magic_args::verbatim_names<magic_args::powershell_style_parsing_traits>>(
+    argv, {}, out, err);
+  CHECK(err.get() == "");
+  CHECK(out.get() == &R"EOF(
+Usage: my_test [OPTIONS...]
+
+Options:
+
+      -mEmUpperCamel=VALUE
+      -m_EmUnderscoreUpperCamel=VALUE
+      -_UnderscoreUpperCamel=VALUE
+      -_underscoreLowerCamel=VALUE
+      -UpperCamel=VALUE
+      -lowerCamel=VALUE
+      -m_em_snake_case=VALUE
+      -snake_case=VALUE
+
+  -?, -Help                    show this message
+)EOF"[1]);
+}

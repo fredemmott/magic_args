@@ -76,11 +76,6 @@ void show_usage(
   std::string_view argv0,
   const program_info& extraHelp = {}) {
   using namespace detail;
-  std::string helpName("help");
-  Traits::normalize_option_name(helpName);
-  std::string versionName("version");
-  Traits::normalize_option_name(versionName);
-
   constexpr auto N = count_members<T>();
 
   constexpr bool hasOptions = []<std::size_t... I>(std::index_sequence<I...>) {
@@ -156,13 +151,16 @@ void show_usage(
 
   if constexpr (requires { Traits::short_help_arg; }) {
     show_option_usage<Traits>(
-      output, flag {helpName, "show this message", Traits::short_help_arg});
+      output,
+      flag {
+        Traits::long_help_arg, "show this message", Traits::short_help_arg});
   } else {
-    show_option_usage<Traits>(output, flag {helpName, "show this message"});
+    show_option_usage<Traits>(
+      output, flag {Traits::long_help_arg, "show this message"});
   }
   if (!extraHelp.mVersion.empty()) {
     show_option_usage<Traits>(
-      output, flag {versionName, "print program version"});
+      output, flag {Traits::version_arg, "print program version"});
   }
 
   if (hasPositionalArguments) {

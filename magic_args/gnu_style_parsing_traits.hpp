@@ -10,7 +10,10 @@ struct gnu_style_parsing_traits {
   static constexpr char long_arg_prefix[] = "--";
   static constexpr char short_arg_prefix[] = "-";
   static constexpr char value_separator[] = "=";
+
+  static constexpr char long_help_arg[] = "help";
   static constexpr char short_help_arg[] = "?";
+  static constexpr char version_arg[] = "version";
 
   inline static void normalize_option_name(std::string& name);
   inline static void normalize_positional_argument_name(std::string& name);

@@ -26,12 +26,9 @@ std::expected<T, incomplete_parse_reason> parse(
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
   using namespace detail;
-  std::string helpName("help");
-  Traits::normalize_option_name(helpName);
-  std::string versionName("version");
-  Traits::normalize_option_name(versionName);
 
-  const auto longHelp = std::format("{}{}", Traits::long_arg_prefix, helpName);
+  const auto longHelp
+    = std::format("{}{}", Traits::long_arg_prefix, Traits::long_help_arg);
   const auto shortHelp = [] {
     if constexpr (requires {
                     Traits::short_help_arg;
@@ -44,7 +41,7 @@ std::expected<T, incomplete_parse_reason> parse(
     }
   }();
   const auto versionArg
-    = std::format("{}{}", Traits::long_arg_prefix, versionName);
+    = std::format("{}{}", Traits::long_arg_prefix, Traits::version_arg);
 
   for (auto&& arg: args) {
     if (arg == "--") {

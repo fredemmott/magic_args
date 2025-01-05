@@ -18,6 +18,7 @@ add_library(
   detail/parse.hpp
   dump.hpp
   parse.hpp
+  verbatim_names.hpp
   magic_args.hpp
   windows.hpp
 )
