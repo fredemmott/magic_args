@@ -8,8 +8,8 @@
 #include "detail/reflection.hpp"
 #include "detail/usage.hpp"
 #include "detail/validation.hpp"
-#include "extra_help.hpp"
 #include "gnu_style_parsing_traits.hpp"
+#include "program_info.hpp"
 #endif
 
 #include <expected>
@@ -22,7 +22,7 @@ namespace magic_args::inline public_api {
 template <class T, class Traits = gnu_style_parsing_traits>
 std::expected<T, incomplete_parse_reason> parse(
   std::span<std::string_view> args,
-  const extra_help& help = {},
+  const program_info& help = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
   using namespace detail;
@@ -182,7 +182,7 @@ template <class T, class Traits = gnu_style_parsing_traits>
 std::expected<T, incomplete_parse_reason> parse(
   int argc,
   char** argv,
-  const extra_help& help = {},
+  const program_info& help = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
   std::vector<std::string_view> args;

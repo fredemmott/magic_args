@@ -21,7 +21,7 @@ namespace magic_args::inline public_api {
 template <class T, class Traits = gnu_style_parsing_traits>
 std::expected<T, incomplete_parse_reason> parse(
   const wchar_t* const commandLine,
-  const extra_help& help = {},
+  const program_info& help = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
   int argc {};
@@ -68,7 +68,7 @@ std::expected<T, incomplete_parse_reason> parse(
 template <class T, class Traits = gnu_style_parsing_traits>
 std::expected<T, incomplete_parse_reason> parse(
   const char* const commandLine,
-  const extra_help& help = {},
+  const program_info& help = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
   // There's CommandLineToArgvW, but no CommandLineToArgvA

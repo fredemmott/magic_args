@@ -46,7 +46,7 @@ struct MyArgs {
 };
 
 int main(int argc, char** argv) {
-  const magic_args::extra_help extraHelp {
+  const magic_args::program_info programInfo {
     .mDescription = "This program shows all the features.",
     .mVersion = "everything example v1.2.3",
     .mExamples = {
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
       "everything --string=someval FOO",
     },
   };
-  const auto args = magic_args::parse<MyArgs>(argc, argv, extraHelp);
+  const auto args = magic_args::parse<MyArgs>(argc, argv, programInfo);
   if (!args.has_value()) {
     switch (args.error()) {
       case HelpRequested:

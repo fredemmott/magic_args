@@ -12,7 +12,7 @@ add_library(
   argument_definitions.hpp
   detail/get_argument_definition.hpp
   detail/validation.hpp
-  extra_help.hpp
+  program_info.hpp
   detail/usage.hpp
   incomplete_parse_reason.hpp
   detail/parse.hpp

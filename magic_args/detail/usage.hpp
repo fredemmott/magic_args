@@ -3,8 +3,8 @@
 #pragma once
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
-#include <magic_args/extra_help.hpp>
 #include <magic_args/gnu_style_parsing_traits.hpp>
+#include <magic_args/program_info.hpp>
 
 #include "concepts.hpp"
 #include "print.hpp"
@@ -74,7 +74,7 @@ template <class T, class Traits = gnu_style_parsing_traits>
 void show_usage(
   FILE* output,
   std::string_view argv0,
-  const extra_help& extraHelp = {}) {
+  const program_info& extraHelp = {}) {
   using namespace detail;
   std::string helpName("help");
   Traits::normalize_option_name(helpName);

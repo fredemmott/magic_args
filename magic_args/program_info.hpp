@@ -6,7 +6,7 @@
 #include <vector>
 
 namespace magic_args::inline public_api {
-struct extra_help {
+struct program_info {
   std::string mDescription;
   std::string mVersion;
   std::vector<std::string> mExamples;
