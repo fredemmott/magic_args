@@ -78,7 +78,6 @@ std::expected<T, incomplete_parse_reason> parse(
       return std::unexpected {encode.error()};
     }
     argv.push_back(buffer);
-    std::println(stderr, "ARG: {}", buffer);
   }
 
   std::vector<std::string_view> argvsv {argv.begin(), argv.end()};
