@@ -7,7 +7,7 @@
 #include "parse.hpp"
 #include "powershell_style_parsing_traits.hpp"
 
-#ifdef MAGIC_ARGS_ENABLE_WINDOWS
+#ifdef MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS
 #include "windows.hpp"
 #endif
 
