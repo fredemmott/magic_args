@@ -4,7 +4,7 @@
 #include <magic_args/magic_args.hpp>
 
 struct MyArgs {
-  bool mFoo { false };
+  bool mFoo {false};
   std::string mBar;
   std::string mBaz;
 };
@@ -14,8 +14,8 @@ int main(int argc, char** argv) {
   if (!args.has_value()) {
     if (args.error() == magic_args::HelpRequested) {
       return EXIT_SUCCESS;
-      }
-      return EXIT_FAILURE;
+    }
+    return EXIT_FAILURE;
   }
   magic_args::dump(*args);
   return EXIT_SUCCESS;
