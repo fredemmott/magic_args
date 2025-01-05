@@ -72,7 +72,9 @@ struct MyArgs {
 - latest Apple Clang (XCode)
 - GCC 13 on Ubuntu 24.04
 
-## Using magic_args in your project
+The *magic_args* library has no other dependencies; CMake, Catch2, and vcpkg are used for the examples and unit tests.
+
+## Using *magic_args* in your project
 
 Add the `magic_args` directory to your project and include path, using your preferred method. Options include:
 
