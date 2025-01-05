@@ -193,6 +193,9 @@ Arguments:
       INPUT                   help text here
 ```
 
+If you provide a version, `parse<>()` can result in `std::unexpected{ magic_args::VersionRequested }`; like
+`HelpRequested`, you will probably want to return `EXIT_SUCCESS` from `main()` for this.
+
 ### Custom argument types
 
 Types can be supported by implementing support for `operator >>` from a stream; alternatively, implement the following
