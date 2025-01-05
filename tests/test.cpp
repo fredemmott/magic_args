@@ -29,6 +29,17 @@ struct CustomArgs {
   magic_args::optional_positional_argument<MyValueType> mPositional;
 };
 
+struct Normalization {
+  std::string mEmUpperCamel;
+  std::string m_EmUnderscoreUpperCamel;
+  std::string _UnderscoreUpperCamel;
+  std::string _underscoreLowerCamel;
+  std::string UpperCamel;
+  std::string lowerCamel;
+  std::string m_em_snake_case;
+  std::string snake_case;
+};
+
 struct Optional {
   std::optional<std::string> mValue;
   magic_args::option<std::optional<std::string>> mDocumentedValue {
@@ -803,4 +814,58 @@ TEST_CASE("custom arguments") {
   CHECK(args->mRaw.mValue == "123");
   CHECK(args->mOption.mValue.mValue == "456");
   CHECK(args->mPositional.mValue.mValue == "789");
+}
+
+TEST_CASE("GNU-style normalization") {
+  std::vector<std::string_view> argv {testName, "--help"};
+
+  Output out, err;
+  const auto args = magic_args::parse<Normalization>(argv, {}, out, err);
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
+Usage: my_test [OPTIONS...]
+
+Options:
+
+      --em-upper-camel=VALUE
+      --em-underscore-upper-camel=VALUE
+      --underscore-upper-camel=VALUE
+      --underscore-lower-camel=VALUE
+      --upper-camel=VALUE
+      --lower-camel=VALUE
+      --em-snake-case=VALUE
+      --snake-case=VALUE
+
+  -?, --help                   show this message
+)EOF"[1]);
+  REQUIRE(!args.has_value());
+  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+}
+
+TEST_CASE("PowerShell-style normalization") {
+  std::vector<std::string_view> argv {testName, "-Help"};
+
+  Output out, err;
+  const auto args = magic_args::
+    parse<Normalization, magic_args::powershell_style_parsing_traits>(
+      argv, {}, out, err);
+  CHECK(err.empty());
+  CHECK(out.get() == &R"EOF(
+Usage: my_test [OPTIONS...]
+
+Options:
+
+      -EmUpperCamel=VALUE
+      -EmUnderscoreUpperCamel=VALUE
+      -UnderscoreUpperCamel=VALUE
+      -UnderscoreLowerCamel=VALUE
+      -UpperCamel=VALUE
+      -LowerCamel=VALUE
+      -EmSnakeCase=VALUE
+      -SnakeCase=VALUE
+
+  -?, -Help                    show this message
+)EOF"[1]);
+  REQUIRE(!args.has_value());
+  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
 }
