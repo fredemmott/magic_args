@@ -176,6 +176,18 @@ Arguments:
       INPUT                   help text here
 ```
 
+### Custom argument types
+
+Types can be supported by implementing support for `operator >>` from a stream; alternatively, implement the following
+functions in the same namespace as your type:
+
+```c++
+// Used by `magic_args::parse()`
+void from_string_argument(T& v, std::string_view arg);
+// Used by `magic_args::dump()`; alternatively, implement `std::formatter<>`
+auto formattable_argument_value(const T& v);
+```
+
 ### Support for `WinMain` and `wWinMain`
 
 If possible, use a standard `main` function instead. *magic_args* includes helpers for when that is impractical:
