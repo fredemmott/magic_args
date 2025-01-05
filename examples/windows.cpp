@@ -23,7 +23,7 @@ int WINAPI wWinMain(
   LPWSTR lpCmdLine,
   int nCmdShow) {
   magic_args::attach_to_parent_terminal();
-  const auto args = magic_args::parse<MyArgs>(lpCmdLine);
+  const auto args = magic_args::parse<MyArgs>(GetCommandLineW());
   if (!args.has_value()) {
     if (args.error() == magic_args::HelpRequested) {
       return EXIT_SUCCESS;

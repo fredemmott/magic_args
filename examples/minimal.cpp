@@ -6,7 +6,7 @@
 struct MyArgs {
   bool mFoo {false};
   std::string mBar;
-  std::string mBaz;
+  int mBaz {0};
 };
 
 int main(int argc, char** argv) {
