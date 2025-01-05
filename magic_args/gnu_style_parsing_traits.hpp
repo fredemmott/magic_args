@@ -17,10 +17,12 @@ struct gnu_style_parsing_traits {
 };
 
 inline void gnu_style_parsing_traits::normalize_option_name(std::string& name) {
-  if (
-    name.starts_with('m') && name.size() > 1 && name[1] >= 'A'
-    && name[1] <= 'Z') {
-    name = name.substr(1);
+  if (name.starts_with('m')) {
+    if (name.size() > 1 && name[1] >= 'A' && name[1] <= 'Z') {
+      name = name.substr(1);
+    } else if (name.size() > 1 && name[1] == '_') {
+      name = name.substr(2);
+    }
   }
   if (name.starts_with('_')) {
     name = name.substr(1);
