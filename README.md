@@ -15,9 +15,9 @@ struct MyArgs {
 };
 
 int main(int argc, char** argv) {
-  const std::expected<MyArgs, magic_args::incomplete_parse_reason> args
-    = magic_args::parse<MyArgs>(argc, argv);
-  // alternatively: const auto args = magic_args::parse<MyArgs>(argc, argv)
+  // This gets you an
+  // std::expected<MyArgs, magic_args::incomplete_parse_reason>
+  const auto args = magic_args::parse<MyArgs>(argc, argv);
   
   if (!args.has_value()) {
     if (args.error() == magic_args::HelpRequested) {
