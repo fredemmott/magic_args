@@ -253,6 +253,11 @@ Options:
   -?, -Help                    show this message
 ```
 
+## Limitations
+
+Currently, only up to 16 struct members are supported; this limit can be increased by extending [
+`magic_args::detail::tie_struct()`](magic_args/detail/reflection.hpp).
+
 ## License
 
 *magic_args* is [MIT-licensed](LICENSE).
