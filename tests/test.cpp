@@ -457,7 +457,7 @@ TEST_CASE("parameters, --help") {
 
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
-Usage: my_test [OPTIONS...] [INPUT] [OUTPUT]
+Usage: my_test [OPTIONS...] [--] [INPUT] [OUTPUT]
 
 Options:
 
@@ -515,7 +515,7 @@ TEST_CASE("parameters, extra") {
   CHECK(err.get() == &R"EOF(
 my_test: Invalid positional argument: bogus
 
-Usage: my_test [OPTIONS...] [INPUT] [OUTPUT]
+Usage: my_test [OPTIONS...] [--] [INPUT] [OUTPUT]
 
 Options:
 
@@ -555,7 +555,7 @@ TEST_CASE("mandatory named parameter, --help") {
   CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
-Usage: my_test [OPTIONS...] INPUT [OUTPUT]
+Usage: my_test [OPTIONS...] [--] INPUT [OUTPUT]
 
 Options:
 
@@ -586,7 +586,7 @@ TEST_CASE("missing mandatory named parameter") {
   CHECK(err.get() == &R"EOF(
 my_test: Missing required argument `INPUT`
 
-Usage: my_test [OPTIONS...] INPUT [OUTPUT]
+Usage: my_test [OPTIONS...] [--] INPUT [OUTPUT]
 
 Options:
 
@@ -611,7 +611,7 @@ TEST_CASE("multi-value parameter - --help") {
   CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
-Usage: my_test [OPTIONS...] [OUTPUT] [INPUT [INPUT [...]]]
+Usage: my_test [OPTIONS...] [--] [OUTPUT] [INPUT [INPUT [...]]]
 
 Options:
 
@@ -674,7 +674,7 @@ TEST_CASE("mandatory multi-value named argument, missing all") {
   CHECK(err.get() == &R"EOF(
 my_test: Missing required argument `OUTPUT`
 
-Usage: my_test [OPTIONS...] OUTPUT INPUT [INPUT [...]]
+Usage: my_test [OPTIONS...] [--] OUTPUT INPUT [INPUT [...]]
 
 Options:
 
@@ -703,7 +703,7 @@ TEST_CASE("mandatory multi-value named argument, missing first") {
   CHECK(err.get() == &R"EOF(
 my_test: Missing required argument `INPUTS`
 
-Usage: my_test [OPTIONS...] OUTPUT INPUT [INPUT [...]]
+Usage: my_test [OPTIONS...] [--] OUTPUT INPUT [INPUT [...]]
 
 Options:
 

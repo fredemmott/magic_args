@@ -95,7 +95,7 @@ void show_usage(
   if constexpr (!hasPositionalArguments) {
     detail::println(output, "{}", oneLiner);
   } else {
-    detail::print(output, "{}", oneLiner);
+    detail::print(output, "{} [--]", oneLiner);
     []<std::size_t... I>(auto output, std::index_sequence<I...>) {
       (
         [&] {
