@@ -33,7 +33,8 @@ target_compile_features(
   cxx_std_23
 )
 
-get_target_property(SINGLE_HEADER_SOURCES magic_args SOURCES)
+get_target_property(HEADER_FILES magic_args SOURCES)
+set(SINGLE_HEADER_SOURCES "${HEADER_FILES}")
 list(PREPEND SINGLE_HEADER_SOURCES detail/single_header_prefix.hpp)
 set(SINGLE_HEADER_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/single-header/magic_args")
 set(SINGLE_HEADER_OUTPUT_FILE "${SINGLE_HEADER_OUTPUT_DIRECTORY}/magic_args.hpp")
@@ -66,4 +67,16 @@ target_compile_features(
   magic_args-single-header
   INTERFACE
   cxx_std_23
+)
+
+foreach (HEADER IN LISTS HEADER_FILES)
+  cmake_path(GET HEADER PARENT_PATH DIRECTORY)
+  install(FILES "${HEADER}" DESTINATION "include/magic_args/${DIRECTORY}")
+endforeach ()
+
+install(
+  FILES "${SINGLE_HEADER_OUTPUT_FILE}"
+  DESTINATION "include/magic_args"
+  COMPONENT SingleHeader
+  EXCLUDE_FROM_ALL
 )
