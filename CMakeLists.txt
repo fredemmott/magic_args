@@ -24,6 +24,13 @@ if (MSVC)
       # Error on warning
       "/WX"
     )
+    # Clang-CL
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+      add_compile_options(
+        "-Wno-missing-field-initializers"
+        "-Wno-missing-designated-field-initializers"
+      )
+    endif ()
   endif ()
 endif ()
 
