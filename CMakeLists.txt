@@ -19,8 +19,9 @@ endif ()
 
 add_subdirectory(magic_args)
 
-include(CTest)
+option(BUILD_TESTING "Build tests" "${PROJECT_IS_TOP_LEVEL}")
 if (BUILD_TESTING)
+  include(CTest)
   add_subdirectory(tests)
 endif ()
 
