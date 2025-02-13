@@ -29,6 +29,9 @@ if (MSVC)
       add_compile_options(
         "-Wno-missing-field-initializers"
         "-Wno-missing-designated-field-initializers"
+        # As of 2025-02-13, the version of Clang-CL on GitHub actions does not recognize
+        # -Wno-missing-designated-field-initializers
+        "-Wno-unknown-warning-option"
       )
     endif ()
   endif ()
