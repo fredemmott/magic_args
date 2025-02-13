@@ -39,8 +39,9 @@ void show_option_usage(FILE* output, const TArg& arg) {
       = std::format("{}{}", Traits::long_arg_prefix, arg.mName);
     if constexpr (std::same_as<std::decay_t<decltype(arg)>, flag>) {
       return name;
+    } else {
+      return std::format("{}{}VALUE", name, Traits::value_separator);
     }
-    return std::format("{}{}VALUE", name, Traits::value_separator);
   }();
 
   const auto params = std::format("  {:3} {}", shortArg, longArg);
@@ -104,7 +105,7 @@ void show_usage(
           if constexpr (!(basic_option<TArg> || std::same_as<TArg, flag>)) {
             auto name = arg.mName;
             for (auto&& c: name) {
-              c = std::toupper(c);
+              c = static_cast<char>(std::toupper(c));
             }
             if (name.back() == 'S') {
               // Real de-pluralization requires a lookup database; we can't do

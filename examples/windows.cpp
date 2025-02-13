@@ -18,10 +18,10 @@ struct MyArgs {
 };
 
 int WINAPI wWinMain(
-  HINSTANCE hInstance,
-  HINSTANCE hPrevInstance,
-  LPWSTR lpCmdLine,
-  int nCmdShow) {
+  [[maybe_unused]] HINSTANCE hInstance,
+  [[maybe_unused]] HINSTANCE hPrevInstance,
+  [[maybe_unused]] LPWSTR lpCmdLine,
+  [[maybe_unused]] int nCmdShow) {
   magic_args::attach_to_parent_terminal();
   const auto args = magic_args::parse<MyArgs>(GetCommandLineW());
   if (!args.has_value()) {

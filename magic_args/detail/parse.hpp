@@ -68,8 +68,8 @@ template <
   class V = std::decay_t<typename T::value_type>>
   requires(!basic_option<T>)
 arg_parse_result<V> parse_option(
-  const T& arg,
-  std::span<std::string_view> args) {
+  [[maybe_unused]] const T& arg,
+  [[maybe_unused]] std::span<std::string_view> args) {
   return std::nullopt;
 }
 
@@ -166,8 +166,9 @@ arg_parse_result<V> parse_positional_argument(
       detail::println(
         errorStream, "{}: Missing required argument `{}`", arg0, argDef.mName);
       return std::unexpected {incomplete_parse_reason::MissingRequiredArgument};
+    } else {
+      return std::nullopt;
     }
-    return std::nullopt;
   }
   if constexpr (vector_like<V>) {
     V ret {};
@@ -187,10 +188,10 @@ arg_parse_result<V> parse_positional_argument(
 
 template <class Traits, basic_option T, class V = typename T::value_type>
 arg_parse_result<V> parse_positional_argument(
-  const T& argDef,
-  std::string_view arg0,
-  std::span<std::string_view> args,
-  FILE* errorStream) {
+  [[maybe_unused]] const T& argDef,
+  [[maybe_unused]] std::string_view arg0,
+  [[maybe_unused]] std::span<std::string_view> args,
+  [[maybe_unused]] FILE* errorStream) {
   return std::nullopt;
 }
 

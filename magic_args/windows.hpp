@@ -28,7 +28,7 @@ inline std::expected<void, incomplete_parse_reason> utf8_from_wide(
     CP_UTF8,
     WC_ERR_INVALID_CHARS,
     wide.data(),
-    wide.size(),
+    static_cast<INT>(wide.size()),
     nullptr,
     0,
     nullptr,
@@ -41,9 +41,9 @@ inline std::expected<void, incomplete_parse_reason> utf8_from_wide(
     CP_UTF8,
     WC_ERR_INVALID_CHARS,
     wide.data(),
-    wide.size(),
+    static_cast<INT>(wide.size()),
     buffer.data(),
-    buffer.size(),
+    static_cast<INT>(buffer.size()),
     nullptr,
     nullptr);
   return {};

@@ -15,6 +15,16 @@ if (MSVC)
     # Source is UTF-8
     "/utf-8"
   )
+  if (PROJECT_IS_TOP_LEVEL)
+    add_compile_options(
+      # C++ standard exception handling
+      "/EHsc"
+      # Enable most warnings
+      "/W4"
+      # Error on warning
+      "/WX"
+    )
+  endif ()
 endif ()
 
 add_subdirectory(magic_args)

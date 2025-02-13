@@ -38,7 +38,7 @@ constexpr std::ptrdiff_t last_mandatory_positional_argument() {
     using TArg
       = std::decay_t<decltype(get_argument_definition<T, I, Traits>())>;
     if constexpr (requires { TArg::is_required; }) {
-      if (recurse == -1 && TArg::is_required) {
+      if constexpr (recurse == -1 && TArg::is_required) {
         return I;
       }
     }
