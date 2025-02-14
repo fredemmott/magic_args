@@ -6,7 +6,7 @@ set(
   CACHE STRING "Vcpkg toolchain file"
 )
 
-project(magic_args VERSION 0.0.1 LANGUAGES CXX)
+project(magic_args VERSION 0.2.0 LANGUAGES CXX)
 
 if (MSVC)
   add_compile_options(
