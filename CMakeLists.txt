@@ -1,11 +1,5 @@
 cmake_minimum_required(VERSION 3.22..3.29)
 
-set(
-  CMAKE_TOOLCHAIN_FILE
-  "${CMAKE_SOURCE_DIR}/third-party/vcpkg/scripts/buildsystems/vcpkg.cmake"
-  CACHE STRING "Vcpkg toolchain file"
-)
-
 project(magic_args VERSION 0.2.0 LANGUAGES CXX)
 
 if (MSVC)

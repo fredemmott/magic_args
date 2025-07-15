@@ -10,14 +10,16 @@ jobs:
         include:
           - name: Windows - MSVC
             runs-on: windows-2022
+            cmake-args: --preset "Debug - default"
           - name: Windows - clang-cl
             runs-on: windows-2022
-            cmake-args: -T ClangCL
+            cmake-args: --preset "Debug - clang-cl"
           - name: Linux - GCC
             runs-on: ubuntu-24.04
-            cmake-args: -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++
+            cmake-args: --preset "Debug - default" -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++
           - name: MacOS - Apple Clang
             runs-on: macos-15
+            cmake-args: --preset "Debug - default"
     with:
       name: ${{matrix.name}}
       runs-on: ${{matrix.runs-on}}
