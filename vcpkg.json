@@ -1,4 +1,9 @@
 {
+  "name": "magic-args",
+  "version-string": "main",
+  "description": "Ease-of-use-first argument parsing for C++23",
+  "homepage": "https://github.com/fredemmott/magic_args",
+  "license": "MIT",
   "builtin-baseline": "b2cb0da531c2f1f740045bfe7c4dac59f0b2b69c",
   "dependencies": [
     "catch2"
