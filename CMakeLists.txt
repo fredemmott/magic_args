@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22..3.29)
 
-project(magic_args VERSION 0.2.0 LANGUAGES CXX)
+project(magic_args VERSION 0.2.1 LANGUAGES CXX)
 
 if (MSVC)
   add_compile_options(
