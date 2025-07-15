@@ -100,9 +100,6 @@ available [from the releases page](https://github.com/fredemmott/magic_args/rele
 If you want to use `using namespace`, use `using namespace magic_args::public_api`; this avoids pulling in the
 `magic_args::detail` namespace.
 
-As the project is very new, I wouldn't recommend contributing it to a package manager; however, if you wish to integrate
-it with one (for example, via vcpkg's overlay ports feature), `cmake --install` is supported.
-
 ## Features
 
 - `--foo` and `-f` for flags (bool options that default to false and can be set to false)
