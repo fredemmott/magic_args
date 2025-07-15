@@ -85,6 +85,7 @@ install(
 install(
   EXPORT
   exports
+  NAMESPACE magic_args::
   FILE magic_args-targets.cmake
   DESTINATION lib/cmake/magic_args
 )
