@@ -100,6 +100,8 @@ available [from the releases page](https://github.com/fredemmott/magic_args/rele
 If you want to use `using namespace`, use `using namespace magic_args::public_api`; this avoids pulling in the
 `magic_args::detail` namespace.
 
+This is installable via vcpkg, using [my vcpkg registry](https://github.com/fredemmott/vcpkg-registry) - see [Microsoft's instructions](https://learn.microsoft.com/en-us/vcpkg/consume/git-registries) on using these.
+
 ## Features
 
 - `--foo` and `-f` for flags (bool options that default to false and can be set to false)
