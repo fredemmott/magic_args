@@ -37,7 +37,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ../source ${{inputs.cmake-args}}
+          cmake ../source --preset "Debug - default" ${{inputs.cmake-args}}
       - name: Build
         working-directory: build
         shell: pwsh
