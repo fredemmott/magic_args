@@ -1,6 +1,6 @@
-add_library(
-  magic_args
-  INTERFACE
+add_library(magic_args INTERFACE)
+set(
+  HEADER_FILES
   # DO NOT SORT THESE
   #
   # These are in the order required for the single-header version
@@ -22,10 +22,18 @@ add_library(
   magic_args.hpp
   windows.hpp
 )
+target_sources(
+  magic_args
+  INTERFACE
+  FILE_SET HEADERS
+  TYPE HEADERS
+  FILES ${HEADER_FILES}
+)
 target_include_directories(
   magic_args
   INTERFACE
-  "${CMAKE_CURRENT_LIST_DIR}/.."
+  "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
+  "$<INSTALL_INTERFACE:include>"
 )
 target_compile_features(
   magic_args
@@ -33,7 +41,6 @@ target_compile_features(
   cxx_std_23
 )
 
-get_target_property(HEADER_FILES magic_args SOURCES)
 set(SINGLE_HEADER_SOURCES "${HEADER_FILES}")
 list(PREPEND SINGLE_HEADER_SOURCES detail/single_header_prefix.hpp)
 set(SINGLE_HEADER_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/single-header/magic_args")
@@ -69,10 +76,23 @@ target_compile_features(
   cxx_std_23
 )
 
-foreach (HEADER IN LISTS HEADER_FILES)
-  cmake_path(GET HEADER PARENT_PATH DIRECTORY)
-  install(FILES "${HEADER}" DESTINATION "include/magic_args/${DIRECTORY}")
-endforeach ()
+install(
+  TARGETS magic_args
+  EXPORT exports
+  FILE_SET HEADERS
+  DESTINATION include/magic_args
+)
+install(
+  EXPORT
+  exports
+  FILE magic_args-targets.cmake
+  DESTINATION lib/cmake/magic_args
+)
+install(
+  FILES
+  "${CMAKE_CURRENT_SOURCE_DIR}/magic_args-config.cmake"
+  DESTINATION lib/cmake/magic_args
+)
 
 install(
   FILES "${SINGLE_HEADER_OUTPUT_FILE}"
@@ -80,3 +100,6 @@ install(
   COMPONENT SingleHeader
   EXCLUDE_FROM_ALL
 )
+
+# For projects using add_subdirectory()
+add_library(magic_args::magic_args ALIAS magic_args)
