@@ -7,6 +7,8 @@ endif ()
 
 project(magic_args VERSION 0.2.1 LANGUAGES CXX)
 
+option(CONFORMANT_MSVC "Under MSVC, enable various /Zc flags" OFF)
+
 if (MSVC)
   add_compile_options(
     # Include content and marker in error messages
@@ -34,6 +36,16 @@ if (MSVC)
       )
     endif ()
   endif ()
+  if (CONFORMANT_MSVC)
+    add_compile_options(
+      "/permissive-"
+      "/Zc:forScope"
+      "/Zc:__cplusplus"
+      "/Zc:lambda"
+    )
+  endif ()
+elseif (CONFORMANT_MSVC)
+  message(FATAL_ERROR "CONFORMANT_MSVC specified, but not using MSVC")
 endif ()
 
 add_subdirectory(magic_args)

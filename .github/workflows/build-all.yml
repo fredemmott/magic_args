@@ -10,6 +10,9 @@ jobs:
         include:
           - name: Windows - MSVC
             runs-on: windows-2022
+          - name: Windows - Conformant MSVC
+            runs-on: windows-2022
+            cmake-args: -DCONFORMANT_MSVC=ON
           - name: Windows - clang-cl
             runs-on: windows-2022
           - name: Linux - GCC
