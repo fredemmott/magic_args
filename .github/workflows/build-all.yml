@@ -12,9 +12,10 @@ jobs:
             runs-on: windows-2022
           - name: Windows - Conformant MSVC
             runs-on: windows-2022
-            cmake-args: -DCONFORMANT_MSVC=ON
+            cmake-preset: Debug - conformant MSVC
           - name: Windows - clang-cl
             runs-on: windows-2022
+            cmake-preset: Debug - clang-cl
           - name: Linux - GCC
             runs-on: ubuntu-24.04
             cmake-args: -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++

@@ -7,6 +7,10 @@ on:
       runs-on:
         required: true
         type: string
+      cmake-preset:
+        required: false
+        type: string
+        default: "Debug - default"
       cmake-args:
         required: false
         type: string
@@ -37,7 +41,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ../source --preset "Debug - default" ${{inputs.cmake-args}}
+          cmake ../source --preset "${{inputs.cmake-preset}}" ${{inputs.cmake-args}}
       - name: Build
         working-directory: build
         shell: pwsh
