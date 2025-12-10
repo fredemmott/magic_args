@@ -90,6 +90,11 @@ The *magic_args* library has no other dependencies; CMake, Catch2, and vcpkg are
 
 Add the `magic_args` directory to your project and include path, using your preferred method. Options include:
 
+- **Recommended**: [vcpkg] (`magic-args`)
+    - this port is available in the main vcpkg registry
+    - newer or prerelease versions may be available
+      from [my vcpkg registry](https://github.com/fredemmott/vcpkg-registry) -
+      see [Microsoft's instructions](https://learn.microsoft.com/en-us/vcpkg/consume/git-registries) on using these.
 - a git submodule
 - CMake `FetchContent` and `ExternalProject_Add`
 - adding the files manually
@@ -99,8 +104,6 @@ available [from the releases page](https://github.com/fredemmott/magic_args/rele
 
 If you want to use `using namespace`, use `using namespace magic_args::public_api`; this avoids pulling in the
 `magic_args::detail` namespace.
-
-This is installable via vcpkg, using [my vcpkg registry](https://github.com/fredemmott/vcpkg-registry) - see [Microsoft's instructions](https://learn.microsoft.com/en-us/vcpkg/consume/git-registries) on using these.
 
 ## Features
 
@@ -278,3 +281,5 @@ Currently, only up to 16 struct members are supported; this limit can be increas
 ## License
 
 *magic_args* is [MIT-licensed](LICENSE).
+
+[vcpkg]: https://vcpkg.io
