@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.22..3.29)
 
+if (CMAKE_TOOLCHAIN_FILE)
+  # Suppress bogus unused variable warning
+  message(STATUS "Using toolchain: ${CMAKE_TOOLCHAIN_FILE}")
+endif ()
+
 project(magic_args VERSION 0.2.1 LANGUAGES CXX)
 
 if (MSVC)
