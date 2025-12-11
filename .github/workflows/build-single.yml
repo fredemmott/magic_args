@@ -32,6 +32,10 @@ jobs:
           path: source
           fetch-depth: 0
           submodules: true
+      - uses: TheMrMilchmann/setup-msvc-dev@79dac248aac9d0059f86eae9d8b5bfab4e95e97c # v4.0
+        if: startsWith(inputs.runs-on, 'windows')
+        with:
+          arch: x64
       - uses: maxim-lobanov/setup-xcode@v1
         if: startsWith(inputs.runs-on, 'macos')
         with:

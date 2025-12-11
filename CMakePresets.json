@@ -8,6 +8,7 @@
     {
       "name": "default",
       "hidden": true,
+      "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "third-party/vcpkg/scripts/buildsystems/vcpkg.cmake"
       }
