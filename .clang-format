@@ -18,9 +18,15 @@ ConstructorInitializerIndentWidth: '2'
 ContinuationIndentWidth: '2'
 DeriveLineEnding: false
 DerivePointerAlignment: false
-IndentRequires: true
-IndentWidth: '2'
-MaxEmptyLinesToKeep: '1'
+SortIncludes: true
+IncludeBlocks: Preserve
+IncludeCategories:
+  - Regex: '^<magic_args/magic_args\.hpp>'
+    Priority: 1
+  - Regex: '^<magic_args/'
+    Priority: 2
+IndentWidth: 2
+MaxEmptyLinesToKeep: 1
 PointerAlignment: Left
 ReflowComments: true
 SpaceBeforeCpp11BracedList: 'true'
@@ -32,3 +38,4 @@ TabWidth: '2'
 LineEnding: 'LF'
 UseCRLF: false
 UseTab: Never
+

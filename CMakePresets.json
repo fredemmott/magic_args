@@ -30,6 +30,14 @@
       }
     },
     {
+      "name": "Debug - minimal",
+      "inherits": "default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VCPKG_MANIFEST_NO_DEFAULT_FEATURES": "ON"
+      }
+    },
+    {
       "name": "Debug - conformant MSVC",
       "inherits": "default",
       "cacheVariables": {

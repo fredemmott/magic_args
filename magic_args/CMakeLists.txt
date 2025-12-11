@@ -21,9 +21,19 @@ set(
   dump.hpp
   parse.hpp
   verbatim_names.hpp
+  enum.hpp
   magic_args.hpp
   windows.hpp
 )
+
+find_package(magic_enum CONFIG)
+if (magic_enum_FOUND)
+  message(STATUS "Found magic_enum, adding enum support")
+  target_link_libraries(magic_args INTERFACE magic_enum::magic_enum)
+else () # magic_enum_FOUND
+  message(STATUS "Did not find magic_enum library, skipping enum support")
+endif ()
+
 target_sources(
   magic_args
   INTERFACE

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <magic_args/magic_args.hpp>
+#include <magic_args/enum.hpp>
 
 using namespace magic_args::public_api;
 
@@ -43,6 +44,15 @@ struct MyArgs {
   };
   optional_positional_argument<std::string> mOptionalPositional {};
   optional_positional_argument<std::vector<std::string>> mOptionalMulti {};
+
+#ifdef MAGIC_ARGS_ENUM_HPP
+  enum class MyEnum {
+    Foo,
+    Bar,
+  };
+
+  MyEnum mEnum;
+#endif
 };
 
 int main(int argc, char** argv) {

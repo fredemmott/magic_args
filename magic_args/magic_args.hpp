@@ -12,4 +12,8 @@
 #include "windows.hpp"
 #endif
 
+#ifdef MAGIC_ARGS_ENABLE_ENUM
+#include "enum.hpp"
+#endif
+
 #endif
