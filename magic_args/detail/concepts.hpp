@@ -21,7 +21,7 @@ concept basic_option = requires(T v) {
   { v.mHelp } -> std::convertible_to<std::string>;
   { v.mShortName } -> std::convertible_to<std::string>;
 };
-}// namespace magic_args::inline api
+}// namespace magic_args::inline public_api
 
 namespace magic_args::detail {
 template <class T>

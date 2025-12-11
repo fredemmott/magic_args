@@ -3,53 +3,13 @@
 #pragma once
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
-#include "detail/concepts.hpp"
 #include "detail/print.hpp"
 #include "detail/reflection.hpp"
+#include "detail/to_formattable.hpp"
 #endif
 
 #include <ranges>
 #include <vector>
-
-namespace magic_args::detail {
-
-template <std::formattable<char> T>
-auto formattable_argument_value(const T& arg) {
-  return arg;
-}
-
-template <std::formattable<char> T>
-  requires(!std::formattable<std::vector<T>, char>)
-std::string formattable_argument_value(const std::vector<T>& arg) {
-  std::string result;
-  for (auto&& v: arg) {
-    if (result.empty()) {
-      result = std::format("`{}`", v);
-    } else {
-      result = std::format("{}, `{}`", result, v);
-    }
-  }
-  return std::format("[{}]", result);
-}
-
-template <class T>
-std::string formattable_argument_value(const std::optional<T>& arg)
-  requires requires { formattable_argument_value(arg.value()); }
-{
-  if (arg.has_value()) {
-    return std::format("{}", formattable_argument_value(arg.value()));
-  }
-  return "[nullopt]";
-}
-
-template <basic_argument T>
-auto formattable_argument_value(const T& arg)
-  requires requires { formattable_argument_value(arg.mValue); }
-{
-  return formattable_argument_value(arg.mValue);
-}
-
-}// namespace magic_args::detail
 
 namespace magic_args::inline public_api {
 
@@ -61,10 +21,7 @@ void dump(const T& args, FILE* output = stdout) {
   []<std::size_t... I>(
     const auto& args, FILE* output, std::index_sequence<I...>) {
     (detail::println(
-       output,
-       "{:29} `{}`",
-       member_name<T, I>,
-       formattable_argument_value(get<I>(args))),
+       output, "{:29} `{}`", member_name<T, I>, to_formattable(get<I>(args))),
      ...);
   }(tuple,
     output,

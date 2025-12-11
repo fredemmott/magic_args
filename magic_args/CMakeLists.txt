@@ -15,7 +15,9 @@ set(
   program_info.hpp
   detail/usage.hpp
   incomplete_parse_reason.hpp
+  detail/from_string.hpp
   detail/parse.hpp
+  detail/to_formattable.hpp
   dump.hpp
   parse.hpp
   verbatim_names.hpp

@@ -6,6 +6,7 @@
 #include <magic_args/argument_definitions.hpp>
 #include <magic_args/incomplete_parse_reason.hpp>
 
+#include "from_string.hpp"
 #include "print.hpp"
 #endif
 
@@ -13,7 +14,6 @@
 #include <optional>
 #include <span>
 #include <sstream>
-#include <string>
 
 #ifndef __cpp_lib_expected
 static_assert(
@@ -73,38 +73,6 @@ arg_parse_result<V> parse_option(
   return std::nullopt;
 }
 
-template <class T>
-void from_string_arg_outer(T& out, std::string_view arg)
-  requires requires { from_string_argument(out, arg); }
-{
-  from_string_argument(out, arg);
-}
-
-template <class T>
-void from_string_arg_outer(T& out, std::string_view arg)
-  requires(!std::assignable_from<T&, std::string>)
-  && requires(std::stringstream ss, T v) { ss >> v; }
-{
-  std::stringstream ss {std::string {arg}};
-  ss >> out;
-}
-
-template <class T>
-  requires std::assignable_from<T&, std::string>
-void from_string_arg_outer(T& out, std::string_view arg) {
-  out = std::string {arg};
-}
-
-template <class T>
-  requires requires(T v, std::string_view arg) {
-    from_string_arg_outer(v, arg);
-  }
-void from_string_arg_outer(std::optional<T>& out, std::string_view arg) {
-  T value {};
-  from_string_arg_outer(value, arg);
-  out = std::move(value);
-}
-
 template <
   class Traits,
   basic_option T,
@@ -138,7 +106,7 @@ arg_parse_result<V> parse_option(
   }
 
   V ret {};
-  from_string_arg_outer(ret, value);
+  from_string(ret, value);
   return {arg_parse_match {ret, consumed}};
 }
 
@@ -175,13 +143,13 @@ arg_parse_result<V> parse_positional_argument(
     ret.reserve(args.size());
     for (auto&& arg: args) {
       typename V::value_type v {};
-      from_string_arg_outer(v, arg);
+      from_string(v, arg);
       ret.push_back(std::move(v));
     }
     return {arg_parse_match {ret, args.size()}};
   } else {
     V ret {};
-    from_string_arg_outer(ret, args.front());
+    from_string(ret, args.front());
     return arg_parse_match {std::move(ret), 1};
   }
 }
