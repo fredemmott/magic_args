@@ -24,31 +24,106 @@ static_assert(
 
 namespace magic_args::detail {
 
-enum class option_match_kind {
-  NameAndValue,
-  NameOnly,
+[[nodiscard]] inline std::string_view consume(
+  std::string_view& sv,
+  const std::size_t size) {
+  if (size > sv.size()) [[unlikely]] {
+    throw std::out_of_range {std::format(
+      "Asked to consume {} bytes, but only {} available", size, sv.size())};
+  }
+  const auto begin = sv.begin();
+  const auto end = sv.begin() + size;
+  sv.remove_prefix(size);
+  return {begin, end};
+};
+
+struct option_match {
+  // MUST be entirely within `std::string_view arg`
+  std::string_view mName;
+  // unless `nullopt`, MUST be entirely within `std::string_view arg`
+  std::optional<std::string_view> mValue;
+
+  constexpr bool has_value() const noexcept {
+    return mValue.has_value();
+  }
 };
 
 template <class Traits, basic_option T>
 [[nodiscard]]
-std::optional<option_match_kind> option_matches(
+std::optional<option_match> option_matches_long(
+  const T& argDef,
+  const std::string_view arg) {
+  constexpr std::string_view Prefix {Traits::long_arg_prefix};
+  constexpr std::string_view Separator {Traits::value_separator};
+
+  if (!arg.starts_with(Prefix)) {
+    return std::nullopt;
+  }
+  std::string_view tail {arg.begin() + Prefix.size(), arg.end()};
+
+  if (!tail.starts_with(argDef.mName)) {
+    return std::nullopt;
+  }
+
+  option_match ret {
+    .mName = consume(tail, argDef.mName.size()),
+    .mValue = {},
+  };
+
+  if (tail.empty()) {
+    // `--foo`
+    return ret;
+  }
+
+  if (!tail.starts_with(Separator)) {
+    // `--foobar` when we want `--foo=`
+    return std::nullopt;
+  }
+
+  // `--foo=` or `--foo=bar`
+  tail.remove_prefix(Separator.size());
+  ret.mValue = tail;
+
+  return ret;
+}
+
+template <class Traits, basic_option T>
+[[nodiscard]]
+std::optional<option_match> option_matches_short(
+  const T& argDef,
+  const std::string_view arg) {
+  if (argDef.mShortName.empty()) {
+    return std::nullopt;
+  }
+
+  constexpr std::string_view Prefix = Traits::short_arg_prefix;
+  if (!arg.starts_with(Prefix)) {
+    return std::nullopt;
+  }
+
+  const std::string_view tail {arg.begin() + Prefix.size(), arg.end()};
+  if (tail != argDef.mShortName) {
+    return std::nullopt;
+  }
+
+  return option_match {.mName = tail, .mValue = {}};
+}
+
+template <class Traits, basic_option T>
+[[nodiscard]]
+std::optional<option_match> option_matches(
   const T& argDef,
   std::string_view arg) {
-  const auto name = std::format("{}{}", Traits::long_arg_prefix, argDef.mName);
-  if (arg == name) {
-    return option_match_kind::NameOnly;
+  if (const auto ret = option_matches_long<Traits>(argDef, arg); ret) {
+    return ret;
   }
-  if (arg.starts_with(name + Traits::value_separator)) {
-    return option_match_kind::NameAndValue;
-  }
+
   if constexpr (requires { Traits::short_arg_prefix; }) {
-    if (
-      (!argDef.mShortName.empty())
-      && arg
-        == std::format("{}{}", Traits::short_arg_prefix, argDef.mShortName)) {
-      return option_match_kind::NameOnly;
+    if (const auto ret = option_matches_short<Traits>(argDef, arg); ret) {
+      return ret;
     }
   }
+
   return std::nullopt;
 }
 
@@ -80,7 +155,6 @@ template <
 arg_parse_result<V> parse_option(
   const T& argDef,
   std::span<std::string_view> args) {
-  using enum option_match_kind;
   const auto match = option_matches<Traits>(argDef, args.front());
   if (!match) {
     return std::nullopt;
@@ -88,20 +162,14 @@ arg_parse_result<V> parse_option(
 
   std::size_t consumed = 1;
   std::string_view value;
-  switch (match.value()) {
-    case NameOnly: {
-      if (args.size() == 1) {
-        return std::unexpected {missing_argument_value {}};
-      }
-      value = args[1];
-      ++consumed;
-      break;
+  if (match->has_value()) {
+    value = *match->mValue;
+  } else {
+    if (args.size() == 1) {
+      return std::unexpected {missing_argument_value {}};
     }
-    case NameAndValue: {
-      const auto it = args.front().find(Traits::value_separator);
-      value = args.front().substr(it + std::size(Traits::value_separator) - 1);
-      break;
-    }
+    value = args[1];
+    ++consumed;
   }
 
   V ret {};
