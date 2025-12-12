@@ -1,8 +1,8 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
+#include <magic_args/magic_args.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
-#include <magic_args/magic_args.hpp>
 #include <string>
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
@@ -28,7 +28,7 @@ TEST_CASE("help, GNU-style") {
   Output out, err;
   const auto args = magic_args::parse<MyArgs>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::HelpRequested);
+  CHECK(holds_alternative<magic_args::help_requested>(args.error()));
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
 Usage: test_app [OPTIONS...]
@@ -50,7 +50,7 @@ TEST_CASE("help, powershell-style") {
     = magic_args::parse<MyArgs, magic_args::powershell_style_parsing_traits>(
       argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::HelpRequested);
+  CHECK(holds_alternative<magic_args::help_requested>(args.error()));
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
 Usage: test_app [OPTIONS...]

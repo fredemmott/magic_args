@@ -13,7 +13,9 @@ int main(int argc, char** argv) {
   const std::expected<MyArgs, magic_args::incomplete_parse_reason> args
     = magic_args::parse<MyArgs>(argc, argv);
   if (!args.has_value()) {
-    if (args.error() == magic_args::HelpRequested) {
+    if (const auto& e = args.error();
+        holds_alternative<magic_args::help_requested>(e)
+        || holds_alternative<magic_args::version_requested>(e)) {
       return EXIT_SUCCESS;
     }
     return EXIT_FAILURE;

@@ -34,7 +34,7 @@ inline std::expected<void, incomplete_parse_reason> utf8_from_wide(
     nullptr,
     nullptr);
   if (byteCount <= 0) {
-    return std::unexpected {incomplete_parse_reason::InvalidEncoding};
+    return std::unexpected {invalid_encoding {}};
   }
   buffer.resize(byteCount);
   WideCharToMultiByte(
@@ -94,7 +94,7 @@ std::expected<T, incomplete_parse_reason> parse(
   const auto charCount = MultiByteToWideChar(
     CP_ACP, MB_ERR_INVALID_CHARS, commandLine, -1, nullptr, 0);
   if (charCount <= 0) {
-    return std::unexpected {incomplete_parse_reason::InvalidEncoding};
+    return std::unexpected {invalid_encoding {}};
   }
   std::wstring buffer;
   buffer.resize(charCount);

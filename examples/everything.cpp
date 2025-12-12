@@ -55,6 +55,11 @@ struct MyArgs {
 #endif
 };
 
+template <class... Ts>
+struct overload : Ts... {
+  using Ts::operator()...;
+};
+
 int main(int argc, char** argv) {
   const magic_args::program_info programInfo {
     .mDescription = "This program shows all the features.",
@@ -68,13 +73,13 @@ int main(int argc, char** argv) {
   };
   const auto args = magic_args::parse<MyArgs>(argc, argv, programInfo);
   if (!args.has_value()) {
-    switch (args.error()) {
-      case HelpRequested:
-      case VersionRequested:
-        return EXIT_SUCCESS;
-      default:
-        return EXIT_FAILURE;
-    }
+    return std::visit(
+      overload {
+        [](magic_args::help_requested) { return EXIT_SUCCESS; },
+        [](magic_args::version_requested) { return EXIT_SUCCESS; },
+        [](auto) { return EXIT_FAILURE; },
+      },
+      args.error());
   }
   magic_args::dump(*args);
   return EXIT_SUCCESS;

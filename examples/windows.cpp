@@ -25,7 +25,9 @@ int WINAPI wWinMain(
   magic_args::attach_to_parent_terminal();
   const auto args = magic_args::parse<MyArgs>(GetCommandLineW());
   if (!args.has_value()) {
-    if (args.error() == magic_args::HelpRequested) {
+    if (const auto& e = args.error();
+        holds_alternative<magic_args::help_requested>(e)
+        || holds_alternative<magic_args::version_requested>(e)) {
       return EXIT_SUCCESS;
     }
     return EXIT_FAILURE;

@@ -49,11 +49,11 @@ std::expected<T, incomplete_parse_reason> parse(
     }
     if (arg == longHelp || (arg == shortHelp && !shortHelp.empty())) {
       show_usage<T, Traits>(outputStream, args.front(), help);
-      return std::unexpected {incomplete_parse_reason::HelpRequested};
+      return std::unexpected {help_requested {}};
     }
     if (arg == versionArg && !help.mVersion.empty()) {
       detail::println(outputStream, "{}", help.mVersion);
-      return std::unexpected {incomplete_parse_reason::VersionRequested};
+      return std::unexpected {version_requested {}};
     }
   }
 
@@ -109,7 +109,7 @@ std::expected<T, incomplete_parse_reason> parse(
     if (arg.starts_with(Traits::long_arg_prefix)) {
       detail::print(errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
       show_usage<T, Traits>(errorStream, args.front(), help);
-      return std::unexpected {incomplete_parse_reason::InvalidArgument};
+      return std::unexpected {invalid_argument {}};
     }
     if constexpr (requires { Traits::short_arg_prefix; }) {
       // TODO: handle -abc where `a`, `b`, and `c` are all flags
@@ -124,7 +124,7 @@ std::expected<T, incomplete_parse_reason> parse(
         detail::print(
           errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
         show_usage<T, Traits>(errorStream, args.front(), help);
-        return std::unexpected {incomplete_parse_reason::InvalidArgument};
+        return std::unexpected {invalid_argument {}};
       }
     }
 
@@ -169,7 +169,7 @@ std::expected<T, incomplete_parse_reason> parse(
       arg0,
       positionalArgs.front());
     show_usage<T, Traits>(errorStream, args.front(), help);
-    return std::unexpected {incomplete_parse_reason::InvalidArgument};
+    return std::unexpected {invalid_argument {}};
   }
 
   return ret;

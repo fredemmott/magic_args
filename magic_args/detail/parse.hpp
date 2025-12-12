@@ -80,7 +80,6 @@ template <
 arg_parse_result<V> parse_option(
   const T& argDef,
   std::span<std::string_view> args) {
-  using enum incomplete_parse_reason;
   using enum option_match_kind;
   const auto match = option_matches<Traits>(argDef, args.front());
   if (!match) {
@@ -92,7 +91,7 @@ arg_parse_result<V> parse_option(
   switch (match.value()) {
     case NameOnly: {
       if (args.size() == 1) {
-        return std::unexpected {MissingArgumentValue};
+        return std::unexpected {missing_argument_value {}};
       }
       value = args[1];
       ++consumed;
@@ -133,7 +132,7 @@ arg_parse_result<V> parse_positional_argument(
     if constexpr (T::is_required) {
       detail::println(
         errorStream, "{}: Missing required argument `{}`", arg0, argDef.mName);
-      return std::unexpected {incomplete_parse_reason::MissingRequiredArgument};
+      return std::unexpected {missing_required_argument {}};
     } else {
       return std::nullopt;
     }

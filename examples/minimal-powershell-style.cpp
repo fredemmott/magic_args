@@ -14,7 +14,9 @@ int main(int argc, char** argv) {
     = magic_args::parse<MyArgs, magic_args::powershell_style_parsing_traits>(
       argc, argv);
   if (!args.has_value()) {
-    if (args.error() == magic_args::HelpRequested) {
+    if (const auto& e = args.error();
+        holds_alternative<magic_args::help_requested>(e)
+        || holds_alternative<magic_args::version_requested>(e)) {
       return EXIT_SUCCESS;
     }
     return EXIT_FAILURE;

@@ -1,10 +1,10 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
+#include <magic_args/magic_args.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
-#include <magic_args/magic_args.hpp>
 #include <ranges>
 
 #include "output.hpp"
@@ -137,7 +137,7 @@ TEMPLATE_TEST_CASE(
   Output out, err;
   const auto args = magic_args::parse<TestType>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::InvalidArgument);
+  CHECK(holds_alternative<magic_args::invalid_argument>(args.error()));
   CHECK(out.empty());
   CHECK_THAT(err.get(), Catch::Matchers::StartsWith(&R"EOF(
 my_test: Invalid positional argument: --not-a-valid-arg
@@ -152,7 +152,7 @@ TEST_CASE("empty struct, --help") {
   Output out, err;
   const auto args = magic_args::parse<EmptyStruct>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
@@ -176,7 +176,7 @@ TEST_CASE("empty struct, --help with description") {
     out,
     err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
@@ -204,7 +204,7 @@ TEST_CASE("empty struct, --help with examples") {
     out,
     err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
@@ -237,7 +237,7 @@ TEST_CASE("empty struct, --help with description and examples") {
     out,
     err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
@@ -267,7 +267,7 @@ TEST_CASE("empty struct, --help with version") {
     out,
     err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
@@ -292,7 +292,7 @@ TEST_CASE("empty struct, --version") {
     out,
     err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::VersionRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
   CHECK(out.get() == "MyApp v1.2.3\n");
@@ -309,7 +309,7 @@ TEMPLATE_TEST_CASE(
   Output out, err;
   const auto args = magic_args::parse<TestType>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::InvalidArgument);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
   CHECK(out.empty());
   CHECK_THAT(
     err.get(),
@@ -365,7 +365,7 @@ TEST_CASE("flags only, --help") {
   Output out, err;
   const auto args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
@@ -387,7 +387,7 @@ TEST_CASE("options only, --help") {
   Output out, err;
   const auto args = magic_args::parse<OptionsOnly>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
 Usage: my_test [OPTIONS...]
@@ -453,7 +453,7 @@ TEST_CASE("parameters, --help") {
   const auto args
     = magic_args::parse<FlagsAndPositionalArguments>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
@@ -510,7 +510,7 @@ TEST_CASE("parameters, extra") {
   const auto args
     = magic_args::parse<FlagsAndPositionalArguments>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::InvalidArgument);
+  CHECK(holds_alternative<magic_args::invalid_argument>(args.error()));
   CHECK(out.empty());
   CHECK(err.get() == &R"EOF(
 my_test: Invalid positional argument: bogus
@@ -552,7 +552,7 @@ TEST_CASE("mandatory named parameter, --help") {
   const auto args
     = magic_args::parse<MandatoryPositionalArgument>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
 Usage: my_test [OPTIONS...] [--] INPUT [OUTPUT]
@@ -579,9 +579,7 @@ TEST_CASE("missing mandatory named parameter") {
   const auto args
     = magic_args::parse<MandatoryPositionalArgument>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(
-    args.error()
-    == magic_args::incomplete_parse_reason::MissingRequiredArgument);
+  CHECK(holds_alternative<magic_args::missing_required_argument>(args.error()));
   CHECK(out.empty());
   CHECK(err.get() == &R"EOF(
 my_test: Missing required argument `INPUT`
@@ -608,7 +606,7 @@ TEST_CASE("multi-value parameter - --help") {
   const auto args
     = magic_args::parse<MultiValuePositionalArgument>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
   CHECK(err.empty());
   CHECK(out.get() == &R"EOF(
 Usage: my_test [OPTIONS...] [--] [OUTPUT] [INPUT [INPUT [...]]]
@@ -667,9 +665,7 @@ TEST_CASE("mandatory multi-value named argument, missing all") {
   const auto args = magic_args::parse<MandatoryMultiValuePositionalArgument>(
     argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(
-    args.error()
-    == magic_args::incomplete_parse_reason::MissingRequiredArgument);
+  CHECK(holds_alternative<magic_args::missing_required_argument>(args.error()));
   CHECK(out.empty());
   CHECK(err.get() == &R"EOF(
 my_test: Missing required argument `OUTPUT`
@@ -696,9 +692,7 @@ TEST_CASE("mandatory multi-value named argument, missing first") {
   const auto args = magic_args::parse<MandatoryMultiValuePositionalArgument>(
     argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(
-    args.error()
-    == magic_args::incomplete_parse_reason::MissingRequiredArgument);
+  CHECK(holds_alternative<magic_args::missing_required_argument>(args.error()));
   CHECK(out.empty());
   CHECK(err.get() == &R"EOF(
 my_test: Missing required argument `INPUTS`
@@ -839,7 +833,7 @@ Options:
   -?, --help                   show this message
 )EOF"[1]);
   REQUIRE(!args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 }
 
 TEST_CASE("PowerShell-style normalization") {
@@ -867,7 +861,7 @@ Options:
   -?, -Help                    show this message
 )EOF"[1]);
   REQUIRE(!args.has_value());
-  CHECK(args.error() == magic_args::incomplete_parse_reason::HelpRequested);
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 }
 
 TEST_CASE("GNU-style verbatim names") {
