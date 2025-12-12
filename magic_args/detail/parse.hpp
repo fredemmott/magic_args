@@ -221,7 +221,9 @@ arg_parse_result<V> parse_positional_argument(
     if constexpr (T::is_required) {
       detail::println(
         errorStream, "{}: Missing required argument `{}`", arg0, argDef.mName);
-      return std::unexpected {missing_required_argument {}};
+      return std::unexpected {
+        missing_required_argument {argDef.mName},
+      };
     } else {
       return std::nullopt;
     }

@@ -22,6 +22,14 @@ struct version_requested {
 struct missing_required_argument {
   static constexpr bool is_error = true;
   static constexpr bool user_requested = false;
+
+  struct source_t {
+    std::string mName;
+    constexpr bool empty() const noexcept {
+      return mName.empty();
+    }
+  };
+  source_t mSource;
 };
 struct missing_argument_value {
   static constexpr bool is_error = true;
