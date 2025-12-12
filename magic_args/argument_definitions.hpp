@@ -6,46 +6,8 @@
 #include "detail/concepts.hpp"
 #endif
 
-#include <type_traits>
 #include <string>
-
-// As of 2025-12-11, this is a workaround for:
-// - we currently target Ubuntu 24.04 which includes G++13, which
-//   doesn't support explicit member parameters
-// - using a CRTP helper parent class breaks designated initializers
-//   under VS 2022
-#define MAGIC_ARGS_DETAIL_DEFINE_VALUE_GETTERS() \
-  [[nodiscard]] constexpr auto& value() & noexcept(!is_std_optional) { \
-    if constexpr (is_std_optional) { \
-      return mValue.value(); \
-    } else { \
-      return mValue; \
-    } \
-  } \
-\
-  [[nodiscard]] constexpr const auto& value() \
-    const& noexcept(!is_std_optional) { \
-    if constexpr (is_std_optional) { \
-      return mValue.value(); \
-    } else { \
-      return mValue; \
-    } \
-  } \
-\
-  [[nodiscard]] constexpr auto&& value() && noexcept(!is_std_optional) { \
-    if constexpr (is_std_optional) { \
-      return std::move(mValue).value(); \
-    } else { \
-      return std::move(mValue); \
-    } \
-  } \
-\
-  [[nodiscard]] \
-  constexpr bool has_value() const noexcept \
-    requires is_std_optional \
-  { \
-    return mValue.has_value(); \
-  }
+#include <type_traits>
 
 namespace magic_args::inline public_api {
 
@@ -58,7 +20,20 @@ struct optional_positional_argument {
   std::string mName;
   std::string mHelp;
 
-  MAGIC_ARGS_DETAIL_DEFINE_VALUE_GETTERS();
+  [[nodiscard]] constexpr decltype(auto) value(this auto&& self) noexcept(
+    !is_std_optional) {
+    if constexpr (is_std_optional) {
+      return self.mValue.value();
+    } else {
+      return self.mValue;
+    }
+  }
+
+  [[nodiscard]] constexpr bool has_value() const noexcept
+    requires is_std_optional
+  {
+    return mValue.has_value();
+  };
 
   optional_positional_argument& operator=(T&& value) {
     mValue = std::move(value);
@@ -102,7 +77,19 @@ struct mandatory_positional_argument {
   std::string mName;
   std::string mHelp;
 
-  MAGIC_ARGS_DETAIL_DEFINE_VALUE_GETTERS();
+  [[nodiscard]] constexpr decltype(auto) value(this auto&& self) noexcept(
+    !is_std_optional) {
+    if constexpr (is_std_optional) {
+      return self.mValue.value();
+    } else {
+      return self.mValue;
+    }
+  }
+  [[nodiscard]] constexpr bool has_value() const noexcept
+    requires is_std_optional
+  {
+    return mValue.has_value();
+  };
 
   mandatory_positional_argument& operator=(T&& value) {
     mValue = std::move(value);
@@ -128,7 +115,19 @@ struct option final {
   std::string mHelp;
   std::string mShortName;
 
-  MAGIC_ARGS_DETAIL_DEFINE_VALUE_GETTERS();
+  [[nodiscard]] constexpr decltype(auto) value(this auto&& self) noexcept(
+    !is_std_optional) {
+    if constexpr (is_std_optional) {
+      return self.mValue.value();
+    } else {
+      return self.mValue;
+    }
+  }
+  [[nodiscard]] constexpr bool has_value() const noexcept
+    requires is_std_optional
+  {
+    return mValue.has_value();
+  };
 
   option& operator=(T&& value) {
     mValue = std::move(value);

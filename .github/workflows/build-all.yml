@@ -16,9 +16,9 @@ jobs:
           - name: Windows - clang-cl
             runs-on: windows-2022
             cmake-preset: Debug - clang-cl
-          - name: Linux - GCC
+          - name: Linux - GCC 14
             runs-on: ubuntu-24.04
-            cmake-args: -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++
+            cmake-args: -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
           - name: MacOS - Apple Clang
             runs-on: macos-15
     with:
