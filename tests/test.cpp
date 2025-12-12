@@ -292,7 +292,7 @@ TEST_CASE("empty struct, --version") {
     out,
     err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
+  CHECK(std::holds_alternative<magic_args::version_requested>(args.error()));
 
   CHECK(err.empty());
   CHECK(out.get() == "MyApp v1.2.3\n");
@@ -309,7 +309,7 @@ TEMPLATE_TEST_CASE(
   Output out, err;
   const auto args = magic_args::parse<TestType>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
+  CHECK(std::holds_alternative<magic_args::invalid_argument>(args.error()));
   CHECK(out.empty());
   CHECK_THAT(
     err.get(),
