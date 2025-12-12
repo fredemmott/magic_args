@@ -12,6 +12,7 @@
 
 #include <expected>
 #include <optional>
+#include <ranges>
 #include <span>
 #include <sstream>
 
@@ -148,6 +149,24 @@ arg_parse_result<V> parse_option(
   return std::nullopt;
 }
 
+template <basic_option T>
+auto map_option_error(
+  const std::span<std::string_view> args,
+  const T& argDef,
+  const std::string_view value,
+  invalid_argument_value e) {
+  if (e.mSource != invalid_argument_value::source_t {}) {
+    throw std::logic_error(
+      "argument value parsers should not set mName or mValue");
+  }
+  e.mSource = {
+    .mArgvSlice = std::ranges::to<std::vector<std::string>>(args),
+    .mName = argDef.mName,
+    .mValue = std::string {value},
+  };
+  return std::unexpected {std::move(e)};
+}
+
 template <
   class Traits,
   basic_option T,
@@ -174,7 +193,8 @@ arg_parse_result<V> parse_option(
 
   V ret {};
   if (const auto converted = from_string(ret, value); !converted) {
-    return std::unexpected {converted.error()};
+    return map_option_error(
+      args.subspan(0, consumed), argDef, value, converted.error());
   }
   return {arg_parse_match {ret, consumed}};
 }

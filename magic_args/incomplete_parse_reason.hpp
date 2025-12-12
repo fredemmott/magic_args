@@ -34,6 +34,17 @@ struct invalid_argument {
 struct invalid_argument_value {
   static constexpr bool is_error = true;
   static constexpr bool user_requested = false;
+
+  struct source_t {
+    std::vector<std::string> mArgvSlice;
+    std::string mName;
+    std::string mValue;
+    constexpr bool operator==(const source_t&) const noexcept = default;
+  };
+
+  // Automatically populated by the framework; if you fill this out, an
+  // exception will be thrown
+  source_t mSource;
 };
 struct invalid_encoding {
   static constexpr bool is_error = true;
