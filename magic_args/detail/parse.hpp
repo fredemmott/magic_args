@@ -230,7 +230,10 @@ arg_parse_result<V> parse_positional_argument(
   if constexpr (vector_like<V>) {
     V ret {};
     ret.reserve(args.size());
-    for (auto&& [i, arg]: std::views::enumerate(args)) {
+    // As of 2025-12-12, Apple Clang on Github Actions does not support
+    // `std::views::enumerate`
+    for (std::size_t i = 0; i < args.size(); ++i) {
+      const auto& arg = args[i];
       typename V::value_type v {};
       if (const auto parsed = from_string(v, arg); !parsed) {
         return map_value_parse_error(
