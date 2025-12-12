@@ -77,10 +77,8 @@ int main(int argc, char** argv) {
   const auto args = magic_args::parse<MyArgs>(argc, argv, programInfo);
   if (!args.has_value()) {
     return std::visit(
-      overload {
-        [](magic_args::help_requested) { return EXIT_SUCCESS; },
-        [](magic_args::version_requested) { return EXIT_SUCCESS; },
-        [](auto) { return EXIT_FAILURE; },
+      []<incomplete_parse_reason T>(T) {
+        return T::is_error ? EXIT_FAILURE : EXIT_SUCCESS;
       },
       args.error());
   }

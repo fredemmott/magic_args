@@ -17,7 +17,7 @@
 #endif
 
 namespace magic_args::detail {
-inline std::expected<void, incomplete_parse_reason> utf8_from_wide(
+inline std::expected<void, incomplete_parse_reason_t> utf8_from_wide(
   std::string& buffer,
   const std::wstring_view wide) {
   if (wide.empty()) {
@@ -59,7 +59,7 @@ struct local_free_deleter {
 namespace magic_args::inline public_api {
 
 template <class T, class Traits = gnu_style_parsing_traits>
-std::expected<T, incomplete_parse_reason> parse(
+std::expected<T, incomplete_parse_reason_t> parse(
   const wchar_t* const commandLine,
   const program_info& help = {},
   FILE* outputStream = stdout,
@@ -85,7 +85,7 @@ std::expected<T, incomplete_parse_reason> parse(
 }
 
 template <class T, class Traits = gnu_style_parsing_traits>
-std::expected<T, incomplete_parse_reason> parse(
+std::expected<T, incomplete_parse_reason_t> parse(
   const char* const commandLine,
   const program_info& help = {},
   FILE* outputStream = stdout,

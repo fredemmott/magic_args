@@ -20,7 +20,7 @@
 namespace magic_args::inline public_api {
 
 template <class T, class Traits = gnu_style_parsing_traits>
-std::expected<T, incomplete_parse_reason> parse(
+std::expected<T, incomplete_parse_reason_t> parse(
   std::span<std::string_view> args,
   const program_info& help = {},
   FILE* outputStream = stdout,
@@ -65,7 +65,7 @@ std::expected<T, incomplete_parse_reason> parse(
   std::vector<std::string_view> positionalArgs;
 
   // Handle options
-  std::optional<incomplete_parse_reason> failure;
+  std::optional<incomplete_parse_reason_t> failure;
   for (std::size_t i = 1; i < args.size();) {
     const auto arg = args[i];
     if (arg == "--") {
@@ -176,7 +176,7 @@ std::expected<T, incomplete_parse_reason> parse(
 }
 
 template <class T, class Traits = gnu_style_parsing_traits>
-std::expected<T, incomplete_parse_reason> parse(
+std::expected<T, incomplete_parse_reason_t> parse(
   int argc,
   char** argv,
   const program_info& help = {},

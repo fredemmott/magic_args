@@ -60,7 +60,7 @@ struct arg_parse_match {
 
 template <class T>
 using arg_parse_result
-  = std::optional<std::expected<arg_parse_match<T>, incomplete_parse_reason>>;
+  = std::optional<std::expected<arg_parse_match<T>, incomplete_parse_reason_t>>;
 
 template <
   class Traits,

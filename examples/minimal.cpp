@@ -10,7 +10,7 @@ struct MyArgs {
 };
 
 int main(int argc, char** argv) {
-  const std::expected<MyArgs, magic_args::incomplete_parse_reason> args
+  const std::expected<MyArgs, magic_args::incomplete_parse_reason_t> args
     = magic_args::parse<MyArgs>(argc, argv);
   if (!args.has_value()) {
     if (const auto& e = args.error();
