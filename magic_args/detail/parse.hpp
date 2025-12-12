@@ -149,15 +149,15 @@ arg_parse_result<V> parse_option(
   return std::nullopt;
 }
 
-template <basic_option T>
-auto map_option_error(
+template <basic_argument T>
+auto map_value_parse_error(
   const std::span<std::string_view> args,
   const T& argDef,
   const std::string_view value,
   invalid_argument_value e) {
   if (e.mSource != invalid_argument_value::source_t {}) {
     throw std::logic_error(
-      "argument value parsers should not set mName or mValue");
+      "argument value parsers should not set error source");
   }
   e.mSource = {
     .mArgvSlice = std::ranges::to<std::vector<std::string>>(args),
@@ -193,7 +193,7 @@ arg_parse_result<V> parse_option(
 
   V ret {};
   if (const auto converted = from_string(ret, value); !converted) {
-    return map_option_error(
+    return map_value_parse_error(
       args.subspan(0, consumed), argDef, value, converted.error());
   }
   return {arg_parse_match {ret, consumed}};
@@ -227,13 +227,15 @@ arg_parse_result<V> parse_positional_argument(
       return std::nullopt;
     }
   }
+
   if constexpr (vector_like<V>) {
     V ret {};
     ret.reserve(args.size());
-    for (auto&& arg: args) {
+    for (auto&& [i, arg]: std::views::enumerate(args)) {
       typename V::value_type v {};
       if (const auto parsed = from_string(v, arg); !parsed) {
-        return std::unexpected {parsed.error()};
+        return map_value_parse_error(
+          args.subspan(i, 1), argDef, arg, parsed.error());
       }
       ret.push_back(std::move(v));
     }
@@ -241,7 +243,8 @@ arg_parse_result<V> parse_positional_argument(
   } else {
     V ret {};
     if (const auto parsed = from_string(ret, args.front()); !parsed) {
-      return std::unexpected {parsed.error()};
+      return map_value_parse_error(
+        args.subspan(0, 1), argDef, args.front(), parsed.error());
     }
     return arg_parse_match {std::move(ret), 1};
   }
