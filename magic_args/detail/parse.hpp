@@ -105,7 +105,9 @@ arg_parse_result<V> parse_option(
   }
 
   V ret {};
-  from_string(ret, value);
+  if (const auto converted = from_string(ret, value); !converted) {
+    return std::unexpected {converted.error()};
+  }
   return {arg_parse_match {ret, consumed}};
 }
 
@@ -142,13 +144,17 @@ arg_parse_result<V> parse_positional_argument(
     ret.reserve(args.size());
     for (auto&& arg: args) {
       typename V::value_type v {};
-      from_string(v, arg);
+      if (const auto parsed = from_string(v, arg); !parsed) {
+        return std::unexpected {parsed.error()};
+      }
       ret.push_back(std::move(v));
     }
     return {arg_parse_match {ret, args.size()}};
   } else {
     V ret {};
-    from_string(ret, args.front());
+    if (const auto parsed = from_string(ret, args.front()); !parsed) {
+      return std::unexpected {parsed.error()};
+    }
     return arg_parse_match {std::move(ret), 1};
   }
 }

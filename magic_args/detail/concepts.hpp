@@ -33,4 +33,8 @@ template <class T>
 concept std_optional = requires { typename T::value_type; }
   && std::same_as<T, std::optional<typename T::value_type>>;
 
+template <class T, class U>
+concept same_as_ignoring_cvref
+  = std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
+
 }// namespace magic_args::detail

@@ -32,8 +32,15 @@ struct to_formattable_t<T> {
 
 template <cpp_enum T>
 struct from_string_t<T> {
-  static constexpr void operator()(T& out, std::string_view arg) {
-    out = magic_enum::enum_cast<T>(arg).value_or(out);
+  static constexpr std::expected<void, invalid_argument_value> operator()(
+    T& out,
+    std::string_view arg) {
+    const auto parsed = magic_enum::enum_cast<T>(arg);
+    if (parsed) {
+      out = *parsed;
+      return {};
+    }
+    return std::unexpected {invalid_argument_value {}};
   }
 };
 

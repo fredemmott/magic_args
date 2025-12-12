@@ -15,8 +15,11 @@ namespace MyNS {
 struct MyValueType {
   std::string mValue;
 };
-void from_string_argument(MyValueType& v, std::string_view arg) {
+std::expected<void, magic_args::invalid_argument_value> from_string_argument(
+  MyValueType& v,
+  std::string_view arg) {
   v.mValue = std::string {arg};
+  return {};
 }
 }// namespace MyNS
 using MyNS::MyValueType;

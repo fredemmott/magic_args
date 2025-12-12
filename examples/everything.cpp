@@ -9,8 +9,11 @@ using namespace magic_args::public_api;
 struct MyCustomType {
   std::string mValue;
 };
-void from_string_argument(MyCustomType& value, std::string_view arg) {
+std::expected<void, invalid_argument_value> from_string_argument(
+  MyCustomType& value,
+  std::string_view arg) {
   value.mValue = arg;
+  return {};
 }
 std::string formattable_argument_value(const MyCustomType& value) {
   return value.mValue;
