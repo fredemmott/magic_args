@@ -14,7 +14,6 @@
 #include <optional>
 #include <ranges>
 #include <span>
-#include <sstream>
 
 #ifndef __cpp_lib_expected
 static_assert(
@@ -155,7 +154,7 @@ auto map_value_parse_error(
   const T& argDef,
   const std::string_view value,
   invalid_argument_value e) {
-  if (e.mSource != invalid_argument_value::source_t {}) {
+  if (!e.mSource.empty()) {
     throw std::logic_error(
       "argument value parsers should not set error source");
   }

@@ -39,7 +39,10 @@ struct invalid_argument_value {
     std::vector<std::string> mArgvSlice;
     std::string mName;
     std::string mValue;
-    constexpr bool operator==(const source_t&) const noexcept = default;
+
+    constexpr bool empty() const noexcept {
+      return mArgvSlice.empty() && mName.empty() && mValue.empty();
+    }
   };
 
   // Automatically populated by the framework; if you fill this out, an
