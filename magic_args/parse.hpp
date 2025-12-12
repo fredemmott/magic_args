@@ -109,7 +109,10 @@ std::expected<T, incomplete_parse_reason_t> parse(
     if (arg.starts_with(Traits::long_arg_prefix)) {
       detail::print(errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
       show_usage<T, Traits>(errorStream, args.front(), help);
-      return std::unexpected {invalid_argument {}};
+      return std::unexpected {invalid_argument {
+        .mKind = invalid_argument::kind::Option,
+        .mSource = {std::string {args.front()}},
+      }};
     }
     if constexpr (requires { Traits::short_arg_prefix; }) {
       // TODO: handle -abc where `a`, `b`, and `c` are all flags
@@ -124,7 +127,10 @@ std::expected<T, incomplete_parse_reason_t> parse(
         detail::print(
           errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
         show_usage<T, Traits>(errorStream, args.front(), help);
-        return std::unexpected {invalid_argument {}};
+        return std::unexpected {invalid_argument {
+          .mKind = invalid_argument::kind::Option,
+          .mSource = {std::string {args.front()}},
+        }};
       }
     }
 
@@ -169,7 +175,10 @@ std::expected<T, incomplete_parse_reason_t> parse(
       arg0,
       positionalArgs.front());
     show_usage<T, Traits>(errorStream, args.front(), help);
-    return std::unexpected {invalid_argument {}};
+    return std::unexpected {invalid_argument {
+      .mKind = invalid_argument::kind::Positional,
+      .mSource = {std::string {args.front()}},
+    }};
   }
 
   return ret;

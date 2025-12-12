@@ -34,11 +34,34 @@ struct missing_required_argument {
 struct missing_argument_value {
   static constexpr bool is_error = true;
   static constexpr bool user_requested = false;
+
+  struct source_t {
+    std::string mName;
+    std::string mArgvMember;
+
+    constexpr bool empty() const noexcept {
+      return mName.empty() && mArgvMember.empty();
+    }
+  };
+
+  source_t mSource;
 };
 struct invalid_argument {
   static constexpr bool is_error = true;
   static constexpr bool user_requested = false;
+
+  enum class kind {
+    Option,
+    Positional,
+  };
+  struct source_t {
+    std::string mArg;
+  };
+
+  kind mKind {};
+  source_t mSource;
 };
+
 struct invalid_argument_value {
   static constexpr bool is_error = true;
   static constexpr bool user_requested = false;

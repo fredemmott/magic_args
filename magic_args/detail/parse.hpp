@@ -184,7 +184,12 @@ arg_parse_result<V> parse_option(
     value = *match->mValue;
   } else {
     if (args.size() == 1) {
-      return std::unexpected {missing_argument_value {}};
+      return std::unexpected {missing_argument_value {
+        .mSource = {
+          .mName = argDef.mName,
+          .mArgvMember = std::string { args.front() },
+        },
+      }};
     }
     value = args[1];
     ++consumed;
