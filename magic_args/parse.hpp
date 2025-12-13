@@ -102,10 +102,6 @@ std::expected<T, incomplete_parse_reason_t> parse(
       continue;
     }
 
-    // Store positional parameters for later
-    [&]<std::size_t... I>(std::index_sequence<I...>) {
-    }(std::make_index_sequence<N> {});
-
     if (arg.starts_with(Traits::long_arg_prefix)) {
       detail::print(errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
       show_usage<T, Traits>(errorStream, args.front(), help);
