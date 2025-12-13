@@ -5,6 +5,7 @@
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "detail/get_argument_definition.hpp"
 #include "detail/parse.hpp"
+#include "detail/print_incomplete_parse_reason.hpp"
 #include "detail/reflection.hpp"
 #include "detail/usage.hpp"
 #include "detail/validation.hpp"
@@ -20,11 +21,9 @@
 namespace magic_args::inline public_api {
 
 template <class T, class Traits = gnu_style_parsing_traits>
-std::expected<T, incomplete_parse_reason_t> parse(
+std::expected<T, incomplete_parse_reason_t> parse_silent(
   std::span<std::string_view> args,
-  const program_info& help = {},
-  FILE* outputStream = stdout,
-  FILE* errorStream = stderr) {
+  const program_info& help = {}) {
   using namespace detail;
 
   const auto longHelp
@@ -48,11 +47,9 @@ std::expected<T, incomplete_parse_reason_t> parse(
       break;
     }
     if (arg == longHelp || (arg == shortHelp && !shortHelp.empty())) {
-      show_usage<T, Traits>(outputStream, args.front(), help);
       return std::unexpected {help_requested {}};
     }
     if (arg == versionArg && !help.mVersion.empty()) {
-      detail::println(outputStream, "{}", help.mVersion);
       return std::unexpected {version_requested {}};
     }
   }
@@ -94,8 +91,6 @@ std::expected<T, incomplete_parse_reason_t> parse(
         }(std::make_index_sequence<N> {});
 
     if (failure) {
-      detail::println(errorStream, "");
-      show_usage<T, Traits>(errorStream, args.front(), help);
       return std::unexpected {failure.value()};
     }
     if (matchedOption) {
@@ -103,8 +98,6 @@ std::expected<T, incomplete_parse_reason_t> parse(
     }
 
     if (arg.starts_with(Traits::long_arg_prefix)) {
-      detail::print(errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
-      show_usage<T, Traits>(errorStream, args.front(), help);
       return std::unexpected {invalid_argument {
         .mKind = invalid_argument::kind::Option,
         .mSource = {std::string {arg}},
@@ -120,12 +113,9 @@ std::expected<T, incomplete_parse_reason_t> parse(
       if (
         arg.starts_with(Traits::short_arg_prefix)
         && arg != Traits::short_arg_prefix) {
-        detail::print(
-          errorStream, "{}: Unrecognized option: {}\n\n", arg0, arg);
-        show_usage<T, Traits>(errorStream, args.front(), help);
         return std::unexpected {invalid_argument {
           .mKind = invalid_argument::kind::Option,
-          .mSource = {std::string {args.front()}},
+          .mSource = {std::string {arg}},
         }};
       }
     }
@@ -143,8 +133,7 @@ std::expected<T, incomplete_parse_reason_t> parse(
     (void)([&] {
       // returns bool: continue
       const auto def = get_argument_definition<T, I, Traits>();
-      auto result = parse_positional_argument<Traits>(
-        def, arg0, positionalArgs, errorStream);
+      auto result = parse_positional_argument<Traits>(def, positionalArgs);
       if (!result) {
         return true;
       }
@@ -159,21 +148,13 @@ std::expected<T, incomplete_parse_reason_t> parse(
     }() && ...);
   }(std::make_index_sequence<N> {});
   if (failure) {
-    detail::println(errorStream, "");
-    show_usage<T, Traits>(errorStream, args.front(), help);
     return std::unexpected {failure.value()};
   }
 
   if (!positionalArgs.empty()) {
-    detail::print(
-      errorStream,
-      "{}: Invalid positional argument: {}\n\n",
-      arg0,
-      positionalArgs.front());
-    show_usage<T, Traits>(errorStream, args.front(), help);
     return std::unexpected {invalid_argument {
       .mKind = invalid_argument::kind::Positional,
-      .mSource = {std::string {args.front()}},
+      .mSource = {std::string {positionalArgs.front()}},
     }};
   }
 
@@ -181,18 +162,51 @@ std::expected<T, incomplete_parse_reason_t> parse(
 }
 
 template <class T, class Traits = gnu_style_parsing_traits>
-std::expected<T, incomplete_parse_reason_t> parse(
-  int argc,
-  char** argv,
-  const program_info& help = {},
-  FILE* outputStream = stdout,
-  FILE* errorStream = stderr) {
+std::expected<T, incomplete_parse_reason_t>
+parse_silent(int argc, char** argv, const program_info& help = {}) {
   std::vector<std::string_view> args;
   args.reserve(argc);
   for (auto&& arg: std::span {argv, static_cast<std::size_t>(argc)}) {
     args.emplace_back(arg);
   }
-  return parse<T, Traits>(std::span {args}, help, outputStream, errorStream);
+  return parse_silent<T, Traits>(std::span {args}, help);
+}
+
+template <class T, class Traits = gnu_style_parsing_traits>
+std::expected<T, incomplete_parse_reason_t> parse(
+  const std::span<std::string_view> args,
+  const program_info& help = {},
+  FILE* outputStream = stdout,
+  FILE* errorStream = stderr) {
+  const auto ret = parse_silent<T, Traits>(args, help);
+  if (!ret) {
+    detail::print_incomplete_parse_reason<T, Traits>(
+      help,
+      args.empty() ? std::string_view {} : args.front(),
+      outputStream,
+      errorStream,
+      ret.error());
+  }
+  return ret;
+}
+
+template <class T, class Traits = gnu_style_parsing_traits>
+std::expected<T, incomplete_parse_reason_t> parse(
+  const int argc,
+  char** argv,
+  const program_info& help = {},
+  FILE* outputStream = stdout,
+  FILE* errorStream = stderr) {
+  const auto ret = parse_silent<T, Traits>(argc, argv, help);
+  if (!ret) {
+    detail::print_incomplete_parse_reason<T, Traits>(
+      help,
+      std::string_view {argc == 0 ? nullptr : argv[0]},
+      outputStream,
+      errorStream,
+      ret.error());
+  }
+  return ret;
 }
 
 }// namespace magic_args::inline public_api

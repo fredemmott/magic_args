@@ -19,6 +19,7 @@ set(
   detail/parse.hpp
   detail/to_formattable.hpp
   dump.hpp
+  detail/print_incomplete_parse_reason.hpp
   parse.hpp
   verbatim_names.hpp
   enum.hpp

@@ -59,7 +59,7 @@ struct local_free_deleter {
 namespace magic_args::inline public_api {
 
 template <class T, class Traits = gnu_style_parsing_traits>
-std::expected<T, incomplete_parse_reason_t> parse(
+std::expected<T, incomplete_parse_reason_t> parse_silent(
   const wchar_t* const commandLine,
   const program_info& help = {},
   FILE* outputStream = stdout,
@@ -85,7 +85,7 @@ std::expected<T, incomplete_parse_reason_t> parse(
 }
 
 template <class T, class Traits = gnu_style_parsing_traits>
-std::expected<T, incomplete_parse_reason_t> parse(
+std::expected<T, incomplete_parse_reason_t> parse_silent(
   const char* const commandLine,
   const program_info& help = {},
   FILE* outputStream = stdout,
@@ -126,5 +126,23 @@ inline void attach_to_parent_terminal() {
   }
 }
 
+template <class T, class Traits = gnu_style_parsing_traits>
+std::expected<T, incomplete_parse_reason_t> parse(
+  const wchar_t* const commandLine,
+  const program_info& help = {},
+  FILE* outputStream = stdout,
+  FILE* errorStream = stderr) {
+  return parse_silent<T, Traits>(commandLine, help, outputStream, errorStream);
+}
+
+template <class T, class Traits = gnu_style_parsing_traits>
+std::expected<T, incomplete_parse_reason_t> parse(
+  const char* const commandLine,
+  const program_info& help = {},
+  FILE* outputStream = stdout,
+  FILE* errorStream = stderr) {
+  return parse_silent<T, Traits>(commandLine, help, outputStream, errorStream);
+}
 }// namespace magic_args::inline public_api
+
 #endif
