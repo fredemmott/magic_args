@@ -16,15 +16,18 @@
 #include <expected>
 #include <filesystem>
 #include <format>
-#include <span>
+#include <ranges>
 
 namespace magic_args::inline public_api {
 
 template <class T, class Traits = gnu_style_parsing_traits>
 std::expected<T, incomplete_parse_reason_t> parse_silent(
-  std::span<std::string_view> args,
+  detail::argv_range auto&& argv,
   const program_info& help = {}) {
   using namespace detail;
+
+  const std::vector<std::string_view> args {
+    std::ranges::begin(argv), std::ranges::end(argv)};
 
   const auto longHelp
     = std::format("{}{}", Traits::long_arg_prefix, Traits::long_help_arg);
@@ -67,7 +70,7 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
     const auto arg = args[i];
     if (arg == "--") {
       std::ranges::copy(
-        args.subspan(i + 1), std::back_inserter(positionalArgs));
+        std::views::drop(args, i + 1), std::back_inserter(positionalArgs));
       break;
     }
 
@@ -76,7 +79,7 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
           // returns bool: matched option
           return ([&] {
             const auto def = get_argument_definition<T, I, Traits>();
-            auto result = parse_option<Traits>(def, args.subspan(i));
+            auto result = parse_option<Traits>(def, std::views::drop(args, i));
             if (!result) {
               return false;
             }
@@ -163,26 +166,23 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
 
 template <class T, class Traits = gnu_style_parsing_traits>
 std::expected<T, incomplete_parse_reason_t>
-parse_silent(int argc, char** argv, const program_info& help = {}) {
-  std::vector<std::string_view> args;
-  args.reserve(argc);
-  for (auto&& arg: std::span {argv, static_cast<std::size_t>(argc)}) {
-    args.emplace_back(arg);
-  }
-  return parse_silent<T, Traits>(std::span {args}, help);
+parse_silent(const int argc, char** argv, const program_info& help = {}) {
+  return parse_silent<T, Traits>(
+    std::views::counted(argv, static_cast<std::size_t>(argc)), help);
 }
 
 template <class T, class Traits = gnu_style_parsing_traits>
 std::expected<T, incomplete_parse_reason_t> parse(
-  const std::span<std::string_view> args,
+  detail::argv_range auto&& argv,
   const program_info& help = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
-  const auto ret = parse_silent<T, Traits>(args, help);
+  const auto ret
+    = parse_silent<T, Traits>(std::forward<decltype(argv)>(argv), help);
   if (!ret) {
     detail::print_incomplete_parse_reason<T, Traits>(
       help,
-      args.empty() ? std::string_view {} : args.front(),
+      argv.empty() ? std::string_view {} : argv.front(),
       outputStream,
       errorStream,
       ret.error());

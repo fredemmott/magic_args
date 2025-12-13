@@ -37,4 +37,21 @@ template <class T, class U>
 concept same_as_ignoring_cvref
   = std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
 
+// A range of UTF-8 strings, in a form that can be iterated, randomly
+// accessed, and the elements can be converted to a `std::string_view`
+//
+// e.g. `std::span<std::string_view>`, `std::vector<std::string>`,
+// `std::views::counted(argv, argc)`
+template <class T>
+concept argv_range = std::ranges::random_access_range<T>
+  && std::convertible_to<std::ranges::range_value_t<T>, std::string_view>;
+
+// A randomly-accessible range R where all elements are of type T
+//
+// For example, an `std::span<std::string_view>` is a
+// `random_access_range_of<std::string_view>`
+template <class R, class T>
+concept random_access_range_of = std::ranges::random_access_range<R>
+  && std::same_as<std::ranges::range_value_t<R>, T>;
+
 }// namespace magic_args::detail
