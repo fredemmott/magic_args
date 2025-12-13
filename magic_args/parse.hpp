@@ -183,7 +183,8 @@ std::expected<T, incomplete_parse_reason_t> parse(
     detail::print_incomplete_parse_reason<T, Traits>(
       ret.error(),
       help,
-      argv.empty() ? std::string_view {} : argv.front(),
+      std::ranges::empty(argv) ? std::string_view {}
+                               : std::string_view {*std::ranges::begin(argv)},
       outputStream,
       errorStream);
   }
