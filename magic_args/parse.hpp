@@ -107,7 +107,7 @@ std::expected<T, incomplete_parse_reason_t> parse(
       show_usage<T, Traits>(errorStream, args.front(), help);
       return std::unexpected {invalid_argument {
         .mKind = invalid_argument::kind::Option,
-        .mSource = {std::string {args.front()}},
+        .mSource = {std::string {arg}},
       }};
     }
     if constexpr (requires { Traits::short_arg_prefix; }) {
