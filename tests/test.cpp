@@ -149,6 +149,22 @@ Usage: my_test [OPTIONS...]
 )EOF"[1]));
 }
 
+TEMPLATE_TEST_CASE(
+  "bogus flag after -- (silent)",
+  "",
+  EmptyStruct,
+  OptionsOnly,
+  FlagsOnly) {
+  std::vector<std::string_view> argv {testName, "--", "--not-a-valid-arg"};
+  const auto args = magic_args::parse_silent<TestType>(argv, {});
+  REQUIRE_FALSE(args.has_value());
+  REQUIRE(holds_alternative<magic_args::invalid_argument>(args.error()));
+  const auto& e = get<magic_args::invalid_argument>(args.error());
+  // Positional because of `--`
+  CHECK(e.mKind == magic_args::invalid_argument::kind::Positional);
+  CHECK(e.mSource.mArg == "--not-a-valid-arg");
+}
+
 TEST_CASE("empty struct, --help") {
   std::vector<std::string_view> argv {testName, "--help"};
 
@@ -327,6 +343,22 @@ Options:
 )EOF",
         invalid)
         .substr(1)));
+}
+
+TEMPLATE_TEST_CASE(
+  "empty struct, invalid argument (silent)",
+  "",
+  EmptyStruct,
+  FlagsOnly) {
+  const auto invalid = GENERATE("--abc", "-z");
+  std::vector<std::string_view> argv {testName, invalid};
+
+  const auto args = magic_args::parse_silent<TestType>(argv, {});
+  REQUIRE_FALSE(args.has_value());
+  REQUIRE(std::holds_alternative<magic_args::invalid_argument>(args.error()));
+  const auto& e = get<magic_args::invalid_argument>(args.error());
+  CHECK(e.mKind == magic_args::invalid_argument::kind::Option);
+  CHECK(e.mSource.mArg == invalid);
 }
 
 TEST_CASE("flags only, specifying flags") {
