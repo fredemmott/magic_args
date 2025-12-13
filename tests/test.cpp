@@ -13,11 +13,15 @@ struct EmptyStruct {};
 
 namespace MyNS {
 struct MyValueType {
+  static constexpr std::string_view InvalidValue {"___MAGIC_INVALID___"};
   std::string mValue;
 };
 std::expected<void, magic_args::invalid_argument_value> from_string_argument(
   MyValueType& v,
   std::string_view arg) {
+  if (arg == MyValueType::InvalidValue) {
+    return std::unexpected {magic_args::invalid_argument_value {}};
+  }
   v.mValue = std::string {arg};
   return {};
 }
@@ -109,6 +113,10 @@ struct MandatoryMultiValuePositionalArgument {
     .mHelp = "file to create",
   };
   magic_args::mandatory_positional_argument<std::vector<std::string>> mInputs;
+};
+
+struct CustomPositionalArgument {
+  magic_args::optional_positional_argument<MyValueType> mFoo;
 };
 
 constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
@@ -951,4 +959,108 @@ Options:
 
   -?, -Help                    show this message
 )EOF"[1]);
+}
+
+TEST_CASE("GNU-style invalid value") {
+  constexpr std::string_view argv[] {
+    testName, "--raw", MyValueType::InvalidValue};
+
+  Output out, err;
+  const auto args = magic_args::parse<CustomArgs>(argv, {}, out, err);
+  REQUIRE(!args.has_value());
+  CHECK(out.empty());
+  CHECK(err.get() == &R"EOF(
+my_test: `___MAGIC_INVALID___` is not a valid value for `--raw` (seen: `--raw ___MAGIC_INVALID___`)
+
+Usage: my_test [OPTIONS...] [--] [POSITIONAL]
+
+Options:
+
+      --raw=VALUE
+      --option=VALUE           std::optional
+
+  -?, --help                   show this message
+
+Arguments:
+
+      POSITIONAL
+)EOF"[1]);
+
+  REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
+  const auto& e = get<magic_args::invalid_argument_value>(args.error());
+  CHECK(e.mSource.mName == "--raw");
+  CHECK(e.mSource.mValue == MyValueType::InvalidValue);
+}
+
+TEST_CASE("PowerShell-style invalid value") {
+  constexpr std::string_view argv[] {
+    testName, "-Raw", MyValueType::InvalidValue};
+
+  Output out, err;
+  const auto args = magic_args::
+    parse<CustomArgs, magic_args::powershell_style_parsing_traits>(
+      argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.get() == &R"EOF(
+my_test: `___MAGIC_INVALID___` is not a valid value for `-Raw` (seen: `-Raw ___MAGIC_INVALID___`)
+
+Usage: my_test [OPTIONS...] [--] [POSITIONAL]
+
+Options:
+
+      -Raw=VALUE
+      -Option=VALUE            std::optional
+
+  -?, -Help                    show this message
+
+Arguments:
+
+      POSITIONAL
+)EOF"[1]);
+
+  REQUIRE(!args.has_value());
+  REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
+  const auto& e = get<magic_args::invalid_argument_value>(args.error());
+  CHECK(e.mSource.mName == "-Raw");
+  CHECK(e.mSource.mValue == MyValueType::InvalidValue);
+}
+
+TEST_CASE("positional argument with custom type") {
+  constexpr std::string_view argv[] {testName, "ABC"};
+
+  Output out, err;
+  const auto args
+    = magic_args::parse<CustomPositionalArgument>(argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.empty());
+  REQUIRE(args.has_value());
+  CHECK(args->mFoo.mValue.mValue == "ABC");
+}
+
+TEST_CASE("invalid value for positional argument") {
+  constexpr std::string_view argv[] {testName, MyValueType::InvalidValue};
+
+  Output out, err;
+  const auto args
+    = magic_args::parse<CustomPositionalArgument>(argv, {}, out, err);
+  REQUIRE(!args.has_value());
+  CHECK(out.empty());
+  CHECK(err.get() == &R"EOF(
+my_test: `___MAGIC_INVALID___` is not a valid value for `FOO` (seen: `___MAGIC_INVALID___`)
+
+Usage: my_test [OPTIONS...] [--] [FOO]
+
+Options:
+
+  -?, --help                   show this message
+
+Arguments:
+
+      FOO
+)EOF"[1]);
+
+  REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
+  const auto& e = get<magic_args::invalid_argument_value>(args.error());
+  CHECK(e.mSource.mName == "FOO");
+  CHECK(e.mSource.mValue == MyValueType::InvalidValue);
 }

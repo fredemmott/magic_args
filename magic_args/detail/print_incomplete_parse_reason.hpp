@@ -68,12 +68,22 @@ void print_incomplete_parse_reason(
 }
 template <class T, class Traits>
 void print_incomplete_parse_reason(
-  const invalid_argument_value&,
+  const invalid_argument_value& r,
   const program_info&,
-  [[maybe_unused]] const std::string_view arg0,
+  const std::string_view arg0,
   [[maybe_unused]] FILE* outputStream,
-  [[maybe_unused]] FILE* errorStream) {
-  // TODO
+  FILE* errorStream) {
+  detail::print(
+    errorStream,
+    "{}: `{}` is not a valid value for `{}` (seen: `{}`)",
+    arg0,
+    r.mSource.mValue,
+    r.mSource.mName,
+    // 2025-12-13: no join_with on Apple Clang
+    std::ranges::fold_left(
+      std::views::drop(r.mSource.mArgvSlice, 1),
+      r.mSource.mArgvSlice.front(),
+      [](auto acc, auto it) { return std::format("{} {}", acc, it); }));
 }
 template <class T, class Traits>
 void print_incomplete_parse_reason(
