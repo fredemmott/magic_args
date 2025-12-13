@@ -9,6 +9,7 @@
 #include "from_string.hpp"
 #endif
 
+#include <algorithm>
 #include <expected>
 #include <optional>
 #include <ranges>
@@ -147,7 +148,7 @@ arg_parse_result<V> parse_option(
   return std::nullopt;
 }
 
-template <basic_argument T>
+template <class Traits, basic_argument T>
 auto map_value_parse_error(
   const random_access_range_of<std::string_view> auto& args,
   const T& argDef,
@@ -159,7 +160,18 @@ auto map_value_parse_error(
   }
   e.mSource = {
     .mArgvSlice = std::ranges::to<std::vector<std::string>>(args),
-    .mName = argDef.mName,
+    .mName = std::string {[&]() {
+      if constexpr (!basic_option<T>) {
+        return argDef.mName;
+      } else {
+        const auto first = *std::ranges::begin(args);
+        const auto index = first.find(Traits::value_separator);
+        if (index == std::string_view::npos) {
+          return first;
+        }
+        return first.substr(0, index);
+      }
+    }()},
     .mValue = std::string {value},
   };
   return std::unexpected {std::move(e)};
@@ -197,7 +209,7 @@ arg_parse_result<V> parse_option(
 
   V ret {};
   if (const auto converted = from_string(ret, value); !converted) {
-    return map_value_parse_error(
+    return map_value_parse_error<Traits>(
       std::views::take(args, consumed), argDef, value, converted.error());
   }
   return {arg_parse_match {ret, consumed}};
@@ -237,7 +249,7 @@ arg_parse_result<V> parse_positional_argument(
       const auto& arg = args[i];
       typename V::value_type v {};
       if (const auto parsed = from_string(v, arg); !parsed) {
-        return map_value_parse_error(
+        return map_value_parse_error<Traits>(
           std::views::single(*(std::ranges::begin(args) + i)),
           argDef,
           arg,
@@ -249,7 +261,7 @@ arg_parse_result<V> parse_positional_argument(
   } else {
     V ret {};
     if (const auto parsed = from_string(ret, args.front()); !parsed) {
-      return map_value_parse_error(
+      return map_value_parse_error<Traits>(
         std::views::take(args, 1), argDef, args.front(), parsed.error());
     }
     return arg_parse_match {std::move(ret), 1};
