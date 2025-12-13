@@ -41,12 +41,13 @@ void print_incomplete_parse_reason(
 }
 template <class T, class Traits>
 void print_incomplete_parse_reason(
-  const missing_argument_value&,
-  const program_info&,
-  [[maybe_unused]] const std::string_view arg0,
+  const missing_argument_value& r,
+  [[maybe_unused]] const program_info&,
+  const std::string_view arg0,
   [[maybe_unused]] FILE* outputStream,
-  [[maybe_unused]] FILE* errorStream) {
-  // TODO
+  FILE* errorStream) {
+  detail::print(
+    errorStream, "{}: option `{}` requires a value", arg0, r.mSource.mName);
 }
 template <class T, class Traits>
 void print_incomplete_parse_reason(

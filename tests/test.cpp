@@ -1064,3 +1064,19 @@ Arguments:
   CHECK(e.mSource.mName == "FOO");
   CHECK(e.mSource.mValue == MyValueType::InvalidValue);
 }
+
+TEST_CASE("missing argument value") {
+  constexpr std::string_view argv[] {testName, "--raw"};
+  Output out, err;
+  const auto args = magic_args::parse<CustomArgs>(argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK_THAT(err.get(), Catch::Matchers::StartsWith(&R"EOF(
+my_test: option `--raw` requires a value
+
+Usage: my_test [OPTIONS...] [--] [POSITIONAL]
+)EOF"[1]));
+  REQUIRE_FALSE(args.has_value());
+  REQUIRE(holds_alternative<magic_args::missing_argument_value>(args.error()));
+  const auto& e = get<magic_args::missing_argument_value>(args.error());
+  CHECK(e.mSource.mName == "--raw");
+}

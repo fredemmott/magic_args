@@ -24,6 +24,21 @@ static_assert(
 
 namespace magic_args::detail {
 
+template <class Traits, basic_argument T>
+std::string provided_argument_name(
+  const T& argDef,
+  const std::string_view arg) {
+  if constexpr (!basic_option<T>) {
+    return argDef.mName;
+  } else {
+    const auto index = arg.find(Traits::value_separator);
+    if (index == std::string_view::npos) {
+      return std::string {arg};
+    }
+    return std::string {arg.substr(0, index)};
+  }
+}
+
 [[nodiscard]] inline std::string_view consume(
   std::string_view& sv,
   const std::size_t size) {
@@ -160,18 +175,7 @@ auto map_value_parse_error(
   }
   e.mSource = {
     .mArgvSlice = std::ranges::to<std::vector<std::string>>(args),
-    .mName = std::string {[&]() {
-      if constexpr (!basic_option<T>) {
-        return argDef.mName;
-      } else {
-        const auto first = *std::ranges::begin(args);
-        const auto index = first.find(Traits::value_separator);
-        if (index == std::string_view::npos) {
-          return first;
-        }
-        return first.substr(0, index);
-      }
-    }()},
+    .mName = provided_argument_name<Traits>(argDef, *std::ranges::begin(args)),
     .mValue = std::string {value},
   };
   return std::unexpected {std::move(e)};
@@ -198,7 +202,7 @@ arg_parse_result<V> parse_option(
     if (args.size() == 1) {
       return std::unexpected {missing_argument_value {
         .mSource = {
-          .mName = argDef.mName,
+          .mName = provided_argument_name<Traits>(argDef, first),
           .mArgvMember = std::string { first },
         },
       }};
