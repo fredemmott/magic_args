@@ -60,7 +60,7 @@ TEST_CASE("wWinMain - invalid argument", "[windows]") {
   constexpr auto commandLine = L"test_app --invalid-argument";
   Output out, err;
   const auto args = magic_args::parse<MyArgs>(commandLine, {}, out, err);
-  CHECK(!args.has_value());
+  CHECK_FALSE(args.has_value());
 
   CHECK(out.empty());
   CHECK(err.get() == &R"EOF(
@@ -86,7 +86,7 @@ TEST_CASE("winMain - invalid argument", "[windows]") {
   constexpr auto commandLine = "test_app --invalid-argument";
   Output out, err;
   const auto args = magic_args::parse<MyArgs>(commandLine, {}, out, err);
-  CHECK(!args.has_value());
+  CHECK_FALSE(args.has_value());
 
   CHECK(out.empty());
   CHECK(err.get() == &R"EOF(
@@ -109,8 +109,7 @@ TEST_CASE("winMain - invalid argument (silent)", "[windows]") {
   REQUIRE(GetACP() == CP_UTF8);
   constexpr auto commandLine = "test_app --invalid-argument";
   const auto args = magic_args::parse_silent<MyArgs>(commandLine, {});
-  CHECK(!args.has_value());
-
+  REQUIRE_FALSE(args.has_value());
   REQUIRE(holds_alternative<magic_args::invalid_argument>(args.error()));
   const auto& e = get<magic_args::invalid_argument>(args.error());
   CHECK(e.mKind == magic_args::invalid_argument::kind::Option);

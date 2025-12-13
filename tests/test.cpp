@@ -147,14 +147,14 @@ TEMPLATE_TEST_CASE(
   std::vector<std::string_view> argv {testName, "--", "--not-a-valid-arg"};
   Output out, err;
   const auto args = magic_args::parse<TestType>(argv, {}, out, err);
-  REQUIRE_FALSE(args.has_value());
-  CHECK(holds_alternative<magic_args::invalid_argument>(args.error()));
   CHECK(out.empty());
   CHECK_THAT(err.get(), Catch::Matchers::StartsWith(&R"EOF(
 my_test: Unexpected argument: --not-a-valid-arg
 
 Usage: my_test [OPTIONS...]
 )EOF"[1]));
+  REQUIRE_FALSE(args.has_value());
+  CHECK(holds_alternative<magic_args::invalid_argument>(args.error()));
 }
 
 TEMPLATE_TEST_CASE(
@@ -875,7 +875,7 @@ Options:
 
   -?, --help                   show this message
 )EOF"[1]);
-  REQUIRE(!args.has_value());
+  REQUIRE_FALSE(args.has_value());
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 }
 
@@ -903,7 +903,7 @@ Options:
 
   -?, -Help                    show this message
 )EOF"[1]);
-  REQUIRE(!args.has_value());
+  REQUIRE_FALSE(args.has_value());
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 }
 
@@ -967,7 +967,7 @@ TEST_CASE("GNU-style invalid value") {
 
   Output out, err;
   const auto args = magic_args::parse<CustomArgs>(argv, {}, out, err);
-  REQUIRE(!args.has_value());
+  REQUIRE_FALSE(args.has_value());
   CHECK(out.empty());
   CHECK(err.get() == &R"EOF(
 my_test: `___MAGIC_INVALID___` is not a valid value for `--raw` (seen: `--raw ___MAGIC_INVALID___`)
@@ -1018,7 +1018,7 @@ Arguments:
       POSITIONAL
 )EOF"[1]);
 
-  REQUIRE(!args.has_value());
+  REQUIRE_FALSE(args.has_value());
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
   const auto& e = get<magic_args::invalid_argument_value>(args.error());
   CHECK(e.mSource.mName == "-Raw");
@@ -1043,7 +1043,7 @@ TEST_CASE("invalid value for positional argument") {
   Output out, err;
   const auto args
     = magic_args::parse<CustomPositionalArgument>(argv, {}, out, err);
-  REQUIRE(!args.has_value());
+  REQUIRE_FALSE(args.has_value());
   CHECK(out.empty());
   CHECK(err.get() == &R"EOF(
 my_test: `___MAGIC_INVALID___` is not a valid value for `FOO` (seen: `___MAGIC_INVALID___`)
