@@ -62,10 +62,7 @@ void print_incomplete_parse_reason(
       break;
     case invalid_argument::kind::Positional:
       detail::print(
-        errorStream,
-        "{}: Invalid positional argument: {}",
-        arg0,
-        arg.mSource.mArg);
+        errorStream, "{}: Unexpected argument: {}", arg0, arg.mSource.mArg);
       break;
   }
 }

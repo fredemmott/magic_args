@@ -143,7 +143,7 @@ TEMPLATE_TEST_CASE(
   CHECK(holds_alternative<magic_args::invalid_argument>(args.error()));
   CHECK(out.empty());
   CHECK_THAT(err.get(), Catch::Matchers::StartsWith(&R"EOF(
-my_test: Invalid positional argument: --not-a-valid-arg
+my_test: Unexpected argument: --not-a-valid-arg
 
 Usage: my_test [OPTIONS...]
 )EOF"[1]));
@@ -548,7 +548,7 @@ TEST_CASE("parameters, extra") {
   CHECK(holds_alternative<magic_args::invalid_argument>(args.error()));
   CHECK(out.empty());
   CHECK(err.get() == &R"EOF(
-my_test: Invalid positional argument: bogus
+my_test: Unexpected argument: bogus
 
 Usage: my_test [OPTIONS...] [--] [INPUT] [OUTPUT]
 
