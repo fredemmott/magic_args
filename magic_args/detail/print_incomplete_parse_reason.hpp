@@ -12,49 +12,49 @@
 namespace magic_args::detail {
 template <class T, class Traits>
 void print_incomplete_parse_reason(
+  const help_requested&,
   const program_info& help,
   const std::string_view arg0,
   FILE* outputStream,
-  [[maybe_unused]] FILE* errorStream,
-  const help_requested&) {
+  [[maybe_unused]] FILE* errorStream) {
   show_usage<T, Traits>(outputStream, arg0, help);
 }
 
 template <class T, class Traits>
 void print_incomplete_parse_reason(
+  const version_requested&,
   const program_info& help,
   [[maybe_unused]] const std::string_view arg0,
   FILE* outputStream,
-  [[maybe_unused]] FILE* errorStream,
-  const version_requested&) {
+  [[maybe_unused]] FILE* errorStream) {
   detail::println(outputStream, "{}", help.mVersion);
 }
 template <class T, class Traits>
 void print_incomplete_parse_reason(
+  const missing_required_argument& r,
   const program_info&,
   const std::string_view arg0,
   [[maybe_unused]] FILE* outputStream,
-  FILE* errorStream,
-  const missing_required_argument& r) {
+  FILE* errorStream) {
   detail::print(
     errorStream, "{}: Missing required argument `{}`", arg0, r.mSource.mName);
 }
 template <class T, class Traits>
 void print_incomplete_parse_reason(
+  const missing_argument_value&,
   const program_info&,
   [[maybe_unused]] const std::string_view arg0,
   [[maybe_unused]] FILE* outputStream,
-  [[maybe_unused]] FILE* errorStream,
-  const missing_argument_value&) {
+  [[maybe_unused]] FILE* errorStream) {
   // TODO
 }
 template <class T, class Traits>
 void print_incomplete_parse_reason(
+  const invalid_argument& arg,
   const program_info&,
   const std::string_view arg0,
   [[maybe_unused]] FILE* outputStream,
-  FILE* errorStream,
-  const invalid_argument& arg) {
+  FILE* errorStream) {
   switch (arg.mKind) {
     case invalid_argument::kind::Option:
       detail::print(
@@ -68,38 +68,38 @@ void print_incomplete_parse_reason(
 }
 template <class T, class Traits>
 void print_incomplete_parse_reason(
+  const invalid_argument_value&,
   const program_info&,
   [[maybe_unused]] const std::string_view arg0,
   [[maybe_unused]] FILE* outputStream,
-  [[maybe_unused]] FILE* errorStream,
-  const invalid_argument_value&) {
+  [[maybe_unused]] FILE* errorStream) {
   // TODO
 }
 template <class T, class Traits>
 void print_incomplete_parse_reason(
+  const invalid_encoding&,
   const program_info&,
   [[maybe_unused]] const std::string_view arg0,
   [[maybe_unused]] FILE* outputStream,
-  [[maybe_unused]] FILE* errorStream,
-  const invalid_encoding&) {
+  [[maybe_unused]] FILE* errorStream) {
   // TODO
 }
 
 template <class T, class Traits>
 void print_incomplete_parse_reason(
+  const incomplete_parse_reason_t& reason,
   const program_info& help,
   const std::string_view arg0,
   FILE* outputStream,
-  FILE* errorStream,
-  const incomplete_parse_reason_t& reason) {
+  FILE* errorStream) {
   std::visit(
     [=, &help]<class R>(R&& it) {
       detail::print_incomplete_parse_reason<T, Traits>(
+        std::forward<R>(it),
         help,
         arg0.empty() ? arg0 : std::filesystem::path(arg0).stem().string(),
         outputStream,
-        errorStream,
-        std::forward<R>(it));
+        errorStream);
       if constexpr (std::decay_t<R>::is_error) {
         detail::print(errorStream, "\n\n");
         show_usage<T, Traits>(errorStream, arg0, help);

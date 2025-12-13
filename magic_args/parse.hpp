@@ -181,11 +181,11 @@ std::expected<T, incomplete_parse_reason_t> parse(
     = parse_silent<T, Traits>(std::forward<decltype(argv)>(argv), help);
   if (!ret) {
     detail::print_incomplete_parse_reason<T, Traits>(
+      ret.error(),
       help,
       argv.empty() ? std::string_view {} : argv.front(),
       outputStream,
-      errorStream,
-      ret.error());
+      errorStream);
   }
   return ret;
 }
@@ -200,11 +200,11 @@ std::expected<T, incomplete_parse_reason_t> parse(
   const auto ret = parse_silent<T, Traits>(argc, argv, help);
   if (!ret) {
     detail::print_incomplete_parse_reason<T, Traits>(
+      ret.error(),
       help,
       std::string_view {argc == 0 ? nullptr : argv[0]},
       outputStream,
-      errorStream,
-      ret.error());
+      errorStream);
   }
   return ret;
 }
