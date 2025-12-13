@@ -109,6 +109,17 @@ std::expected<T, incomplete_parse_reason_t> parse(
   return parse<T, Traits>(*argv, help, outputStream, errorStream);
 }
 
+template <class T, class Traits = gnu_style_parsing_traits, class TChar>
+std::expected<T, incomplete_parse_reason_t> parse_silent(
+  const TChar* const commandLine,
+  const program_info& help = {}) {
+  const auto argv = detail::win32::make_argv(commandLine);
+  if (!argv) {
+    return std::unexpected {argv.error()};
+  }
+  return parse_silent<T, Traits>(*argv, help);
+}
+
 inline void attach_to_parent_terminal() {
   AttachConsole(ATTACH_PARENT_PROCESS);
   FILE* tmp {nullptr};
