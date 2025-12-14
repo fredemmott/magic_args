@@ -1,11 +1,9 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#ifdef __CLION_IDE__
-#define MAGIC_ARGS_ENABLE_WINDOWS
-#endif
+#pragma once
 
-#if (defined(MAGIC_ARGS_ENABLE_WINDOWS) || !defined(MAGIC_ARGS_SINGLE_FILE)) \
-  && !defined(MAGIC_ARGS_WINDOWS_HPP)
+#if (!defined(MAGIC_ARGS_SINGLE_FILE)) \
+  || defined(MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS)
 #define MAGIC_ARGS_WINDOWS_HPP
 
 #include <Windows.h>
