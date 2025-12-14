@@ -127,4 +127,17 @@ using incomplete_parse_reason_t = detail::constrained_pack<
     invalid_argument_value,
     invalid_encoding>;
 
+template <incomplete_parse_reason T>
+[[nodiscard]]
+constexpr bool is_error(T&&) noexcept {
+  return std::decay_t<T>::is_error;
+}
+
+template <incomplete_parse_reason... Ts>
+[[nodiscard]]
+constexpr bool is_error(const std::variant<Ts...>& reason) {
+  return std::visit(
+    []<class T>(T&&) { return std::decay_t<T>::is_error; }, reason);
+}
+
 }// namespace magic_args::inline public_api

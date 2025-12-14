@@ -23,6 +23,8 @@ set(
   parse.hpp
   verbatim_names.hpp
   magic_args.hpp
+  # Extensions that build on top of the core functionality
+  subcommands.hpp
   windows.hpp
   enum.hpp
 )
