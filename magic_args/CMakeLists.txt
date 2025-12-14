@@ -7,7 +7,6 @@ set(
   detail/concepts.hpp
   detail/reflection.hpp
   gnu_style_parsing_traits.hpp
-  powershell_style_parsing_traits.hpp
   detail/print.hpp
   argument_definitions.hpp
   detail/get_argument_definition.hpp
@@ -16,14 +15,15 @@ set(
   incomplete_parse_reason.hpp
   detail/from_string.hpp
   detail/to_formattable.hpp
-  detail/usage.hpp
   detail/parse.hpp
   dump.hpp
+  detail/usage.hpp
   detail/print_incomplete_parse_reason.hpp
   parse.hpp
-  verbatim_names.hpp
   magic_args.hpp
   # Extensions that build on top of the core functionality
+  powershell_style_parsing_traits.hpp
+  verbatim_names.hpp
   subcommands.hpp
   windows.hpp
   enum.hpp
