@@ -128,7 +128,7 @@ void show_subcommand_usage(
     stream,
     "Usage: {} COMMAND [OPTIONS...]\n",
     get_prefix_for_user_messages<Traits>(argv));
-  detail::println(stream, "Available commands:\n");
+  detail::println(stream, "Commands:\n");
 
   (
     [stream]<class T>(std::type_identity<T>) {
@@ -162,7 +162,7 @@ void print_incomplete_subcommand_parse_reason(
   argv_range auto&& argv,
   FILE* outputStream,
   [[maybe_unused]] FILE*) {
-  show_subcommand_usage<Traits>(info, argv, outputStream);
+  show_subcommand_usage<Traits, Ts...>(info, argv, outputStream);
 }
 
 template <parsing_traits Traits, subcommand... Ts>
@@ -246,11 +246,11 @@ auto parse_subcommands(
         return;
       }
       // Skip argv[0] and argv[1] for printing
+
+      using Args = std::decay_t<T>::arguments_type;
       struct InnerTraits : Traits, detail::prefix_args_count_trait<2> {};
 
-      using arg_type = std::decay_t<T>::arguments_type;
-
-      detail::print_incomplete_parse_reason<arg_type, InnerTraits>(
+      detail::print_incomplete_parse_reason<Args, InnerTraits>(
         it.error(), help, argv, outputStream, errorStream);
     },
     ret.value());

@@ -33,7 +33,9 @@ struct prefix_args_count_trait {
 template <parsing_traits Traits>
 constexpr std::size_t prefix_args_count() {
   if constexpr (requires {
-                  { Traits::prefix_args_count } -> std::same_as<std::size_t>;
+                  {
+                    Traits::prefix_args_count
+                  } -> std::convertible_to<std::size_t>;
                 }) {
     return Traits::prefix_args_count;
   } else {
