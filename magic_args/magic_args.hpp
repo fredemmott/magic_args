@@ -1,6 +1,14 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#ifndef MAGIC_ARGS_SINGLE_FILE
+#pragma once
+#ifdef MAGIC_ARGS_SINGLE_FILE
+namespace magic_args {
+constexpr bool is_single_header_file = true;
+}
+#else
+namespace magic_args {
+constexpr bool is_single_header_file = false;
+}
 #include "dump.hpp"
 #include "gnu_style_parsing_traits.hpp"
 #include "parse.hpp"

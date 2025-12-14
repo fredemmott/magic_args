@@ -5,7 +5,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
-#include <ranges>
 
 #include "chomp.hpp"
 #include "output.hpp"
@@ -1131,4 +1130,20 @@ Options:
 )EOF"));
 
   REQUIRE_FALSE(noOptions.has_value());
+}
+
+TEST_CASE("header build mode") {
+#if __has_include(<magic_args/parse.hpp>)
+  constexpr bool haveParseHpp = true;
+#else
+  constexpr bool haveParseHpp = false;
+#endif
+
+#ifdef TEST_SINGLE_HEADER
+  STATIC_CHECK(magic_args::is_single_header_file);
+  STATIC_CHECK_FALSE(haveParseHpp);
+#else
+  STATIC_CHECK_FALSE(magic_args::is_single_header_file);
+  STATIC_CHECK(haveParseHpp);
+#endif
 }
