@@ -16,45 +16,40 @@
 
 namespace magic_args::detail {
 
-template <class Traits, class TArg>
+template <class Traits, basic_argument TArg>
+  requires(!basic_option<TArg>)
 void show_option_usage(FILE*, const TArg&) {
 }
 
 template <class Traits, basic_option TArg>
-void show_option_usage(FILE* output, const TArg& arg) {
-  const auto shortArg = [&arg] {
+void show_option_usage(FILE* output, const TArg& argDef) {
+  const auto shortArg = [&argDef] {
     if constexpr (requires {
-                    arg.mShortName;
+                    argDef.mShortName;
                     Traits::short_arg_prefix;
                   }) {
-      if (!arg.mShortName.empty()) {
-        return std::format("{}{},", Traits::short_arg_prefix, arg.mShortName);
+      if (!argDef.mShortName.empty()) {
+        return std::format(
+          "{}{},", Traits::short_arg_prefix, argDef.mShortName);
       }
     }
     return std::string {};
   }();
+  const auto longArg = same_as_ignoring_cvref<flag, TArg>
+    ? std::format("{}{}", Traits::long_arg_prefix, argDef.mName)
+    : std::format("{}{}=VALUE", Traits::long_arg_prefix, argDef.mName);
 
-  const auto longArg = [&arg] {
-    const std::string name
-      = std::format("{}{}", Traits::long_arg_prefix, arg.mName);
-    if constexpr (std::same_as<std::decay_t<decltype(arg)>, flag>) {
-      return name;
-    } else {
-      return std::format("{}{}VALUE", name, Traits::value_separator);
-    }
-  }();
-
-  const auto params = std::format("  {:3} {}", shortArg, longArg);
-  if (arg.mHelp.empty()) {
-    detail::println(output, "{}", params);
+  const auto header = std::format("  {:3} {}", shortArg, longArg);
+  if (argDef.mHelp.empty()) {
+    detail::println(output, "{}", header);
     return;
   }
 
-  if (params.size() < 30) {
-    detail::println(output, "{:30} {}", params, arg.mHelp);
+  if (header.size() < 30) {
+    detail::println(output, "{:30} {}", header, argDef.mHelp);
     return;
   }
-  detail::println(output, "{}\n{:31}{}", params, "", arg.mHelp);
+  detail::println(output, "{}\n{:31}{}", header, "", argDef.mHelp);
 }
 
 template <class Traits, basic_option T>
