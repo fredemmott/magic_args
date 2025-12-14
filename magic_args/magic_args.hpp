@@ -19,7 +19,7 @@ constexpr bool is_single_header_file = false;
 #include "windows.hpp"
 #endif
 
-#ifndef MAGIC_ARGS_DISABLE_MAGIC_ENUM
+#ifndef MAGIC_ARGS_DISABLE_ENUM
 #if __has_include(<magic_enum/magic_enum.hpp>)
 #include "enum.hpp"
 #endif
