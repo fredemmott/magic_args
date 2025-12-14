@@ -64,6 +64,18 @@ std::string describe_default_value(const TArg&, TValue&& value) {
   return describe_default_value_t<TArg> {}(std::forward<TValue>(value));
 }
 
+template <basic_argument TArg>
+struct get_argument_help_t {
+  static constexpr auto operator()(const TArg& argDef) {
+    return argDef.mHelp;
+  }
+};
+
+template <basic_argument TArg>
+constexpr auto get_argument_help(TArg&& argDef) {
+  return get_argument_help_t<TArg> {}(std::forward<TArg>(argDef));
+}
+
 template <class Traits, basic_option TArg>
 void show_option_usage(
   FILE* output,
@@ -88,8 +100,8 @@ void show_option_usage(
   const auto header = std::format("  {:3} {}", shortArg, longArg);
 
   std::vector<std::string> extra;
-  if (!argDef.mHelp.empty()) {
-    extra.emplace_back(argDef.mHelp);
+  if (const auto help = get_argument_help(argDef); !help.empty()) {
+    extra.emplace_back(help);
   }
   if (const auto defaultValue = describe_default_value(argDef, initialValue);
       !defaultValue.empty()) {

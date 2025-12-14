@@ -55,6 +55,41 @@ struct describe_default_value_t<TArg> {
   }
 };
 
+template <basic_argument TArg>
+  requires std::is_enum_v<typename std::decay_t<TArg>::value_type>
+struct get_argument_help_t<TArg> {
+  static std::string operator()(const TArg& argDef) {
+    if (!argDef.mHelp.empty()) {
+      return argDef.mHelp;
+    }
+
+    const auto entries
+      = magic_enum::enum_entries<typename std::decay_t<TArg>::value_type>();
+    if (entries.empty()) {
+      return {};
+    }
+
+    if (entries.size() == 2) {
+      return std::format("`{}` or `{}`", entries[0].second, entries[1].second);
+    }
+
+    const auto last = entries[entries.size() - 1].first;
+    std::string ret;
+    for (auto&& [value, name]: entries) {
+      if (ret.empty()) {
+        ret = std::format("`{}`", name);
+        continue;
+      }
+      if (value == last) {
+        ret.append(std::format(", or `{}`", name));
+      } else {
+        ret.append(std::format(", `{}`", name));
+      }
+    }
+    return ret;
+  }
+};
+
 }// namespace magic_args::detail
 
 #endif

@@ -10,6 +10,7 @@
 enum CEnum {
   Foo,
   Bar,
+  Baz,
 };
 enum class ScopedEnum {
   Herp,
@@ -48,8 +49,10 @@ Usage: myApp [OPTIONS...]
 
 Options:
 
-      --c-enum=VALUE           (default: Foo)
-      --scoped-enum=VALUE      (default: Herp)
+      --c-enum=VALUE           `Foo`, `Bar`, or `Baz`
+                               (default: Foo)
+      --scoped-enum=VALUE      `Herp` or `Derp`
+                               (default: Herp)
 
   -?, --help                   show this message
 )EOF"));
@@ -87,8 +90,10 @@ Usage: myApp [OPTIONS...]
 
 Options:
 
-      --c-enum=VALUE           (default: Foo)
-      --scoped-enum=VALUE      (default: Herp)
+      --c-enum=VALUE           `Foo`, `Bar`, or `Baz`
+                               (default: Foo)
+      --scoped-enum=VALUE      `Herp` or `Derp`
+                               (default: Herp)
 
   -?, --help                   show this message
 )EOF"));
