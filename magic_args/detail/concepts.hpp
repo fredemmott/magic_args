@@ -54,4 +54,29 @@ template <class R, class T>
 concept random_access_range_of = std::ranges::random_access_range<R>
   && std::same_as<std::ranges::range_value_t<R>, T>;
 
+template <class T>
+struct is_string_literal_t : std::false_type {};
+
+template <std::size_t N>
+struct is_string_literal_t<char const (&)[N]> : std::true_type {};
+
+template <class T>
+concept string_literal = is_string_literal_t<T>::value;
 }// namespace magic_args::detail
+
+namespace magic_args::inline public_api {
+
+template <class T>
+concept parsing_traits = requires(std::string arg) {
+  { T::long_arg_prefix } -> detail::string_literal;
+  { T::short_arg_prefix } -> detail::string_literal;
+  { T::value_separator } -> detail::string_literal;
+  { T::long_help_arg } -> detail::string_literal;
+  { T::short_help_arg } -> detail::string_literal;
+  { T::version_arg } -> detail::string_literal;
+
+  { T::normalize_option_name(arg) } -> std::same_as<void>;
+  { T::normalize_positional_argument_name(arg) } -> std::same_as<void>;
+};
+
+}// namespace magic_args::inline public_api

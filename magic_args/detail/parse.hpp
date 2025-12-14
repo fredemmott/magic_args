@@ -24,7 +24,7 @@ static_assert(
 
 namespace magic_args::detail {
 
-template <class Traits, basic_argument T>
+template <parsing_traits Traits, basic_argument T>
 std::string provided_argument_name(
   const T& argDef,
   const std::string_view arg) {
@@ -63,7 +63,7 @@ struct option_match {
   }
 };
 
-template <class Traits, basic_option T>
+template <parsing_traits Traits, basic_option T>
 [[nodiscard]]
 std::optional<option_match> option_matches_long(
   const T& argDef,
@@ -102,7 +102,7 @@ std::optional<option_match> option_matches_long(
   return ret;
 }
 
-template <class Traits, basic_option T>
+template <parsing_traits Traits, basic_option T>
 [[nodiscard]]
 std::optional<option_match> option_matches_short(
   const T& argDef,
@@ -124,7 +124,7 @@ std::optional<option_match> option_matches_short(
   return option_match {.mName = tail, .mValue = {}};
 }
 
-template <class Traits, basic_option T>
+template <parsing_traits Traits, basic_option T>
 [[nodiscard]]
 std::optional<option_match> option_matches(
   const T& argDef,
@@ -153,7 +153,7 @@ using arg_parse_result
   = std::optional<std::expected<arg_parse_match<T>, incomplete_parse_reason_t>>;
 
 template <
-  class Traits,
+  parsing_traits Traits,
   basic_argument T,
   class V = std::decay_t<typename T::value_type>>
   requires(!basic_option<T>)
@@ -163,7 +163,7 @@ arg_parse_result<V> parse_option(
   return std::nullopt;
 }
 
-template <class Traits, basic_argument T>
+template <parsing_traits Traits, basic_argument T>
 auto map_value_parse_error(
   const random_access_range_of<std::string_view> auto& args,
   const T& argDef,
@@ -182,7 +182,7 @@ auto map_value_parse_error(
 }
 
 template <
-  class Traits,
+  parsing_traits Traits,
   basic_option T,
   class V = std::decay_t<typename T::value_type>>
 arg_parse_result<V> parse_option(
@@ -219,7 +219,7 @@ arg_parse_result<V> parse_option(
   return {arg_parse_match {ret, consumed}};
 }
 
-template <class Traits>
+template <parsing_traits Traits>
 arg_parse_result<bool> parse_option(
   const flag& arg,
   const random_access_range_of<std::string_view> auto& args) {
@@ -229,7 +229,10 @@ arg_parse_result<bool> parse_option(
   return std::nullopt;
 }
 
-template <class Traits, basic_argument T, class V = typename T::value_type>
+template <
+  parsing_traits Traits,
+  basic_argument T,
+  class V = typename T::value_type>
   requires(!basic_option<T>)
 arg_parse_result<V> parse_positional_argument(
   const T& argDef,
@@ -272,7 +275,10 @@ arg_parse_result<V> parse_positional_argument(
   }
 }
 
-template <class Traits, basic_option T, class V = typename T::value_type>
+template <
+  parsing_traits Traits,
+  basic_option T,
+  class V = typename T::value_type>
 arg_parse_result<V> parse_positional_argument(
   [[maybe_unused]] const T& argDef,
   [[maybe_unused]] std::span<std::string_view> args) {

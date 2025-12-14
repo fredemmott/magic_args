@@ -94,7 +94,10 @@ make_argv(const std::string_view commandLine) {
 }// namespace magic_args::detail::win32
 
 namespace magic_args::inline public_api {
-template <class T, class Traits = gnu_style_parsing_traits, class TChar>
+template <
+  class T,
+  parsing_traits Traits = gnu_style_parsing_traits,
+  class TChar>
 std::expected<T, incomplete_parse_reason_t> parse(
   const TChar* const commandLine,
   const program_info& help = {},
@@ -107,7 +110,10 @@ std::expected<T, incomplete_parse_reason_t> parse(
   return parse<T, Traits>(*argv, help, outputStream, errorStream);
 }
 
-template <class T, class Traits = gnu_style_parsing_traits, class TChar>
+template <
+  class T,
+  parsing_traits Traits = gnu_style_parsing_traits,
+  class TChar>
 std::expected<T, incomplete_parse_reason_t> parse_silent(
   const TChar* const commandLine,
   const program_info& help = {}) {

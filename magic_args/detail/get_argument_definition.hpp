@@ -12,7 +12,7 @@
 
 namespace magic_args::detail {
 
-template <class T, std::size_t N, class Traits>
+template <class T, std::size_t N, parsing_traits Traits>
 auto infer_argument_definition() {
   // TODO: put the member name -> thing into the traits
   std::string name {detail::member_name<T, N>};
@@ -34,7 +34,7 @@ auto infer_argument_definition() {
   }
 }
 
-template <class T, std::size_t N, class Traits>
+template <class T, std::size_t N, parsing_traits Traits>
 auto get_argument_definition() {
   using namespace detail;
 

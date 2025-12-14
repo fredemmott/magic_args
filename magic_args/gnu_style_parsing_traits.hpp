@@ -4,6 +4,10 @@
 
 #include <string>
 
+#ifndef MAGIC_ARGS_SINGLE_FILE
+#include "detail/concepts.hpp"
+#endif
+
 namespace magic_args::inline public_api {
 
 struct gnu_style_parsing_traits {
@@ -18,6 +22,8 @@ struct gnu_style_parsing_traits {
   inline static void normalize_option_name(std::string& name);
   inline static void normalize_positional_argument_name(std::string& name);
 };
+
+static_assert(parsing_traits<gnu_style_parsing_traits>);
 
 inline void gnu_style_parsing_traits::normalize_option_name(std::string& name) {
   if (name.starts_with('m')) {

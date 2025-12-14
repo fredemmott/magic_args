@@ -24,6 +24,7 @@ struct powershell_style_parsing_traits {
     return gnu_style_parsing_traits::normalize_positional_argument_name(name);
   }
 };
+static_assert(parsing_traits<powershell_style_parsing_traits>);
 
 inline void powershell_style_parsing_traits::normalize_option_name(
   std::string& name) {

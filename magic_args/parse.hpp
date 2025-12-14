@@ -20,7 +20,7 @@
 
 namespace magic_args::inline public_api {
 
-template <class T, class Traits = gnu_style_parsing_traits>
+template <class T, parsing_traits Traits = gnu_style_parsing_traits>
 std::expected<T, incomplete_parse_reason_t> parse_silent(
   detail::argv_range auto&& argv,
   const program_info& help = {}) {
@@ -164,14 +164,14 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
   return ret;
 }
 
-template <class T, class Traits = gnu_style_parsing_traits>
+template <class T, parsing_traits Traits = gnu_style_parsing_traits>
 std::expected<T, incomplete_parse_reason_t>
 parse_silent(const int argc, char** argv, const program_info& help = {}) {
   return parse_silent<T, Traits>(
     std::views::counted(argv, static_cast<std::size_t>(argc)), help);
 }
 
-template <class T, class Traits = gnu_style_parsing_traits>
+template <class T, parsing_traits Traits = gnu_style_parsing_traits>
 std::expected<T, incomplete_parse_reason_t> parse(
   detail::argv_range auto&& argv,
   const program_info& help = {},
@@ -191,7 +191,7 @@ std::expected<T, incomplete_parse_reason_t> parse(
   return ret;
 }
 
-template <class T, class Traits = gnu_style_parsing_traits>
+template <class T, parsing_traits Traits = gnu_style_parsing_traits>
 std::expected<T, incomplete_parse_reason_t> parse(
   const int argc,
   char** argv,

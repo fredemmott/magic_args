@@ -10,7 +10,7 @@
 #endif
 
 namespace magic_args::detail {
-template <class T, class Traits>
+template <class T, parsing_traits Traits>
 void print_incomplete_parse_reason(
   const help_requested&,
   const program_info& help,
@@ -20,7 +20,7 @@ void print_incomplete_parse_reason(
   show_usage<T, Traits>(outputStream, arg0, help);
 }
 
-template <class T, class Traits>
+template <class T, parsing_traits Traits>
 void print_incomplete_parse_reason(
   const version_requested&,
   const program_info& help,
@@ -29,7 +29,7 @@ void print_incomplete_parse_reason(
   [[maybe_unused]] FILE* errorStream) {
   detail::println(outputStream, "{}", help.mVersion);
 }
-template <class T, class Traits>
+template <class T, parsing_traits Traits>
 void print_incomplete_parse_reason(
   const missing_required_argument& r,
   const program_info&,
@@ -39,7 +39,7 @@ void print_incomplete_parse_reason(
   detail::print(
     errorStream, "{}: Missing required argument `{}`", arg0, r.mSource.mName);
 }
-template <class T, class Traits>
+template <class T, parsing_traits Traits>
 void print_incomplete_parse_reason(
   const missing_argument_value& r,
   [[maybe_unused]] const program_info&,
@@ -49,7 +49,7 @@ void print_incomplete_parse_reason(
   detail::print(
     errorStream, "{}: option `{}` requires a value", arg0, r.mSource.mName);
 }
-template <class T, class Traits>
+template <class T, parsing_traits Traits>
 void print_incomplete_parse_reason(
   const invalid_argument& arg,
   const program_info&,
@@ -67,7 +67,7 @@ void print_incomplete_parse_reason(
       break;
   }
 }
-template <class T, class Traits>
+template <class T, parsing_traits Traits>
 void print_incomplete_parse_reason(
   const invalid_argument_value& r,
   const program_info&,
@@ -86,7 +86,7 @@ void print_incomplete_parse_reason(
       r.mSource.mArgvSlice.front(),
       [](auto acc, auto it) { return std::format("{} {}", acc, it); }));
 }
-template <class T, class Traits>
+template <class T, parsing_traits Traits>
 void print_incomplete_parse_reason(
   const invalid_encoding&,
   const program_info&,
@@ -96,7 +96,7 @@ void print_incomplete_parse_reason(
   // TODO
 }
 
-template <class T, class Traits>
+template <class T, parsing_traits Traits>
 void print_incomplete_parse_reason(
   const incomplete_parse_reason_t& reason,
   const program_info& help,

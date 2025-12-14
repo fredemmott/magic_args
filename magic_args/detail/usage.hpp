@@ -17,7 +17,7 @@
 
 namespace magic_args::detail {
 
-template <class Traits, basic_argument TArg>
+template <parsing_traits Traits, basic_argument TArg>
   requires(!basic_option<TArg>)
 void show_option_usage(FILE*, const TArg&, const typename TArg::value_type&) {
 }
@@ -76,7 +76,7 @@ constexpr auto get_argument_help(TArg&& argDef) {
   return get_argument_help_t<TArg> {}(std::forward<TArg>(argDef));
 }
 
-template <class Traits, basic_option TArg>
+template <parsing_traits Traits, basic_option TArg>
 void show_option_usage(
   FILE* output,
   const TArg& argDef,
@@ -126,11 +126,11 @@ void show_option_usage(
   }
 }
 
-template <class Traits, basic_option T>
+template <parsing_traits Traits, basic_option T>
 void show_positional_argument_usage(FILE*, const T&) {
 }
 
-template <class Traits, basic_argument T>
+template <parsing_traits Traits, basic_argument T>
   requires(!basic_option<T>)
 void show_positional_argument_usage(FILE* output, const T& arg) {
   if (arg.mHelp.empty()) {
@@ -140,7 +140,7 @@ void show_positional_argument_usage(FILE* output, const T& arg) {
   detail::println(output, "      {:25}{}", arg.mName, arg.mHelp);
 }
 
-template <class T, class Traits = gnu_style_parsing_traits>
+template <class T, parsing_traits Traits = gnu_style_parsing_traits>
 void show_usage(
   FILE* output,
   std::string_view argv0,
