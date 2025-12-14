@@ -8,6 +8,7 @@
 
 #include "concepts.hpp"
 #include "print.hpp"
+#include "to_formattable.hpp"
 #endif
 
 #include <cstdio>
@@ -18,11 +19,56 @@ namespace magic_args::detail {
 
 template <class Traits, basic_argument TArg>
   requires(!basic_option<TArg>)
-void show_option_usage(FILE*, const TArg&) {
+void show_option_usage(FILE*, const TArg&, const typename TArg::value_type&) {
+}
+
+template <basic_option TArg>
+struct describe_default_value_t {
+  using TValue = TArg::value_type;
+
+  static std::string operator()(const TValue&) {
+    return {};
+  }
+
+  static std::string operator()(const TValue& value)
+    requires detail::formattable<TValue> && std::equality_comparable<TValue>
+  {
+    if (value == TValue {}) {
+      return {};
+    }
+    return to_string(value);
+  }
+
+  static std::string operator()(const TValue& value)
+    requires detail::formattable<TValue> && (!std::equality_comparable<TValue>)
+    && std::default_initializable<TValue>
+  {
+    if (const auto ret = to_string(value); ret != to_string(TValue {})) {
+      return ret;
+    }
+    return {};
+  }
+
+ private:
+  static std::string to_string(const TValue& value)
+    requires detail::formattable<TValue>
+  {
+    return std::format("{}", to_formattable(value));
+  }
+};
+
+template <
+  basic_option TArg,
+  same_as_ignoring_cvref<typename TArg::value_type> TValue>
+std::string describe_default_value(const TArg&, TValue&& value) {
+  return describe_default_value_t<TArg> {}(std::forward<TValue>(value));
 }
 
 template <class Traits, basic_option TArg>
-void show_option_usage(FILE* output, const TArg& argDef) {
+void show_option_usage(
+  FILE* output,
+  const TArg& argDef,
+  const typename TArg::value_type& initialValue) {
   const auto shortArg = [&argDef] {
     if constexpr (requires {
                     argDef.mShortName;
@@ -40,16 +86,32 @@ void show_option_usage(FILE* output, const TArg& argDef) {
     : std::format("{}{}=VALUE", Traits::long_arg_prefix, argDef.mName);
 
   const auto header = std::format("  {:3} {}", shortArg, longArg);
-  if (argDef.mHelp.empty()) {
+
+  std::vector<std::string> extra;
+  if (!argDef.mHelp.empty()) {
+    extra.emplace_back(argDef.mHelp);
+  }
+  if (const auto defaultValue = describe_default_value(argDef, initialValue);
+      !defaultValue.empty()) {
+    extra.emplace_back(std::format("(default: {})", defaultValue));
+  }
+
+  if (extra.empty()) {
     detail::println(output, "{}", header);
     return;
   }
 
-  if (header.size() < 30) {
-    detail::println(output, "{:30} {}", header, argDef.mHelp);
-    return;
+  std::string_view prefix;
+  if (header.size() <= 30) {
+    prefix = header;
+  } else {
+    detail::println(output, "{}", header);
   }
-  detail::println(output, "{}\n{:31}{}", header, "", argDef.mHelp);
+
+  for (auto&& line: extra) {
+    detail::println(output, "{:30} {}", prefix, line);
+    prefix = {};
+  }
 }
 
 template <class Traits, basic_option T>
@@ -139,7 +201,9 @@ void show_usage(
   if (hasOptions) {
     [output]<std::size_t... I>(std::index_sequence<I...>) {
       (show_option_usage<Traits>(
-         output, get_argument_definition<T, I, Traits>()),
+         output,
+         get_argument_definition<T, I, Traits>(),
+         get<I>(tie_struct(T {}))),
        ...);
     }(std::make_index_sequence<N> {});
     detail::print(output, "\n");
@@ -148,15 +212,15 @@ void show_usage(
   if constexpr (requires { Traits::short_help_arg; }) {
     show_option_usage<Traits>(
       output,
-      flag {
-        Traits::long_help_arg, "show this message", Traits::short_help_arg});
+      flag {Traits::long_help_arg, "show this message", Traits::short_help_arg},
+      {});
   } else {
     show_option_usage<Traits>(
-      output, flag {Traits::long_help_arg, "show this message"});
+      output, flag {Traits::long_help_arg, "show this message"}, {});
   }
   if (!extraHelp.mVersion.empty()) {
     show_option_usage<Traits>(
-      output, flag {Traits::version_arg, "print program version"});
+      output, flag {Traits::version_arg, "print program version"}, {});
   }
 
   if (hasPositionalArguments) {

@@ -13,11 +13,11 @@ set(
   detail/get_argument_definition.hpp
   detail/validation.hpp
   program_info.hpp
-  detail/usage.hpp
   incomplete_parse_reason.hpp
   detail/from_string.hpp
-  detail/parse.hpp
   detail/to_formattable.hpp
+  detail/usage.hpp
+  detail/parse.hpp
   dump.hpp
   detail/print_incomplete_parse_reason.hpp
   parse.hpp

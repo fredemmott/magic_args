@@ -9,6 +9,23 @@
 
 #include "output.hpp"
 
+namespace {
+constexpr std::string_view chomp(
+  std::string_view sv,
+  const std::size_t count = 1) {
+  sv.remove_prefix(count);
+  return sv;
+}
+template <std::size_t N>
+constexpr std::string_view chomp(
+  const char (&literal)[N],
+  const std::size_t count = 1) {
+  return chomp(std::string_view {literal, N - 1}, count);
+}
+
+static_assert(chomp("foo") == std::string_view {"oo"});
+}// namespace
+
 struct EmptyStruct {};
 
 namespace MyNS {
@@ -117,6 +134,14 @@ struct MandatoryMultiValuePositionalArgument {
 
 struct CustomPositionalArgument {
   magic_args::optional_positional_argument<MyValueType> mFoo;
+};
+
+struct WithDefaults {
+  std::string mMyArg {"testValue"};
+  magic_args::option<std::string> mMyArgWithHelp {
+    .mValue = "testValue2",
+    .mHelp = "Test help text",
+  };
 };
 
 constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
@@ -1079,4 +1104,47 @@ Usage: my_test [OPTIONS...] [--] [POSITIONAL]
   REQUIRE(holds_alternative<magic_args::missing_argument_value>(args.error()));
   const auto& e = get<magic_args::missing_argument_value>(args.error());
   CHECK(e.mSource.mName == "--raw");
+}
+
+TEST_CASE("default argument value - no options") {
+  Output out, err;
+  const auto noOptions = magic_args::parse<WithDefaults>(
+    std::initializer_list<std::string_view> {testName}, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.empty());
+
+  REQUIRE(noOptions.has_value());
+  CHECK(noOptions->mMyArg == "testValue");
+  CHECK(noOptions->mMyArgWithHelp == "testValue2");
+}
+
+TEST_CASE("default argument value - overriden") {
+  Output out, err;
+  const auto noOptions = magic_args::parse<WithDefaults>(
+    std::vector {testName, "--my-arg", "foobar"}, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.empty());
+
+  REQUIRE(noOptions.has_value());
+  CHECK(noOptions->mMyArg == "foobar");
+}
+
+TEST_CASE("default argument value - --help") {
+  Output out, err;
+  const auto noOptions = magic_args::parse<WithDefaults>(
+    std::vector {testName, "--help"}, {}, out, err);
+  CHECK(err.empty());
+  CHECK(out.get() == chomp(R"EOF(
+Usage: my_test [OPTIONS...]
+
+Options:
+
+      --my-arg=VALUE           (Default: testValue)
+      --my-arg-with-help=VALUE Test help text
+                               (Default: testValue2)
+
+  -?, --help                   show this message
+)EOF"));
+
+  REQUIRE_FALSE(noOptions.has_value());
 }
