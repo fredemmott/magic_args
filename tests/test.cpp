@@ -173,11 +173,11 @@ TEMPLATE_TEST_CASE(
   Output out, err;
   const auto args = magic_args::parse<TestType>(argv, {}, out, err);
   CHECK(out.empty());
-  CHECK_THAT(err.get(), Catch::Matchers::StartsWith(&R"EOF(
+  CHECK_THAT(err.get(), Catch::Matchers::StartsWith(std::string {chomp(R"EOF(
 my_test: Unexpected argument: --not-a-valid-arg
 
 Usage: my_test [OPTIONS...]
-)EOF"[1]));
+)EOF")}));
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::invalid_argument>(args.error()));
 }
@@ -207,13 +207,13 @@ TEST_CASE("empty struct, --help") {
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
 
   -?, --help                   show this message
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("empty struct, --help with description") {
@@ -231,14 +231,14 @@ TEST_CASE("empty struct, --help with description") {
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 Tests things.
 
 Options:
 
   -?, --help                   show this message
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("empty struct, --help with examples") {
@@ -259,7 +259,7 @@ TEST_CASE("empty struct, --help with examples") {
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Examples:
@@ -270,7 +270,7 @@ Examples:
 Options:
 
   -?, --help                   show this message
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("empty struct, --help with description and examples") {
@@ -292,7 +292,7 @@ TEST_CASE("empty struct, --help with description and examples") {
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 Tests things.
 
@@ -304,7 +304,7 @@ Examples:
 Options:
 
   -?, --help                   show this message
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("empty struct, --help with version") {
@@ -322,14 +322,14 @@ TEST_CASE("empty struct, --help with version") {
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
 
   -?, --help                   show this message
       --version                print program version
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("empty struct, --version") {
@@ -436,7 +436,7 @@ TEST_CASE("flags only, --help") {
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
@@ -446,7 +446,7 @@ Options:
   -b, --baz                    do the bazzy thing
 
   -?, --help                   show this message
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("options only, --help") {
@@ -457,7 +457,7 @@ TEST_CASE("options only, --help") {
   REQUIRE_FALSE(args.has_value());
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
@@ -467,7 +467,7 @@ Options:
   -f, --foo=VALUE              do the foo thing
 
   -?, --help                   show this message
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("options only, all provided, --foo value") {
@@ -524,7 +524,7 @@ TEST_CASE("parameters, --help") {
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...] [--] [INPUT] [OUTPUT]
 
 Options:
@@ -537,7 +537,7 @@ Arguments:
 
       INPUT
       OUTPUT                   file to create
-)EOF"[1]);
+)EOF"));
 }
 
 TEMPLATE_TEST_CASE(
@@ -580,7 +580,7 @@ TEST_CASE("parameters, extra") {
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::invalid_argument>(args.error()));
   CHECK(out.empty());
-  CHECK(err.get() == &R"EOF(
+  CHECK(err.get() == chomp(R"EOF(
 my_test: Unexpected argument: bogus
 
 Usage: my_test [OPTIONS...] [--] [INPUT] [OUTPUT]
@@ -595,7 +595,7 @@ Arguments:
 
       INPUT
       OUTPUT                   file to create
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("positional parameters with flag as value") {
@@ -622,7 +622,7 @@ TEST_CASE("mandatory named parameter, --help") {
   REQUIRE_FALSE(args.has_value());
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...] [--] INPUT [OUTPUT]
 
 Options:
@@ -635,7 +635,7 @@ Arguments:
 
       INPUT
       OUTPUT                   file to create
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("missing mandatory named parameter") {
@@ -649,7 +649,7 @@ TEST_CASE("missing mandatory named parameter") {
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::missing_required_argument>(args.error()));
   CHECK(out.empty());
-  CHECK(err.get() == &R"EOF(
+  CHECK(err.get() == chomp(R"EOF(
 my_test: Missing required argument `INPUT`
 
 Usage: my_test [OPTIONS...] [--] INPUT [OUTPUT]
@@ -664,7 +664,7 @@ Arguments:
 
       INPUT
       OUTPUT                   file to create
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("multi-value parameter - --help") {
@@ -676,7 +676,7 @@ TEST_CASE("multi-value parameter - --help") {
   REQUIRE_FALSE(args.has_value());
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...] [--] [OUTPUT] [INPUT [INPUT [...]]]
 
 Options:
@@ -689,7 +689,7 @@ Arguments:
 
       OUTPUT                   file to create
       INPUTS
-)EOF"[1]);
+)EOF"));
 }
 
 TEMPLATE_TEST_CASE(
@@ -735,7 +735,7 @@ TEST_CASE("mandatory multi-value named argument, missing all") {
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::missing_required_argument>(args.error()));
   CHECK(out.empty());
-  CHECK(err.get() == &R"EOF(
+  CHECK(err.get() == chomp(R"EOF(
 my_test: Missing required argument `OUTPUT`
 
 Usage: my_test [OPTIONS...] [--] OUTPUT INPUT [INPUT [...]]
@@ -750,7 +750,7 @@ Arguments:
 
       OUTPUT                   file to create
       INPUTS
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("mandatory multi-value named argument, missing first") {
@@ -762,7 +762,7 @@ TEST_CASE("mandatory multi-value named argument, missing first") {
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::missing_required_argument>(args.error()));
   CHECK(out.empty());
-  CHECK(err.get() == &R"EOF(
+  CHECK(err.get() == chomp(R"EOF(
 my_test: Missing required argument `INPUTS`
 
 Usage: my_test [OPTIONS...] [--] OUTPUT INPUT [INPUT [...]]
@@ -777,7 +777,7 @@ Arguments:
 
       OUTPUT                   file to create
       INPUTS
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("std::optional") {
@@ -884,7 +884,7 @@ TEST_CASE("GNU-style normalization") {
   Output out, err;
   const auto args = magic_args::parse<Normalization>(argv, {}, out, err);
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
@@ -899,7 +899,7 @@ Options:
       --snake-case=VALUE
 
   -?, --help                   show this message
-)EOF"[1]);
+)EOF"));
   REQUIRE_FALSE(args.has_value());
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 }
@@ -912,7 +912,7 @@ TEST_CASE("PowerShell-style normalization") {
     parse<Normalization, magic_args::powershell_style_parsing_traits>(
       argv, {}, out, err);
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
@@ -927,7 +927,7 @@ Options:
       -SnakeCase=VALUE
 
   -?, -Help                    show this message
-)EOF"[1]);
+)EOF"));
   REQUIRE_FALSE(args.has_value());
   CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
 }
@@ -941,7 +941,7 @@ TEST_CASE("GNU-style verbatim names") {
     magic_args::verbatim_names<magic_args::gnu_style_parsing_traits>>(
     argv, {}, out, err);
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
@@ -956,7 +956,7 @@ Options:
       --snake_case=VALUE
 
   -?, --help                   show this message
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("PowerShell-style verbatim names") {
@@ -968,7 +968,7 @@ TEST_CASE("PowerShell-style verbatim names") {
     magic_args::verbatim_names<magic_args::powershell_style_parsing_traits>>(
     argv, {}, out, err);
   CHECK(err.get() == "");
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
@@ -983,7 +983,7 @@ Options:
       -snake_case=VALUE
 
   -?, -Help                    show this message
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("GNU-style invalid value") {
@@ -994,7 +994,7 @@ TEST_CASE("GNU-style invalid value") {
   const auto args = magic_args::parse<CustomArgs>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(out.empty());
-  CHECK(err.get() == &R"EOF(
+  CHECK(err.get() == chomp(R"EOF(
 my_test: `___MAGIC_INVALID___` is not a valid value for `--raw` (seen: `--raw ___MAGIC_INVALID___`)
 
 Usage: my_test [OPTIONS...] [--] [POSITIONAL]
@@ -1009,7 +1009,7 @@ Options:
 Arguments:
 
       POSITIONAL
-)EOF"[1]);
+)EOF"));
 
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
   const auto& e = get<magic_args::invalid_argument_value>(args.error());
@@ -1026,7 +1026,7 @@ TEST_CASE("PowerShell-style invalid value") {
     parse<CustomArgs, magic_args::powershell_style_parsing_traits>(
       argv, {}, out, err);
   CHECK(out.empty());
-  CHECK(err.get() == &R"EOF(
+  CHECK(err.get() == chomp(R"EOF(
 my_test: `___MAGIC_INVALID___` is not a valid value for `-Raw` (seen: `-Raw ___MAGIC_INVALID___`)
 
 Usage: my_test [OPTIONS...] [--] [POSITIONAL]
@@ -1041,7 +1041,7 @@ Options:
 Arguments:
 
       POSITIONAL
-)EOF"[1]);
+)EOF"));
 
   REQUIRE_FALSE(args.has_value());
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
@@ -1070,7 +1070,7 @@ TEST_CASE("invalid value for positional argument") {
     = magic_args::parse<CustomPositionalArgument>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(out.empty());
-  CHECK(err.get() == &R"EOF(
+  CHECK(err.get() == chomp(R"EOF(
 my_test: `___MAGIC_INVALID___` is not a valid value for `FOO` (seen: `___MAGIC_INVALID___`)
 
 Usage: my_test [OPTIONS...] [--] [FOO]
@@ -1082,7 +1082,7 @@ Options:
 Arguments:
 
       FOO
-)EOF"[1]);
+)EOF"));
 
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
   const auto& e = get<magic_args::invalid_argument_value>(args.error());
@@ -1095,11 +1095,11 @@ TEST_CASE("missing argument value") {
   Output out, err;
   const auto args = magic_args::parse<CustomArgs>(argv, {}, out, err);
   CHECK(out.empty());
-  CHECK_THAT(err.get(), Catch::Matchers::StartsWith(&R"EOF(
+  CHECK_THAT(err.get(), Catch::Matchers::StartsWith(std::string {chomp(R"EOF(
 my_test: option `--raw` requires a value
 
 Usage: my_test [OPTIONS...] [--] [POSITIONAL]
-)EOF"[1]));
+)EOF")}));
   REQUIRE_FALSE(args.has_value());
   REQUIRE(holds_alternative<magic_args::missing_argument_value>(args.error()));
   const auto& e = get<magic_args::missing_argument_value>(args.error());
@@ -1139,9 +1139,9 @@ Usage: my_test [OPTIONS...]
 
 Options:
 
-      --my-arg=VALUE           (Default: testValue)
+      --my-arg=VALUE           (default: testValue)
       --my-arg-with-help=VALUE Test help text
-                               (Default: testValue2)
+                               (default: testValue2)
 
   -?, --help                   show this message
 )EOF"));
