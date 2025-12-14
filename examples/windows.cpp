@@ -5,7 +5,7 @@
  * include <magic_args/windows.hpp> instead of defining
  * MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS.
  *
- * This is off by default as depends on <Windows.h>
+ * This is off by default as it depends on <Windows.h>
  */
 #define MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS
 #include <magic_args/magic_args.hpp>

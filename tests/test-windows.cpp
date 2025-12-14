@@ -1,8 +1,10 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
+#ifdef TEST_SINGLE_HEADER
 #define MAGIC_ARGS_ENABLE_WINDOWS
 #include <magic_args/magic_args.hpp>
-#ifndef MAGIC_ARGS_SINGLE_FILE
+#else
+#include <magic_args/magic_args.hpp>
 #include <magic_args/windows.hpp>
 #endif
 
