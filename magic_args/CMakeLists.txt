@@ -22,12 +22,16 @@ set(
   detail/print_incomplete_parse_reason.hpp
   parse.hpp
   verbatim_names.hpp
-  enum.hpp
   magic_args.hpp
   windows.hpp
+  enum.hpp
 )
 
+
+# Perhaps we'll also support C++26 reflection in the future
+define_property(TARGET PROPERTY MAGIC_ARGS_HAVE_ENUM_SUPPORT)
 find_package(magic_enum CONFIG)
+set_property(TARGET magic_args PROPERTY MAGIC_ARGS_HAVE_ENUM_SUPPORT "${magic_enum_FOUND}")
 if (magic_enum_FOUND)
   message(STATUS "Found magic_enum, adding enum support")
   target_link_libraries(magic_args INTERFACE magic_enum::magic_enum)

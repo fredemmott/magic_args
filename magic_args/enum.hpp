@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#if (!defined(MAGIC_ARGS_ENUM_HPP)) \
-  && (defined(MAGIC_ARGS_ENABLE_ENUM) || !defined(MAGIC_ARGS_SINGLE_FILE))
+#if (!defined(MAGIC_ARGS_ENUM_HPP)) && (!defined(MAGIC_ARGS_DISABLE_ENUM))
 #define MAGIC_ARGS_ENUM_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
@@ -15,9 +14,7 @@
 
 // For now, this is built with magic_enum; when we start targetting
 // C++26, we should investigate (also?) supporting reflection.
-
 #include <magic_enum/magic_enum.hpp>
-#include <type_traits>
 
 namespace magic_args::detail {
 template <class T>

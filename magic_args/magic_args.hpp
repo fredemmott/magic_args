@@ -1,6 +1,5 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "dump.hpp"
 #include "gnu_style_parsing_traits.hpp"
@@ -12,8 +11,10 @@
 #include "windows.hpp"
 #endif
 
-#ifdef MAGIC_ARGS_ENABLE_ENUM
+#ifndef MAGIC_ARGS_DISABLE_MAGIC_ENUM
+#if __has_include(<magic_enum/magic_enum.hpp>)
 #include "enum.hpp"
+#endif
 #endif
 
 #endif
