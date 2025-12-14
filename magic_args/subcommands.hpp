@@ -92,8 +92,7 @@ parse_subcommands_silent(
   struct InnerTraits : Traits, detail::prefix_args_count_trait<2> {};
 
   return subcommand_match<First>(
-    parse_silent<typename First::arguments_type, InnerTraits>(
-      std::views::drop(argv, 1), help));
+    parse_silent<typename First::arguments_type, InnerTraits>(argv, help));
 }
 
 template <subcommand First, subcommand... Rest>
