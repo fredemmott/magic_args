@@ -1,7 +1,7 @@
 add_library(
   test-lib
   STATIC
-  output.cpp output.hpp
+  output.cpp output.hpp chomp.hpp
 )
 target_compile_features(
   test-lib

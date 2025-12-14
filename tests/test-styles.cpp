@@ -9,6 +9,7 @@
 #include "magic_args/powershell_style_parsing_traits.hpp"
 #endif
 
+#include "chomp.hpp"
 #include "output.hpp"
 
 namespace TestStyles {
@@ -30,7 +31,7 @@ TEST_CASE("help, GNU-style") {
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::help_requested>(args.error()));
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: test_app [OPTIONS...]
 
 Options:
@@ -40,7 +41,7 @@ Options:
   -d, --documented-flag        This flag is documented
 
   -?, --help                   show this message
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("help, powershell-style") {
@@ -52,7 +53,7 @@ TEST_CASE("help, powershell-style") {
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::help_requested>(args.error()));
   CHECK(err.empty());
-  CHECK(out.get() == &R"EOF(
+  CHECK(out.get() == chomp(R"EOF(
 Usage: test_app [OPTIONS...]
 
 Options:
@@ -62,7 +63,7 @@ Options:
   -d, -DocumentedFlag          This flag is documented
 
   -?, -Help                    show this message
-)EOF"[1]);
+)EOF"));
 }
 
 // not testing GNU-style here as that's tested in test.cpp

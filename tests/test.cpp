@@ -7,24 +7,8 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include <ranges>
 
+#include "chomp.hpp"
 #include "output.hpp"
-
-namespace {
-constexpr std::string_view chomp(
-  std::string_view sv,
-  const std::size_t count = 1) {
-  sv.remove_prefix(count);
-  return sv;
-}
-template <std::size_t N>
-constexpr std::string_view chomp(
-  const char (&literal)[N],
-  const std::size_t count = 1) {
-  return chomp(std::string_view {literal, N - 1}, count);
-}
-
-static_assert(chomp("foo") == std::string_view {"oo"});
-}// namespace
 
 struct EmptyStruct {};
 

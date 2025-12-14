@@ -9,6 +9,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <string>
 
+#include "chomp.hpp"
 #include "output.hpp"
 
 namespace TestWindows {
@@ -63,7 +64,7 @@ TEST_CASE("wWinMain - invalid argument", "[windows]") {
   CHECK_FALSE(args.has_value());
 
   CHECK(out.empty());
-  CHECK(err.get() == &R"EOF(
+  CHECK(err.get() == chomp(R"EOF(
 test_app: Unrecognized option: --invalid-argument
 
 Usage: test_app [OPTIONS...]
@@ -76,7 +77,7 @@ Options:
       --empty=VALUE
 
   -?, --help                   show this message
-)EOF"[1]);
+)EOF"));
 }
 
 // The intent is to check that error reporting is plumbed in, not specifically
@@ -89,7 +90,7 @@ TEST_CASE("winMain - invalid argument", "[windows]") {
   CHECK_FALSE(args.has_value());
 
   CHECK(out.empty());
-  CHECK(err.get() == &R"EOF(
+  CHECK(err.get() == chomp(R"EOF(
 test_app: Unrecognized option: --invalid-argument
 
 Usage: test_app [OPTIONS...]
@@ -102,7 +103,7 @@ Options:
       --empty=VALUE
 
   -?, --help                   show this message
-)EOF"[1]);
+)EOF"));
 }
 
 TEST_CASE("winMain - invalid argument (silent)", "[windows]") {
