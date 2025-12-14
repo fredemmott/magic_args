@@ -21,15 +21,9 @@ struct CommandHerp {
   };
 };
 
-template <class... Ts>
-struct overload : Ts... {
-  using Ts::operator()...;
-};
-
 int main(int argc, char** argv) {
   const auto ret
-    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      std::views::counted(argv, argc));
+    = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(argc, argv);
   if (!ret) {
     if (magic_args::is_error(ret.error())) {
       return EXIT_FAILURE;

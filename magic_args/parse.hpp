@@ -52,7 +52,7 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
 
   // Handle options
   std::optional<incomplete_parse_reason_t> failure;
-  for (std::size_t i = 1; i < args.size();) {
+  for (std::size_t i = prefix_args_count<Traits>(); i < args.size();) {
     const auto arg = args[i];
     if (arg == "--") {
       std::ranges::copy(
@@ -169,8 +169,7 @@ std::expected<T, incomplete_parse_reason_t> parse(
     detail::print_incomplete_parse_reason<T, Traits>(
       ret.error(),
       help,
-      std::ranges::empty(argv) ? std::string_view {}
-                               : std::string_view {*std::ranges::begin(argv)},
+      argv,
       outputStream,
       errorStream);
   }
@@ -189,7 +188,7 @@ std::expected<T, incomplete_parse_reason_t> parse(
     detail::print_incomplete_parse_reason<T, Traits>(
       ret.error(),
       help,
-      std::string_view {argc == 0 ? nullptr : argv[0]},
+      std::views::counted(argv, argc),
       outputStream,
       errorStream);
   }

@@ -7,6 +7,7 @@
 #include <magic_args/program_info.hpp>
 
 #include "concepts.hpp"
+#include "parse.hpp"
 #include "print.hpp"
 #include "to_formattable.hpp"
 #endif
@@ -143,7 +144,7 @@ void show_positional_argument_usage(FILE* output, const T& arg) {
 template <class T, parsing_traits Traits = gnu_style_parsing_traits>
 void show_usage(
   FILE* output,
-  std::string_view argv0,
+  argv_range auto&& argv,
   const program_info& extraHelp = {}) {
   using namespace detail;
   constexpr auto N = count_members<T>();
@@ -161,7 +162,8 @@ void show_usage(
       }(std::make_index_sequence<N> {});
 
   const auto oneLiner = std::format(
-    "Usage: {} [OPTIONS...]", std::filesystem::path {argv0}.stem().string());
+    "Usage: {} [OPTIONS...]",
+    detail::get_prefix_for_user_messages<Traits>(argv));
   if constexpr (!hasPositionalArguments) {
     detail::println(output, "{}", oneLiner);
   } else {
