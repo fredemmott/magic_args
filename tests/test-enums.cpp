@@ -48,8 +48,8 @@ Usage: myApp [OPTIONS...]
 
 Options:
 
-      --c-enum=VALUE
-      --scoped-enum=VALUE
+      --c-enum=VALUE           (default: Foo)
+      --scoped-enum=VALUE      (default: Herp)
 
   -?, --help                   show this message
 )EOF"));
@@ -87,8 +87,8 @@ Usage: myApp [OPTIONS...]
 
 Options:
 
-      --c-enum=VALUE
-      --scoped-enum=VALUE
+      --c-enum=VALUE           (default: Foo)
+      --scoped-enum=VALUE      (default: Herp)
 
   -?, --help                   show this message
 )EOF"));

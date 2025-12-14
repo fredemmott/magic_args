@@ -41,6 +41,20 @@ struct from_string_t<T> {
   }
 };
 
+/** Always show the defaults of enum fields.
+ *
+ * Without this specialization, the default would only be shown if
+ * different to the default-constructed enum value.
+ */
+template <basic_option TArg>
+  requires std::is_enum_v<typename TArg::value_type>
+struct describe_default_value_t<TArg> {
+  using TValue = typename TArg::value_type;
+  static std::string operator()(const TValue value) {
+    return std::format("{}", to_formattable(value));
+  }
+};
+
 }// namespace magic_args::detail
 
 #endif
