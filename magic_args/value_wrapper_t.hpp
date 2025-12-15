@@ -31,6 +31,11 @@ class value_wrapper_t {
     return std::forward<Self>(self).mValue;
   }
 
+  template <class Self>
+  constexpr auto operator->(this Self&& self) noexcept {
+    return &std::forward<Self>(self).mValue;
+  }
+
  private:
   TValue mValue;
 };
