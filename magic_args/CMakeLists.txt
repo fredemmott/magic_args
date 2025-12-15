@@ -29,6 +29,15 @@ set(
   enum.hpp
 )
 
+# Safety check: verify all .hpp files are listed in HEADER_FILES, so the header-only
+# version is complete
+file(GLOB_RECURSE ALL_HPP_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.hpp")
+foreach (HPP_FILE ${ALL_HPP_FILES})
+  if (NOT "${HPP_FILE}" IN_LIST HEADER_FILES AND NOT "${HPP_FILE}" STREQUAL "detail/single_header_prefix.hpp")
+    message(FATAL_ERROR "Header file '${HPP_FILE}' is not listed in HEADER_FILES in ${CMAKE_CURRENT_LIST_FILE}")
+  endif ()
+endforeach ()
+
 
 # Perhaps we'll also support C++26 reflection in the future
 define_property(TARGET PROPERTY MAGIC_ARGS_HAVE_ENUM_SUPPORT)
