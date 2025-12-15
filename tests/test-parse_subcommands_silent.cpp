@@ -144,7 +144,7 @@ TEST_CASE("match second, but pass invalid arguments (silent)") {
 TEST_CASE("match foo command via, char/argv") {
   constexpr std::array argv {"mytest", "foo", "--bar=BAR"};
   const auto ret = magic_args::parse_subcommands_silent<CommandFooBar>(
-    argv.size(), argv.data());
+    static_cast<int>(argv.size()), argv.data());
   REQUIRE(ret.has_value());
   const auto& v = ret.value();
   REQUIRE(holds_alternative<magic_args::subcommand_match<CommandFooBar>>(v));

@@ -1139,8 +1139,8 @@ TEST_CASE("argc, argv") {
     "--help",
   };
   Output out, err;
-  const auto result
-    = magic_args::parse<WithDefaults>(args.size(), args.data(), {}, out, err);
+  const auto result = magic_args::parse<WithDefaults>(
+    static_cast<int>(args.size()), args.data(), {}, out, err);
   CHECK(err.empty());
   CHECK_THAT(out.get(), Catch::Matchers::StartsWith("Usage: my_test"));
   REQUIRE_FALSE(result.has_value());
