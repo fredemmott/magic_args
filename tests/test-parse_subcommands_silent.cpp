@@ -104,3 +104,39 @@ TEST_CASE("match herp subcommand and parse its arguments (silent)") {
   const auto& match = std::get<magic_args::subcommand_match<CommandHerp>>(v);
   CHECK(match->mDerp == "DERP");
 }
+
+TEST_CASE("match first, but pass invalid arguments (silent)") {
+  const auto ret
+    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
+      std::array {"myApp", "foo", "--INVALID"});
+  REQUIRE_FALSE(ret.has_value());
+  REQUIRE(
+    holds_alternative<
+      magic_args::incomplete_subcommand_parse_reason_t<CommandFooBar>>(
+      ret.error()));
+  const auto& tagged
+    = get<magic_args::incomplete_subcommand_parse_reason_t<CommandFooBar>>(
+      ret.error());
+  REQUIRE(holds_alternative<magic_args::invalid_argument>(tagged.value()));
+  const auto e = get<magic_args::invalid_argument>(tagged.value());
+  CHECK(e.mKind == magic_args::invalid_argument::kind::Option);
+  CHECK(e.mSource.mArg == "--INVALID");
+}
+
+TEST_CASE("match second, but pass invalid arguments (silent)") {
+  const auto ret
+    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
+      std::array {"myApp", "herp", "--INVALID"});
+  REQUIRE_FALSE(ret.has_value());
+  REQUIRE(
+    holds_alternative<
+      magic_args::incomplete_subcommand_parse_reason_t<CommandHerp>>(
+      ret.error()));
+  const auto& tagged
+    = get<magic_args::incomplete_subcommand_parse_reason_t<CommandHerp>>(
+      ret.error());
+  REQUIRE(holds_alternative<magic_args::invalid_argument>(tagged.value()));
+  const auto e = get<magic_args::invalid_argument>(tagged.value());
+  CHECK(e.mKind == magic_args::invalid_argument::kind::Option);
+  CHECK(e.mSource.mArg == "--INVALID");
+}
