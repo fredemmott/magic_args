@@ -14,10 +14,12 @@ inline namespace incomplete_parse_reasons {
 struct help_requested {
   static constexpr bool is_error = false;
   static constexpr bool user_requested = true;
+  constexpr bool operator==(const help_requested&) const = default;
 };
 struct version_requested {
   static constexpr bool is_error = false;
   static constexpr bool user_requested = true;
+  constexpr bool operator==(const version_requested&) const = default;
 };
 struct missing_required_argument {
   static constexpr bool is_error = true;
@@ -28,8 +30,10 @@ struct missing_required_argument {
     constexpr bool empty() const noexcept {
       return mName.empty();
     }
+    constexpr bool operator==(const source_t&) const = default;
   };
   source_t mSource;
+  constexpr bool operator==(const missing_required_argument&) const = default;
 };
 struct missing_argument_value {
   static constexpr bool is_error = true;
@@ -42,9 +46,11 @@ struct missing_argument_value {
     constexpr bool empty() const noexcept {
       return mName.empty() && mArgvMember.empty();
     }
+    constexpr bool operator==(const source_t&) const = default;
   };
 
   source_t mSource;
+  constexpr bool operator==(const missing_argument_value&) const = default;
 };
 struct invalid_argument {
   static constexpr bool is_error = true;
@@ -56,10 +62,12 @@ struct invalid_argument {
   };
   struct source_t {
     std::string mArg;
+    constexpr bool operator==(const source_t&) const = default;
   };
 
   kind mKind {};
   source_t mSource;
+  constexpr bool operator==(const invalid_argument&) const = default;
 };
 
 struct invalid_argument_value {
@@ -74,15 +82,18 @@ struct invalid_argument_value {
     constexpr bool empty() const noexcept {
       return mArgvSlice.empty() && mName.empty() && mValue.empty();
     }
+    constexpr bool operator==(const source_t&) const = default;
   };
 
   // Automatically populated by the framework; if you fill this out, an
   // exception will be thrown
   source_t mSource;
+  constexpr bool operator==(const invalid_argument_value&) const = default;
 };
 struct invalid_encoding {
   static constexpr bool is_error = true;
   static constexpr bool user_requested = false;
+  constexpr bool operator==(const invalid_encoding&) const = default;
 };
 
 }// namespace incomplete_parse_reasons

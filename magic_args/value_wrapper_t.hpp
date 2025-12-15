@@ -36,6 +36,9 @@ class value_wrapper_t {
     return &std::forward<Self>(self).mValue;
   }
 
+  constexpr bool operator==(const value_wrapper_t& other) const noexcept
+    = default;
+
  private:
   TValue mValue;
 };

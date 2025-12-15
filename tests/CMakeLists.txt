@@ -49,6 +49,7 @@ endfunction()
 add_test_executables(test test.cpp)
 add_test_executables(test-styles test-styles.cpp)
 add_test_executables(test-parse_subcommands-silent test-parse_subcommands_silent.cpp)
+add_test_executables(test-parse_subcommands test-parse_subcommands.cpp)
 
 if (WIN32)
   add_test_executables(test-windows test-windows.cpp utf8-process-code-page.manifest)

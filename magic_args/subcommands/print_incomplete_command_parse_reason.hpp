@@ -18,9 +18,13 @@ void show_command_usage(
   using CommonArguments = common_arguments_t<Traits>;
   detail::println(
     stream,
-    "Usage: {} COMMAND [OPTIONS...]\n",
+    "Usage: {} COMMAND [OPTIONS...]",
     get_prefix_for_user_messages<Traits>(argv));
-  detail::println(stream, "Commands:\n");
+  if (!info.mDescription.empty()) {
+    detail::println(stream, "{}", info.mDescription);
+  }
+
+  detail::println(stream, "\nCommands:\n");
 
   (
     [stream]<class T>(std::type_identity<T>) {
