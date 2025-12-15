@@ -30,16 +30,11 @@ int main(int argc, char** argv) {
     }
     return EXIT_SUCCESS;
   }
+
   std::visit(
     []<class T>(const magic_args::subcommand_match<T>& match) {
-      std::println("Matched command `{}`", T::name);
-      if (match) {
-        magic_args::dump(*match);
-      } else {
-        std::println(
-          "Argument parsing incomplete; result should already have been "
-          "printed");
-      }
+      std::println("Matched {}", T::name);
+      magic_args::dump(*match);
     },
     ret.value());
   return 0;

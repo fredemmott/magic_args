@@ -11,6 +11,31 @@
 #include <expected>
 #include <string_view>
 
+namespace magic_args {
+template <class TValue>
+class value_wrapper_t {
+ public:
+  using value_type = TValue;
+
+  value_wrapper_t() = delete;
+  constexpr explicit value_wrapper_t(TValue value) : mValue {std::move(value)} {
+  }
+
+  template <class Self>
+  decltype(auto) value(this Self&& self) noexcept {
+    return std::forward<Self>(self).mValue;
+  }
+
+  template <class Self>
+  constexpr decltype(auto) operator*(this Self&& self) noexcept {
+    return std::forward<Self>(self).mValue;
+  }
+
+ private:
+  TValue mValue;
+};
+}// namespace magic_args
+
 namespace magic_args::inline public_api {
 
 template <class T>
@@ -24,31 +49,84 @@ template <class T>
 concept invocable_subcommand
   = subcommand<T> && std::invocable<T, typename T::arguments_type&&>;
 
-template <
-  subcommand T,
-  class R
-  = std::expected<typename T::arguments_type, incomplete_parse_reason_t>>
-struct subcommand_match : R {
-  using subcommand_type = T;
-  using arguments_type = T::arguments_type;
-
-  subcommand_match() = delete;
-  template <std::convertible_to<R> U>
-  explicit subcommand_match(U&& v) : R {std::forward<U>(v)} {
-  }
-};
-
-using incomplete_subcommand_parse_reason_t = std::variant<
+using incomplete_command_parse_reason_t = std::variant<
   help_requested,
   version_requested,
   missing_required_argument,
   invalid_argument_value>;
 
-template <parsing_traits Traits, subcommand First, subcommand... Rest>
-std::expected<
-  std::variant<subcommand_match<First>, subcommand_match<Rest>...>,
-  incomplete_subcommand_parse_reason_t>
-parse_subcommands_silent(
+template <
+  subcommand T,
+  class TParent = value_wrapper_t<typename T::arguments_type>>
+struct subcommand_match : TParent {
+  using subcommand_type = T;
+  using arguments_type = T::arguments_type;
+
+  using TParent::TParent;
+  using TParent::operator*;
+};
+
+template <
+  subcommand T,
+  class TParent = value_wrapper_t<incomplete_parse_reason_t>>
+struct incomplete_subcommand_parse_reason_t : TParent {
+  using subcommand_type = T;
+
+  using TParent::TParent;
+  using TParent::operator*;
+
+  static constexpr std::string_view subcommand_name {T::name};
+};
+}// namespace magic_args::inline public_api
+namespace magic_args::detail {
+template <
+  parsing_traits Traits,
+  subcommand First,
+  subcommand... Rest,
+  class TExpected>
+void parse_subcommands_silent_impl(
+  std::optional<TExpected>& result,
+  std::string_view command,
+  argv_range auto&& argv,
+  const program_info& help) {
+  if (std::string_view {First::name} != command) {
+    if constexpr (sizeof...(Rest) > 0) {
+      parse_subcommands_silent_impl<Traits, Rest...>(
+        result, command, argv, help);
+    }
+    return;
+  }
+
+  // Skip argv[0] and argv[1], instead of just argv[0]
+  struct InnerTraits : Traits, detail::prefix_args_count_trait<2> {};
+  auto subcommandResult
+    = parse_silent<typename First::arguments_type, InnerTraits>(argv, help);
+  if (subcommandResult) [[likely]] {
+    result.emplace(
+      subcommand_match<First>(std::move(subcommandResult).value()));
+  } else {
+    result.emplace(
+      std::unexpect,
+      incomplete_subcommand_parse_reason_t<First>(
+        std::move(subcommandResult).error()));
+  }
+}
+}// namespace magic_args::detail
+
+namespace magic_args::inline public_api {
+
+template <
+  parsing_traits Traits,
+  subcommand First,
+  subcommand... Rest,
+  class TSuccess
+  = std::variant<subcommand_match<First>, subcommand_match<Rest>...>,
+  class TIncomplete = std::variant<
+    incomplete_command_parse_reason_t,
+    incomplete_subcommand_parse_reason_t<First>,
+    incomplete_subcommand_parse_reason_t<Rest>...>,
+  class TExpected = std::expected<TSuccess, TIncomplete>>
+TExpected parse_subcommands_silent(
   detail::argv_range auto&& argv,
   const program_info& help = {}) {
   if (argv.size() < 2) {
@@ -68,31 +146,20 @@ parse_subcommands_silent(
     return std::unexpected {version_requested {}};
   }
 
-  if (std::string_view {First::name} != command) {
-    if constexpr (sizeof...(Rest) > 0) {
-      const auto result = parse_subcommands_silent<Traits, Rest...>(argv, help);
-      if (!result) {
-        return std::unexpected {result.error()};
-      }
-      return std::visit(
-        []<typename T>(T&& v) { return std::forward<T>(v); },
-        std::move(result).value());
-    } else {
-      return std::unexpected {invalid_argument_value {
+  std::optional<TExpected> result;
+  detail::parse_subcommands_silent_impl<Traits, First, Rest...>(
+    result, command, argv, help);
+  if (result) [[likely]] {
+    return std::move(result).value();
+  }
+
+  return std::unexpected {invalid_argument_value {
         .mSource = {
           .mArgvSlice = std::vector { std::string { command } },
           .mName = "COMMAND",
           .mValue = std::string { command },
         },
       }};
-    }
-  }
-
-  // Skip argv[0] and argv[1], instead of just argv[0]
-  struct InnerTraits : Traits, detail::prefix_args_count_trait<2> {};
-
-  return subcommand_match<First>(
-    parse_silent<typename First::arguments_type, InnerTraits>(argv, help));
 }
 
 template <subcommand First, subcommand... Rest>
@@ -155,7 +222,7 @@ void show_subcommand_usage(
 }
 
 template <parsing_traits Traits, subcommand... Ts>
-void print_incomplete_subcommand_parse_reason(
+void print_incomplete_command_parse_reason(
   const help_requested&,
   const program_info& info,
   argv_range auto&& argv,
@@ -165,7 +232,7 @@ void print_incomplete_subcommand_parse_reason(
 }
 
 template <parsing_traits Traits, subcommand... Ts>
-void print_incomplete_subcommand_parse_reason(
+void print_incomplete_command_parse_reason(
   const version_requested&,
   const program_info& info,
   argv_range auto&&,
@@ -175,7 +242,7 @@ void print_incomplete_subcommand_parse_reason(
 }
 
 template <parsing_traits Traits, subcommand... Ts>
-void print_incomplete_subcommand_parse_reason(
+void print_incomplete_command_parse_reason(
   const missing_required_argument&,
   const program_info&,
   argv_range auto&& argv,
@@ -188,7 +255,7 @@ void print_incomplete_subcommand_parse_reason(
 }
 
 template <parsing_traits Traits, subcommand... Ts>
-void print_incomplete_subcommand_parse_reason(
+void print_incomplete_command_parse_reason(
   const invalid_argument_value& r,
   const program_info&,
   argv_range auto&& argv,
@@ -202,15 +269,15 @@ void print_incomplete_subcommand_parse_reason(
 }
 
 template <parsing_traits Traits, subcommand... Ts>
-void print_incomplete_subcommand_parse_reason(
-  const incomplete_subcommand_parse_reason_t& variant,
+void print_incomplete_command_parse_reason(
+  const incomplete_command_parse_reason_t& variant,
   const program_info& info,
   argv_range auto&& argv,
   FILE* outputStream,
   FILE* errorStream) {
   std::visit(
     [&]<class R>(R&& it) {
-      print_incomplete_subcommand_parse_reason<Traits, Ts...>(
+      print_incomplete_command_parse_reason<Traits, Ts...>(
         std::forward<R>(it), info, argv, outputStream, errorStream);
       if constexpr (std::decay_t<R>::is_error) {
         detail::print(errorStream, "\n\n");
@@ -220,6 +287,11 @@ void print_incomplete_subcommand_parse_reason(
     variant);
 }
 
+template <class... Ts>
+struct overloaded : Ts... {
+  using Ts::operator()...;
+};
+
 }// namespace magic_args::detail
 
 namespace magic_args::inline public_api {
@@ -227,43 +299,42 @@ namespace magic_args::inline public_api {
 template <parsing_traits Traits, subcommand First, subcommand... Rest>
 auto parse_subcommands(
   detail::argv_range auto&& argv,
-  const program_info& help = {},
+  const program_info& info = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
-  const auto ret = parse_subcommands_silent<Traits, First, Rest...>(argv, help);
-  if (!ret) {
-    detail::print_incomplete_subcommand_parse_reason<Traits, First, Rest...>(
-      ret.error(), help, argv, outputStream, errorStream);
+  const auto ret = parse_subcommands_silent<Traits, First, Rest...>(argv, info);
+  if (ret) [[likely]] {
     return ret;
   }
 
   // Matched a subcommand, but argument/option parsing failed for the subcommand
 
   std::visit(
-    [&argv, &help, outputStream, errorStream]<class T>(T&& it) {
-      if (it.has_value()) {
-        return;
-      }
-      // Skip argv[0] and argv[1] for printing
-
-      using Args = std::decay_t<T>::arguments_type;
-      struct InnerTraits : Traits, detail::prefix_args_count_trait<2> {};
-
-      detail::print_incomplete_parse_reason<Args, InnerTraits>(
-        it.error(), help, argv, outputStream, errorStream);
+    detail::overloaded {
+      [&](const incomplete_command_parse_reason_t& reason) {
+        detail::print_incomplete_command_parse_reason<Traits, First, Rest...>(
+          reason, info, argv, outputStream, errorStream);
+      },
+      [&]<class T>(const incomplete_subcommand_parse_reason_t<T>& reason) {
+        // Skip over argv[1], as well as argv[0]
+        struct InnerTraits : Traits, detail::prefix_args_count_trait<2> {};
+        detail::print_incomplete_parse_reason<
+          typename T::arguments_type,
+          InnerTraits>(reason.value(), info, argv, outputStream, errorStream);
+      },
     },
-    ret.value());
+    ret.error());
   return ret;
 }
 
 template <subcommand First, subcommand... Rest>
 auto parse_subcommands(
   detail::argv_range auto&& argv,
-  const program_info& help = {},
+  const program_info& info = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
   return parse_subcommands<gnu_style_parsing_traits, First, Rest...>(
-    argv, help, outputStream, errorStream);
+    argv, info, outputStream, errorStream);
 }
 
 template <class... Args>
@@ -275,6 +346,22 @@ auto parse_subcommands(
   FILE* errorStream = stderr) {
   return parse_subcommands<Args...>(
     std::views::counted(argv, argc), help, outputStream, errorStream);
+}
+
+template <subcommand First, subcommand... Rest>
+bool is_error(
+  const std::variant<
+    incomplete_command_parse_reason_t,
+    incomplete_subcommand_parse_reason_t<First>,
+    incomplete_subcommand_parse_reason_t<Rest>...>& reason) {
+  return std::visit(
+    detail::overloaded {
+      [](const incomplete_command_parse_reason_t& r) { return is_error(r); },
+      []<class T>(const incomplete_subcommand_parse_reason_t<T>& r) {
+        return is_error(*r);
+      },
+    },
+    reason);
 }
 
 }// namespace magic_args::inline public_api
