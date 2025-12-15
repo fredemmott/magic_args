@@ -9,6 +9,7 @@
 
 #include <concepts>
 #include <expected>
+#include <functional>
 #include <string_view>
 
 namespace magic_args {
