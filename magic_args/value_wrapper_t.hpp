@@ -5,6 +5,13 @@
 #include <utility>
 
 namespace magic_args {
+/** This is used as a common base for some return types, but is not intended
+ * for direct use.
+ *
+ * Subclasses usually attach additional data, e.g. `subcommand_match<T>`
+ * extends `value_wrapper_t<Arguments>`, and also functions as a type tag
+ * for the subcommand type.
+ */
 template <class TValue>
 class value_wrapper_t {
  public:
