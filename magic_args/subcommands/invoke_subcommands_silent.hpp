@@ -43,7 +43,10 @@ template <
   invocable_subcommand First,
   compatible_invocable_subcommand<First>... Rest,
   class... Args>
-auto invoke_subcommands_silent(const int argc, char** argv, Args&&... args) {
+auto invoke_subcommands_silent(
+  const int argc,
+  const char* const* argv,
+  Args&&... args) {
   return invoke_subcommands_silent<Traits, First, Rest...>(
     std::views::counted(argv, argc), std::forward<Args>(args)...);
 }

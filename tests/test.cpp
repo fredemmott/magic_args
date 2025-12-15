@@ -1114,7 +1114,7 @@ TEST_CASE("default argument value - overriden") {
 
 TEST_CASE("default argument value - --help") {
   Output out, err;
-  const auto noOptions = magic_args::parse<WithDefaults>(
+  const auto result = magic_args::parse<WithDefaults>(
     std::vector {testName, "--help"}, {}, out, err);
   CHECK(err.empty());
   CHECK(out.get() == chomp(R"EOF(
@@ -1129,7 +1129,22 @@ Options:
   -?, --help                   show this message
 )EOF"));
 
-  REQUIRE_FALSE(noOptions.has_value());
+  REQUIRE_FALSE(result.has_value());
+  REQUIRE(holds_alternative<magic_args::help_requested>(result.error()));
+}
+
+TEST_CASE("argc, argv") {
+  constexpr std::array args {
+    "my_test",
+    "--help",
+  };
+  Output out, err;
+  const auto result
+    = magic_args::parse<WithDefaults>(args.size(), args.data(), {}, out, err);
+  CHECK(err.empty());
+  CHECK_THAT(out.get(), Catch::Matchers::StartsWith("Usage: my_test"));
+  REQUIRE_FALSE(result.has_value());
+  REQUIRE(holds_alternative<magic_args::help_requested>(result.error()));
 }
 
 TEST_CASE("header build mode") {

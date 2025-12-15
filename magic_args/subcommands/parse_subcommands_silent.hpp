@@ -109,10 +109,10 @@ auto parse_subcommands_silent(
 template <class... Args>
 auto parse_subcommands_silent(
   const int argc,
-  char** argv,
   const program_info& help = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
+  const char* const* argv,
   return parse_subcommands_silent<Args...>(
     std::views::counted(argv, argc), help, outputStream, errorStream);
 }

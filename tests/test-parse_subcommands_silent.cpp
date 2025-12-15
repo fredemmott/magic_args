@@ -140,3 +140,14 @@ TEST_CASE("match second, but pass invalid arguments (silent)") {
   CHECK(e.mKind == magic_args::invalid_argument::kind::Option);
   CHECK(e.mSource.mArg == "--INVALID");
 }
+
+TEST_CASE("match foo command via, char/argv") {
+  constexpr std::array argv {"mytest", "foo", "--bar=BAR"};
+  const auto ret = magic_args::parse_subcommands_silent<CommandFooBar>(
+    argv.size(), argv.data());
+  REQUIRE(ret.has_value());
+  const auto& v = ret.value();
+  REQUIRE(holds_alternative<magic_args::subcommand_match<CommandFooBar>>(v));
+  const auto& match = std::get<magic_args::subcommand_match<CommandFooBar>>(v);
+  CHECK(match->mBar == "BAR");
+}

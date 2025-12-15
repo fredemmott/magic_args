@@ -151,8 +151,10 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
 }
 
 template <class T, parsing_traits Traits = gnu_style_parsing_traits>
-std::expected<T, incomplete_parse_reason_t>
-parse_silent(const int argc, char** argv, const program_info& help = {}) {
+std::expected<T, incomplete_parse_reason_t> parse_silent(
+  const int argc,
+  const char* const* argv,
+  const program_info& help = {}) {
   return parse_silent<T, Traits>(
     std::views::counted(argv, static_cast<std::size_t>(argc)), help);
 }
@@ -167,11 +169,7 @@ std::expected<T, incomplete_parse_reason_t> parse(
     = parse_silent<T, Traits>(std::forward<decltype(argv)>(argv), help);
   if (!ret) {
     detail::print_incomplete_parse_reason<T, Traits>(
-      ret.error(),
-      help,
-      argv,
-      outputStream,
-      errorStream);
+      ret.error(), help, argv, outputStream, errorStream);
   }
   return ret;
 }
@@ -179,20 +177,12 @@ std::expected<T, incomplete_parse_reason_t> parse(
 template <class T, parsing_traits Traits = gnu_style_parsing_traits>
 std::expected<T, incomplete_parse_reason_t> parse(
   const int argc,
-  char** argv,
+  const char* const* argv,
   const program_info& help = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
-  const auto ret = parse_silent<T, Traits>(argc, argv, help);
-  if (!ret) {
-    detail::print_incomplete_parse_reason<T, Traits>(
-      ret.error(),
-      help,
-      std::views::counted(argv, argc),
-      outputStream,
-      errorStream);
-  }
-  return ret;
+  return parse<T, Traits>(
+    std::views::counted(argv, argc), help, outputStream, errorStream);
 }
 
 }// namespace magic_args::inline public_api
