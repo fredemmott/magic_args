@@ -112,6 +112,6 @@ auto parse_subcommands_silent(
   const char* const* argv,
   const program_info& help = {}) {
   return parse_subcommands_silent<Args...>(
-    std::views::counted(argv, argc), help, outputStream, errorStream);
+    std::views::counted(argv, argc), help);
 }
 }// namespace magic_args::inline public_api
