@@ -33,9 +33,18 @@ auto parse_subcommands(
           reason, info, argv, outputStream, errorStream);
       },
       [&]<class T>(const incomplete_subcommand_parse_reason_t<T>& reason) {
+        const auto subcommandInfo = [&] {
+          if constexpr (subcommand_with_info<T>) {
+            return T::subcommand_info();
+          } else {
+            static_assert(subcommand<T>);
+            return info;
+          }
+        }();
         detail::print_incomplete_parse_reason<
           typename T::arguments_type,
-          InnerTraits>(reason.value(), info, argv, outputStream, errorStream);
+          InnerTraits>(
+          reason.value(), subcommandInfo, argv, outputStream, errorStream);
       },
     },
     ret.error());

@@ -24,8 +24,12 @@ void show_command_usage(
 
   (
     [stream]<class T>(std::type_identity<T>) {
-      // TODO: show help
-      detail::println(stream, "      {}", T::name);
+      if constexpr (subcommand_with_info<T>) {
+        detail::println(
+          stream, "      {:24} {}", T::name, T::subcommand_info().mDescription);
+      } else {
+        detail::println(stream, "      {}", T::name);
+      }
     }(std::type_identity<Ts> {}),
     ...);
 

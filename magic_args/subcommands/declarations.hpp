@@ -19,6 +19,11 @@ concept subcommand = requires(T v) {
   { T::name } -> std::convertible_to<std::string_view>;
 };
 
+template <class T>
+concept subcommand_with_info = subcommand<T> && requires {
+  { T::subcommand_info() } -> std::convertible_to<program_info>;
+};
+
 using incomplete_command_parse_reason_t = std::variant<
   help_requested,
   version_requested,
