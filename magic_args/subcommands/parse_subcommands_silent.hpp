@@ -16,19 +16,29 @@ void parse_subcommands_silent_impl(
   std::optional<TExpected>& result,
   std::string_view command,
   argv_range auto&& argv,
-  const program_info& help) {
+  const program_info& info) {
   if (std::string_view {First::name} != command) {
     if constexpr (sizeof...(Rest) > 0) {
       parse_subcommands_silent_impl<Traits, Rest...>(
-        result, command, argv, help);
+        result, command, argv, info);
     }
     return;
   }
 
   // Skip argv[0] and argv[1], instead of just argv[0]
-  struct InnerTraits : Traits, detail::prefix_args_count_trait<2> {};
+  struct SubcommandTraits : Traits, detail::prefix_args_count_trait<2> {};
+  const auto subcommandInfo = [&] {
+    if constexpr (subcommand_with_info<First>) {
+      return First::subcommand_info();
+    } else {
+      static_assert(subcommand<First>);
+      return std::reference_wrapper {info};
+    }
+  }();
+
   auto subcommandResult
-    = parse_silent<typename First::arguments_type, InnerTraits>(argv, help);
+    = parse_silent<typename First::arguments_type, SubcommandTraits>(
+      argv, subcommandInfo);
   if (subcommandResult) [[likely]] {
     result.emplace(
       subcommand_match<First>(std::move(subcommandResult).value()));
