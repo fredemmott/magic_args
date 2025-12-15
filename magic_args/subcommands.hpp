@@ -428,7 +428,12 @@ TExpected invoke_subcommands(
 
   return std::visit(
     []<class T>(subcommand_match<T>&& match) {
-      return std::invoke(T::main, std::move(match).value());
+      if constexpr (std::is_void_v<TSuccess>) {
+        std::invoke(T::main, std::move(match).value());
+        return TExpected {};
+      } else {
+        return std::invoke(T::main, std::move(match).value());
+      }
     },
     std::move(result).value());
 }
