@@ -98,22 +98,4 @@ void print_incomplete_command_parse_reason(
     r.mSource.mValue);
 }
 
-template <parsing_traits Traits, subcommand... Ts>
-void print_incomplete_command_parse_reason(
-  const incomplete_command_parse_reason_t& variant,
-  const program_info& info,
-  argv_range auto&& argv,
-  FILE* outputStream,
-  FILE* errorStream) {
-  std::visit(
-    [&]<class R>(R&& it) {
-      print_incomplete_command_parse_reason<Traits, Ts...>(
-        std::forward<R>(it), info, argv, outputStream, errorStream);
-      if constexpr (std::decay_t<R>::is_error) {
-        detail::print(errorStream, "\n\n");
-        show_command_usage<Traits, Ts...>(info, argv, errorStream);
-      }
-    },
-    variant);
-}
 }// namespace magic_args::detail

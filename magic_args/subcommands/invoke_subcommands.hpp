@@ -13,10 +13,7 @@ template <
   compatible_invocable_subcommand<First>... Rest,
   class TSuccess = std::
     invoke_result_t<decltype(First::main), typename First::arguments_type&&>,
-  class TIncomplete = std::variant<
-    incomplete_command_parse_reason_t,
-    incomplete_subcommand_parse_reason_t<First>,
-    incomplete_subcommand_parse_reason_t<Rest>...>,
+  class TIncomplete = incomplete_command_parse_reason_t<First, Rest...>,
   class TExpected = std::expected<TSuccess, TIncomplete>>
 TExpected invoke_subcommands(
   detail::argv_range auto&& argv,

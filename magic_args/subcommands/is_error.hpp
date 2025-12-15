@@ -10,14 +10,10 @@
 namespace magic_args::inline public_api {
 
 template <subcommand First, subcommand... Rest>
-bool is_error(
-  const std::variant<
-    incomplete_command_parse_reason_t,
-    incomplete_subcommand_parse_reason_t<First>,
-    incomplete_subcommand_parse_reason_t<Rest>...>& reason) {
+bool is_error(const incomplete_command_parse_reason_t<First, Rest...>& reason) {
   return std::visit(
     detail::overloaded {
-      [](const incomplete_command_parse_reason_t& r) { return is_error(r); },
+      []<incomplete_parse_reason T>(const T&) { return T::is_error; },
       []<class T>(const incomplete_subcommand_parse_reason_t<T>& r) {
         return is_error(*r);
       },

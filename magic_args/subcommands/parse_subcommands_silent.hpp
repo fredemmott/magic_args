@@ -49,6 +49,7 @@ void parse_subcommands_silent_impl(
         std::move(subcommandResult).error()));
   }
 }
+
 }// namespace magic_args::detail
 
 namespace magic_args::inline public_api {
@@ -59,10 +60,7 @@ template <
   subcommand... Rest,
   class TSuccess
   = std::variant<subcommand_match<First>, subcommand_match<Rest>...>,
-  class TIncomplete = std::variant<
-    incomplete_command_parse_reason_t,
-    incomplete_subcommand_parse_reason_t<First>,
-    incomplete_subcommand_parse_reason_t<Rest>...>,
+  class TIncomplete = incomplete_command_parse_reason_t<First, Rest...>,
   class TExpected = std::expected<TSuccess, TIncomplete>>
 TExpected parse_subcommands_silent(
   detail::argv_range auto&& argv,
