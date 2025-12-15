@@ -25,3 +25,4 @@ jobs:
       name: ${{matrix.name}}
       runs-on: ${{matrix.runs-on}}
       cmake-args: ${{matrix.cmake-args}}
+      cmake-preset: ${{matrix.cmake-preset}}
