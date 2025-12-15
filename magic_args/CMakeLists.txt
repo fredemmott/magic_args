@@ -22,9 +22,21 @@ set(
   parse.hpp
   magic_args.hpp
   # Extensions that build on top of the core functionality
+  ## Subcommands
+  detail/overloaded.hpp
+  value_wrapper_t.hpp
+  subcommands/declarations.hpp
+  subcommands/parse_subcommands_silent.hpp
+  subcommands/print_incomplete_command_parse_reason.hpp
+  subcommands/parse_subcommands.hpp
+  subcommands/invocable_declarations.hpp
+  subcommands/invoke_subcommands_silent.hpp
+  subcommands/invoke_subcommands.hpp
+  subcommands/is_error.hpp
+  subcommands.hpp
+  ## Other extensions
   powershell_style_parsing_traits.hpp
   verbatim_names.hpp
-  subcommands.hpp
   windows.hpp
   enum.hpp
 )
