@@ -45,10 +45,6 @@ concept subcommand = requires(T v) {
   { T::name } -> std::convertible_to<std::string_view>;
 };
 
-template <class T>
-concept invocable_subcommand
-  = subcommand<T> && std::invocable<T, typename T::arguments_type&&>;
-
 using incomplete_command_parse_reason_t = std::variant<
   help_requested,
   version_requested,
@@ -362,6 +358,115 @@ bool is_error(
       },
     },
     reason);
+}
+
+template <class T>
+concept invocable_subcommand = subcommand<T>
+  && requires(typename T::arguments_type&& args) { T::main(std::move(args)); };
+
+template <class T, class TOther>
+concept compatible_invocable_subcommand
+  = invocable_subcommand<T> && invocable_subcommand<TOther>
+  && std::same_as<
+      std::invoke_result_t<decltype(T::main), typename T::arguments_type&&>,
+      std::invoke_result_t<
+        decltype(TOther::main),
+        typename TOther::arguments_type&&>>;
+
+template <
+  parsing_traits Traits,
+  invocable_subcommand First,
+  compatible_invocable_subcommand<First>... Rest,
+  class TSuccess
+  = std::invoke_result_t<typename First::main, typename First::argument_type&&>,
+  class TIncomplete = std::variant<
+    incomplete_command_parse_reason_t,
+    incomplete_subcommand_parse_reason_t<First>,
+    incomplete_subcommand_parse_reason_t<Rest>...>,
+  class TExpected = std::expected<TSuccess, TIncomplete>>
+TExpected invoke_subcommands_silent(
+  detail::argv_range auto&& argv,
+  const program_info& info = {}) {
+  auto result = parse_subcommands_silent<Traits, First, Rest...>(argv, info);
+  if (!result) [[unlikely]] {
+    return {std::unexpect, std::move(result).error()};
+  }
+
+  return {
+    std::in_place,
+    std::visit(
+      []<class T>(subcommand_match<T>&& match) {
+        return std::invoke(T::main, std::move(match).value());
+      },
+      std::move(result).value()),
+  };
+}
+
+template <
+  parsing_traits Traits,
+  invocable_subcommand First,
+  compatible_invocable_subcommand<First>... Rest,
+  class TSuccess = std::
+    invoke_result_t<decltype(First::main), typename First::arguments_type&&>,
+  class TIncomplete = std::variant<
+    incomplete_command_parse_reason_t,
+    incomplete_subcommand_parse_reason_t<First>,
+    incomplete_subcommand_parse_reason_t<Rest>...>,
+  class TExpected = std::expected<TSuccess, TIncomplete>>
+TExpected invoke_subcommands(
+  detail::argv_range auto&& argv,
+  const program_info& info = {},
+  FILE* outputStream = stdout,
+  FILE* errorStream = stderr) {
+  auto result = parse_subcommands<Traits, First, Rest...>(
+    argv, info, outputStream, errorStream);
+  if (!result) [[unlikely]] {
+    return std::unexpected {std::move(result).error()};
+  }
+
+  return std::visit(
+    []<class T>(subcommand_match<T>&& match) {
+      return std::invoke(T::main, std::move(match).value());
+    },
+    std::move(result).value());
+}
+
+template <
+  parsing_traits Traits,
+  invocable_subcommand First,
+  compatible_invocable_subcommand<First>... Rest,
+  class... Args>
+auto invoke_subcommands_silent(const int argc, char** argv, Args&&... args) {
+  return invoke_subcommands_silent<Traits, First, Rest...>(
+    std::views::counted(argv, argc), std::forward<Args>(args)...);
+}
+
+template <
+  parsing_traits Traits,
+  invocable_subcommand First,
+  compatible_invocable_subcommand<First>... Rest,
+  class... Args>
+auto invoke_subcommands(const int argc, char** argv, Args&&... args) {
+  return invoke_subcommands<Traits, First, Rest...>(
+    std::views::counted(argv, argc), std::forward<Args>(args)...);
+}
+
+template <
+  invocable_subcommand First,
+  compatible_invocable_subcommand<First>... Rest,
+  class... Args>
+auto invoke_subcommands_silent(Args&&... args) {
+  return invoke_subcommands_silent<gnu_style_parsing_traits, First, Rest...>(
+    std::forward<Args>(args)...);
+}
+
+template <
+  invocable_subcommand First,
+  compatible_invocable_subcommand<First>... Rest,
+  class... Args>
+auto invoke_subcommands(Args&&... args) {
+  return invoke_subcommands<gnu_style_parsing_traits, First, Rest...>(
+    std::forward<Args>(args)...);
 }
 
 }// namespace magic_args::inline public_api
