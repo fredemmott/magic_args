@@ -305,6 +305,10 @@ auto parse_subcommands(
 
   // Matched a subcommand, but argument/option parsing failed for the subcommand
 
+  // Skip over argv[1], as well as argv[0]
+  // 2025-12-14: VS2022 requires that this be declared outside the lambda
+  struct InnerTraits : Traits, detail::prefix_args_count_trait<2> {};
+
   std::visit(
     detail::overloaded {
       [&](const incomplete_command_parse_reason_t& reason) {
@@ -312,8 +316,6 @@ auto parse_subcommands(
           reason, info, argv, outputStream, errorStream);
       },
       [&]<class T>(const incomplete_subcommand_parse_reason_t<T>& reason) {
-        // Skip over argv[1], as well as argv[0]
-        struct InnerTraits : Traits, detail::prefix_args_count_trait<2> {};
         detail::print_incomplete_parse_reason<
           typename T::arguments_type,
           InnerTraits>(reason.value(), info, argv, outputStream, errorStream);
