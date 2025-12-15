@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 #include <magic_args/magic_args.hpp>
-#include <magic_args/powershell_style_parsing_traits.hpp>
-
-#include <ranges>
 
 struct CommandFooBar {
   static constexpr auto name = "foo";
