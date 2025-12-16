@@ -4,9 +4,9 @@
 #include <magic_args/magic_args.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
-#include "../cmake-build-debug---default/vcpkg_installed/x64-windows/include/catch2/generators/catch_generators.hpp"
 #include "chomp.hpp"
 #include "output.hpp"
 #include "subcommand-definitions.hpp"
