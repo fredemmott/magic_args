@@ -22,7 +22,9 @@ auto parse_subcommands(
 
   // Skip over argv[1], as well as argv[0]
   // 2025-12-14: VS2022 requires that this be declared outside the lambda
-  struct InnerTraits : Traits, detail::skip_args_count_trait<2> {};
+  struct InnerTraits
+    : Traits,
+      detail::skip_args_count_trait<detail::skip_args_count<Traits>() + 1> {};
 
   std::visit(
     detail::overloaded {
