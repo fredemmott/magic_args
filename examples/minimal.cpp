@@ -13,12 +13,10 @@ int main(int argc, char** argv) {
   const std::expected<MyArgs, magic_args::incomplete_parse_reason_t> args
     = magic_args::parse<MyArgs>(argc, argv);
   if (!args.has_value()) {
-    if (const auto& e = args.error();
-        holds_alternative<magic_args::help_requested>(e)
-        || holds_alternative<magic_args::version_requested>(e)) {
-      return EXIT_SUCCESS;
-    }
-    return EXIT_FAILURE;
+    // This could be an actual error, e.g. invalid argument,
+    // or something like `--help` or `--version`, which while not an error,
+    // are an 'unexpected' outcome in the std::expected
+    return magic_args::is_error(args.error()) ? EXIT_FAILURE : EXIT_SUCCESS;
   }
   magic_args::dump(*args);
   return EXIT_SUCCESS;
