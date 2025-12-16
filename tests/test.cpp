@@ -70,6 +70,12 @@ struct FlagsOnly {
   bool operator==(const FlagsOnly&) const noexcept = default;
 };
 
+struct ShortFlags {
+  magic_args::flag mFlagA {.mShortName = "a"};
+  magic_args::flag mFlagB {.mShortName = "b"};
+  magic_args::flag mFlagC {.mShortName = "c"};
+};
+
 struct OptionsOnly {
   std::string mString;
   int mInt {0};
@@ -375,6 +381,15 @@ TEMPLATE_TEST_CASE(
   const auto& e = get<magic_args::invalid_argument>(args.error());
   CHECK(e.mKind == magic_args::invalid_argument::kind::Option);
   CHECK(e.mSource.mArg == invalid);
+}
+
+TEST_CASE("multiple short flags") {
+  const auto args
+    = magic_args::parse_silent<ShortFlags>(std::array {"test", "-ac"});
+  REQUIRE(args.has_value());
+  CHECK(args->mFlagA);
+  CHECK_FALSE(args->mFlagB);
+  CHECK(args->mFlagC);
 }
 
 TEST_CASE("flags only, specifying flags") {

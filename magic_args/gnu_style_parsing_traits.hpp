@@ -19,6 +19,8 @@ struct gnu_style_parsing_traits {
   static constexpr char short_help_arg[] = "?";
   static constexpr char version_arg[] = "version";
 
+  static constexpr bool single_char_short_args = true;
+
   inline static void normalize_option_name(std::string& name);
   inline static void normalize_positional_argument_name(std::string& name);
 };

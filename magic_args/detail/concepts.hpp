@@ -74,6 +74,7 @@ concept parsing_traits = requires(std::string arg) {
   { T::long_help_arg } -> detail::string_literal;
   { T::short_help_arg } -> detail::string_literal;
   { T::version_arg } -> detail::string_literal;
+  { T::single_char_short_args } -> detail::same_as_ignoring_cvref<bool>;
 
   { T::normalize_option_name(arg) } -> std::same_as<void>;
   { T::normalize_positional_argument_name(arg) } -> std::same_as<void>;

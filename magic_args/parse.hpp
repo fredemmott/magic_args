@@ -92,21 +92,54 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
         .mSource = {std::string {arg}},
       }};
     }
-    if constexpr (requires { Traits::short_arg_prefix; }) {
-      // TODO: handle -abc where `a`, `b`, and `c` are all flags
 
-      // The short prefixes have other meanings, e.g.:
-      //
-      // GNU, Powershell: `-` often means 'stdout'
-      // Classic MS: '/' can mean 'root of the filesystem
+    if constexpr (Traits::single_char_short_args) {
       if (
         arg.starts_with(Traits::short_arg_prefix)
         && arg != Traits::short_arg_prefix) {
-        return std::unexpected {invalid_argument {
-          .mKind = invalid_argument::kind::Option,
-          .mSource = {std::string {arg}},
-        }};
-      }
+        const auto flags
+          = arg.substr(std::string_view {Traits::short_arg_prefix}.size());
+        for (const char it: flags) {
+          const bool matched =
+            [&]<std::size_t... I>(std::index_sequence<I...>) {
+              return ([&]() {
+                const auto& def = get_argument_definition<T, I, Traits>();
+                if constexpr (!detail::
+                                same_as_ignoring_cvref<decltype(def), flag>) {
+                  std::ignore = def;
+                  return false;
+                } else if (
+                  def.mShortName.size() == 1 && def.mShortName.front() == it) {
+                  get<I>(tuple) = true;
+                  return true;
+                } else {
+                  return false;
+                }
+              }() || ...);
+            }(std::make_index_sequence<N> {});
+          if (!matched) {
+            return std::unexpected {invalid_argument {
+              .mKind = invalid_argument::kind::Option,
+              .mSource = {std::string {arg}},
+            }};
+          }
+        }
+        ++i;
+        continue;
+        }
+    }
+
+    // The short prefixes have other meanings, e.g.:
+    //
+    // GNU, Powershell: `-` often means 'stdout'
+    // Classic MS: '/' can mean 'root of the filesystem
+    if (
+      arg.starts_with(Traits::short_arg_prefix)
+      && arg != Traits::short_arg_prefix) {
+      return std::unexpected {invalid_argument {
+        .mKind = invalid_argument::kind::Option,
+        .mSource = {std::string {arg}},
+      }};
     }
 
     positionalArgs.emplace_back(arg);
