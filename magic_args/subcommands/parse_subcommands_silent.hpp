@@ -2,11 +2,37 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #ifndef MAGIC_ARGS_SINGLE_FILE
+#include <magic_args/detail/concepts.hpp>
 #include <magic_args/gnu_style_parsing_traits.hpp>
-#include "subcommands/declarations.hpp"
+#include "declarations.hpp"
 #endif
 
 namespace magic_args::detail {
+
+template <parsing_traits Traits>
+struct command_from_argument_t {
+  static constexpr std::string_view operator()(const std::string_view arg) {
+    return arg;
+  }
+};
+
+template <parsing_traits Traits>
+  requires requires(const std::string_view v) {
+    {
+      Traits::command_from_argument(v)
+    } -> same_as_ignoring_cvref<std::string_view>;
+  }
+struct command_from_argument_t<Traits> {
+  static constexpr std::string_view operator()(const std::string_view arg) {
+    return Traits::command_from_argument(arg);
+  }
+};
+
+template <parsing_traits Traits>
+std::string_view command_from_argument(const std::string_view arg) {
+  return command_from_argument_t<Traits> {}(arg);
+}
+
 template <
   parsing_traits Traits,
   subcommand First,
@@ -73,9 +99,13 @@ TExpected parse_subcommands_silent(
       .mSource = {.mName = "COMMAND"},
     }};
   }
+  const std::string_view commandArg {
+    *(std::ranges::begin(argv) + commandIndex)};
+  const std::string_view command {
+    detail::command_from_argument<Traits>(commandArg)};
+
   using CommonArguments = detail::common_arguments_t<Traits>;
 
-  const std::string_view command {*(std::ranges::begin(argv) + commandIndex)};
   if (
     command == CommonArguments::long_help
     || command == CommonArguments::short_help || command == "help") {
@@ -94,7 +124,7 @@ TExpected parse_subcommands_silent(
 
   return std::unexpected {invalid_argument_value {
         .mSource = {
-          .mArgvSlice = std::vector { std::string { command } },
+          .mArgvSlice = std::vector { std::string { commandArg } },
           .mName = "COMMAND",
           .mValue = std::string { command },
         },

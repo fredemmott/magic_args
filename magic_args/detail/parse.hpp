@@ -25,6 +25,8 @@ static_assert(
 
 namespace magic_args::detail {
 
+// This exists because we can't declare `static constexpr` variables in structs
+// defined inside functions
 template <size_t N>
 struct skip_args_count_trait {
   static constexpr std::size_t skip_args_count = N;
