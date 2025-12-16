@@ -67,6 +67,7 @@ endfunction()
 add_test_executables(test test.cpp)
 add_test_executables(test-counted_flag test-counted_flag.cpp)
 add_test_executables(test-default-values test-default-values.cpp)
+add_test_executables(test-help test-help.cpp)
 add_test_executables(test-std-optional test-std-optional.cpp)
 add_test_executables(test-styles test-styles.cpp)
 

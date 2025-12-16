@@ -14,6 +14,22 @@ using namespace Catch::Matchers;
 
 constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
 
+TEST_CASE("header build mode") {
+#if __has_include(<magic_args/parse.hpp>)
+  constexpr bool haveParseHpp = true;
+#else
+  constexpr bool haveParseHpp = false;
+#endif
+
+#ifdef TEST_SINGLE_HEADER
+  STATIC_CHECK(magic_args::is_single_header_file);
+  STATIC_CHECK_FALSE(haveParseHpp);
+#else
+  STATIC_CHECK_FALSE(magic_args::is_single_header_file);
+  STATIC_CHECK(haveParseHpp);
+#endif
+}
+
 TEMPLATE_TEST_CASE(
   "no args",
   "",
@@ -66,140 +82,6 @@ TEMPLATE_TEST_CASE(
   CHECK(e.mSource.mArg == "--not-a-valid-arg");
 }
 
-TEST_CASE("empty struct, --help") {
-  std::vector<std::string_view> argv {testName, "--help"};
-
-  Output out, err;
-  const auto args = magic_args::parse<EmptyStruct>(argv, {}, out, err);
-  REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
-
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...]
-
-Options:
-
-  -?, --help                   show this message
-)EOF"));
-}
-
-TEST_CASE("empty struct, --help with description") {
-  std::vector<std::string_view> argv {testName, "--help"};
-
-  Output out, err;
-  const auto args = magic_args::parse<EmptyStruct>(
-    argv,
-    {
-      .mDescription = "Tests things.",
-    },
-    out,
-    err);
-  REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
-
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...]
-Tests things.
-
-Options:
-
-  -?, --help                   show this message
-)EOF"));
-}
-
-TEST_CASE("empty struct, --help with examples") {
-  std::vector<std::string_view> argv {testName, "--help"};
-
-  Output out, err;
-  const auto args = magic_args::parse<EmptyStruct>(
-    argv,
-    {
-      .mExamples = {
-        "my_test --foo",
-        "my_test --bar",
-      },
-    },
-    out,
-    err);
-  REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
-
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...]
-
-Examples:
-
-  my_test --foo
-  my_test --bar
-
-Options:
-
-  -?, --help                   show this message
-)EOF"));
-}
-
-TEST_CASE("empty struct, --help with description and examples") {
-  std::vector<std::string_view> argv {testName, "--help"};
-
-  Output out, err;
-  const auto args = magic_args::parse<EmptyStruct>(
-    argv,
-    {
-      .mDescription = "Tests things.",
-      .mExamples = {
-        "my_test --foo",
-        "my_test --bar",
-      },
-    },
-    out,
-    err);
-  REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
-
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...]
-Tests things.
-
-Examples:
-
-  my_test --foo
-  my_test --bar
-
-Options:
-
-  -?, --help                   show this message
-)EOF"));
-}
-
-TEST_CASE("empty struct, --help with version") {
-  std::vector<std::string_view> argv {testName, "--help"};
-
-  Output out, err;
-  const auto args = magic_args::parse<EmptyStruct>(
-    argv,
-    {
-      .mVersion = "MyApp v1.2.3",
-    },
-    out,
-    err);
-  REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
-
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...]
-
-Options:
-
-  -?, --help                   show this message
-      --version                print program version
-)EOF"));
-}
-
 TEST_CASE("empty struct, --version") {
   std::vector<std::string_view> argv {testName, "--version"};
 
@@ -239,8 +121,6 @@ TEMPLATE_TEST_CASE(
 my_test: Unrecognized option: {}
 
 Usage: my_test [OPTIONS...]
-
-Options:
 )EOF",
         invalid)
         .substr(1)));
@@ -304,49 +184,6 @@ TEST_CASE("flags only, specifying flags") {
   CHECK(err.empty());
 }
 
-TEST_CASE("flags only, --help") {
-  std::vector<std::string_view> argv {testName, "--help"};
-
-  Output out, err;
-  const auto args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
-  REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
-
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...]
-
-Options:
-
-      --foo
-      --bar
-  -b, --baz                    do the bazzy thing
-
-  -?, --help                   show this message
-)EOF"));
-}
-
-TEST_CASE("options only, --help") {
-  std::vector<std::string_view> argv {testName, "--help"};
-
-  Output out, err;
-  const auto args = magic_args::parse<OptionsOnly>(argv, {}, out, err);
-  REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...]
-
-Options:
-
-      --string=VALUE
-      --int=VALUE
-  -f, --foo=VALUE              do the foo thing
-
-  -?, --help                   show this message
-)EOF"));
-}
-
 TEST_CASE("options only, all provided, --foo value") {
   std::vector<std::string_view> argv {
     testName,
@@ -389,32 +226,6 @@ TEST_CASE("options only, short") {
   CHECK(err.empty());
   REQUIRE(args.has_value());
   CHECK(args->mDocumentedString == "abc");
-}
-
-TEST_CASE("parameters, --help") {
-  std::vector<std::string_view> argv {testName, "--help"};
-
-  Output out, err;
-  const auto args
-    = magic_args::parse<FlagsAndPositionalArguments>(argv, {}, out, err);
-  REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
-
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...] [--] [INPUT] [OUTPUT]
-
-Options:
-
-      --flag
-
-  -?, --help                   show this message
-
-Arguments:
-
-      INPUT
-      OUTPUT                   file to create
-)EOF"));
 }
 
 TEMPLATE_TEST_CASE(
@@ -479,31 +290,6 @@ TEST_CASE("positional parameters with flag as value") {
   CHECK(args->mOutput == "--flag");
 }
 
-TEST_CASE("mandatory named parameter, --help") {
-  std::vector<std::string_view> argv {testName, "--help"};
-
-  Output out, err;
-  const auto args
-    = magic_args::parse<MandatoryPositionalArgument>(argv, {}, out, err);
-  REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...] [--] INPUT [OUTPUT]
-
-Options:
-
-      --flag
-
-  -?, --help                   show this message
-
-Arguments:
-
-      INPUT
-      OUTPUT                   file to create
-)EOF"));
-}
-
 TEST_CASE("missing mandatory named parameter") {
   std::vector<std::string_view> argv {
     testName,
@@ -515,47 +301,11 @@ TEST_CASE("missing mandatory named parameter") {
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::missing_required_argument>(args.error()));
   CHECK(out.empty());
-  CHECK(err.get() == chomp(R"EOF(
+  CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
 my_test: Missing required argument `INPUT`
 
 Usage: my_test [OPTIONS...] [--] INPUT [OUTPUT]
-
-Options:
-
-      --flag
-
-  -?, --help                   show this message
-
-Arguments:
-
-      INPUT
-      OUTPUT                   file to create
-)EOF"));
-}
-
-TEST_CASE("multi-value parameter - --help") {
-  std::vector<std::string_view> argv {testName, "--help"};
-
-  Output out, err;
-  const auto args
-    = magic_args::parse<MultiValuePositionalArgument>(argv, {}, out, err);
-  REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...] [--] [OUTPUT] [INPUT [INPUT [...]]]
-
-Options:
-
-      --flag
-
-  -?, --help                   show this message
-
-Arguments:
-
-      OUTPUT                   file to create
-      INPUTS
-)EOF"));
+)EOF")}));
 }
 
 TEMPLATE_TEST_CASE(
@@ -711,6 +461,7 @@ TEST_CASE("argc, argv") {
     "my_test",
     "--help",
   };
+
   Output out, err;
   const auto result = magic_args::parse<CustomArgs>(
     static_cast<int>(args.size()), args.data(), {}, out, err);
@@ -724,20 +475,4 @@ TEST_CASE("argc, argv") {
   CHECK(result == rangeResult);
   CHECK(out.get() == rangeOut.get());
   CHECK(err.get() == rangeErr.get());
-}
-
-TEST_CASE("header build mode") {
-#if __has_include(<magic_args/parse.hpp>)
-  constexpr bool haveParseHpp = true;
-#else
-  constexpr bool haveParseHpp = false;
-#endif
-
-#ifdef TEST_SINGLE_HEADER
-  STATIC_CHECK(magic_args::is_single_header_file);
-  STATIC_CHECK_FALSE(haveParseHpp);
-#else
-  STATIC_CHECK_FALSE(magic_args::is_single_header_file);
-  STATIC_CHECK(haveParseHpp);
-#endif
 }
