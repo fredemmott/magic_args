@@ -4,39 +4,12 @@
 #include <magic_args/magic_args.hpp>
 
 #include <catch2/catch_test_macros.hpp>
-#include "chomp.hpp"
-
 #include <catch2/matchers/catch_matchers_string.hpp>
+
+#include "chomp.hpp"
 #include "output.hpp"
+#include "subcommand-definitions.hpp"
 
-namespace TestSubcommands {
-struct CommandFooBar {
-  static constexpr auto name = "foo";
-  struct arguments_type {
-    std::string mBar;
-    std::string mBaz;
-    friend bool operator==(const arguments_type& a, const arguments_type& b) {
-      return a.mBar == b.mBar && a.mBaz == b.mBaz;
-    }
-  };
-};
-
-struct CommandHerp {
-  static constexpr auto name = "herp";
-  static magic_args::program_info subcommand_info() noexcept {
-    return {
-      .mDescription = "Do the derpy thing",
-      .mVersion = "Herp v1.2.3",
-    };
-  }
-  struct arguments_type {
-    std::string mDerp;
-    friend bool operator==(const arguments_type& a, const arguments_type& b) {
-      return a.mDerp == b.mDerp;
-    }
-  };
-};
-}// namespace TestSubcommands
 using namespace TestSubcommands;
 
 TEST_CASE("match foo subcommand: success") {
@@ -85,7 +58,7 @@ Usage: myApp COMMAND [OPTIONS...]
 Commands:
 
       foo
-      herp                     Do the derpy thing
+      herp                     Description goes here
 
   -?, --help                   show this message
 
@@ -120,7 +93,7 @@ Do stuff with subcommands
 Commands:
 
       foo
-      herp                     Do the derpy thing
+      herp                     Description goes here
 
   -?, --help                   show this message
       --version                print program version
@@ -176,7 +149,7 @@ TEST_CASE("Subcommand --help") {
   CHECK(err.empty());
   CHECK(out.get() == chomp(R"EOF(
 Usage: myApp herp [OPTIONS...]
-Do the derpy thing
+Description goes here
 
 Options:
 

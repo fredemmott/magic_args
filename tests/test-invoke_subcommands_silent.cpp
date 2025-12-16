@@ -4,39 +4,8 @@
 #include <magic_args/magic_args.hpp>
 
 #include <catch2/catch_test_macros.hpp>
-
-namespace TestInvokeSubcommandsSilent {
-struct CommandFooBar {
-  static constexpr auto name = "foo";
-  struct arguments_type {
-    std::string mBar;
-    std::string mBaz;
-  };
-
-  static std::string main(arguments_type&& args) {
-    return std::format(
-      "TEST RESULT CommandFooBar --bar={} --baz={}", args.mBar, args.mBaz);
-  }
-};
-
-struct CommandHerp {
-  static constexpr auto name = "herp";
-  static magic_args::program_info subcommand_info() noexcept {
-    return {
-      .mDescription = "Do the derpy thing",
-      .mVersion = "Herp v1.2.3",
-    };
-  }
-  struct arguments_type {
-    std::string mDerp;
-  };
-
-  static std::string main(arguments_type&& args) {
-    return std::format("TEST RESULT CommandHerp --derp={}", args.mDerp);
-  }
-};
-}// namespace TestInvokeSubcommandsSilent
-using namespace TestInvokeSubcommandsSilent;
+#include "subcommand-definitions.hpp"
+using namespace TestSubcommands;
 
 template <class... Args>
 void CheckErrorMatches(Args&&... args) {

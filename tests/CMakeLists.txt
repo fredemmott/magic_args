@@ -35,12 +35,12 @@ function(add_test_executables NAME)
 
   add_executable("${SPLIT_HEADERS_NAME}" ${SOURCES})
   target_link_libraries("${SPLIT_HEADERS_NAME}" PRIVATE split-headers-test-deps)
-  catch_discover_tests("${SPLIT_HEADERS_NAME}" PROPERTIES LABELS "split-headers" TEST_PREFIX "split-headers:")
+  catch_discover_tests("${SPLIT_HEADERS_NAME}" PROPERTIES LABELS "split-headers" TEST_PREFIX "split-headers:${NAME}:")
 
   add_executable("${SINGLE_HEADER_NAME}" ${SOURCES})
   target_link_libraries("${SINGLE_HEADER_NAME}" PRIVATE single-header-test-deps)
   target_compile_definitions("${SINGLE_HEADER_NAME}" PRIVATE TEST_SINGLE_HEADER)
-  catch_discover_tests("${SINGLE_HEADER_NAME}" PROPERTIES LABELS "single-header" TEST_PREFIX "single-header:")
+  catch_discover_tests("${SINGLE_HEADER_NAME}" PROPERTIES LABELS "single-header" TEST_PREFIX "single-header:${NAME}:")
 
   add_dependencies(all-split-header-tests "${SPLIT_HEADERS_NAME}")
   add_dependencies(all-single-header-tests "${SINGLE_HEADER_NAME}")
@@ -51,6 +51,7 @@ add_test_executables(test-styles test-styles.cpp)
 add_test_executables(test-parse_subcommands_silent test-parse_subcommands_silent.cpp)
 add_test_executables(test-parse_subcommands test-parse_subcommands.cpp)
 add_test_executables(test-invoke_subcommands_silent test-invoke_subcommands_silent.cpp)
+add_test_executables(test-invoke_subcommands test-invoke_subcommands.cpp)
 
 if (WIN32)
   add_test_executables(test-windows test-windows.cpp utf8-process-code-page.manifest)

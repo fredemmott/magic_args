@@ -1,0 +1,41 @@
+// Copyright 2025 Fred Emmott <fred@fredemmott.com>
+// SPDX-License-Identifier: MIT
+#pragma once
+
+#include <format>
+#include <string>
+
+namespace TestSubcommands {
+struct CommandFooBar {
+  static constexpr auto name = "foo";
+  struct arguments_type {
+    std::string mBar;
+    std::string mBaz;
+    constexpr bool operator==(const arguments_type&) const noexcept = default;
+  };
+
+  static std::string main(arguments_type&& args) {
+    return std::format(
+      "TEST RESULT CommandFooBar --bar={} --baz={}", args.mBar, args.mBaz);
+  }
+};
+
+struct CommandHerp {
+  static constexpr auto name = "herp";
+  static magic_args::program_info subcommand_info() noexcept {
+    return {
+      .mDescription = "Description goes here",
+      .mVersion = "Version goes here",
+    };
+  }
+  struct arguments_type {
+    std::string mDerp;
+    constexpr bool operator==(const arguments_type&) const noexcept = default;
+  };
+
+  static std::string main(arguments_type&& args) {
+    return std::format("TEST RESULT CommandHerp --derp={}", args.mDerp);
+  }
+};
+
+}// namespace TestSubcommands

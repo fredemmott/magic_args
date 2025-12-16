@@ -41,20 +41,40 @@ TExpected invoke_subcommands(
 template <
   parsing_traits Traits,
   invocable_subcommand First,
-  compatible_invocable_subcommand<First>... Rest,
-  class... Args>
-auto invoke_subcommands(const int argc, char** argv, Args&&... args) {
+  compatible_invocable_subcommand<First>... Rest>
+auto invoke_subcommands(
+  const int argc,
+  char** argv,
+  const program_info& info = {},
+  FILE* outputStream = stdout,
+  FILE* errorStream = stderr) {
   return invoke_subcommands<Traits, First, Rest...>(
-    std::views::counted(argv, argc), std::forward<Args>(args)...);
+    std::views::counted(argv, argc), info, outputStream, errorStream);
 }
 
 template <
   invocable_subcommand First,
-  compatible_invocable_subcommand<First>... Rest,
-  class... Args>
-auto invoke_subcommands(Args&&... args) {
+  compatible_invocable_subcommand<First>... Rest>
+auto invoke_subcommands(
+  detail::argv_range auto&& argv,
+  const program_info& info = {},
+  FILE* outputStream = stdout,
+  FILE* errorStream = stderr) {
   return invoke_subcommands<gnu_style_parsing_traits, First, Rest...>(
-    std::forward<Args>(args)...);
+    std::forward<decltype(argv)>(argv), info, outputStream, errorStream);
+}
+
+template <
+  invocable_subcommand First,
+  compatible_invocable_subcommand<First>... Rest>
+auto invoke_subcommands(
+  const int argc,
+  const char* const* argv,
+  const program_info& info = {},
+  FILE* outputStream = stdout,
+  FILE* errorStream = stderr) {
+  return invoke_subcommands<gnu_style_parsing_traits, First, Rest...>(
+    std::views::counted(argv, argc), info, outputStream, errorStream);
 }
 
 }// namespace magic_args::inline public_api
