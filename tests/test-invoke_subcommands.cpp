@@ -27,7 +27,7 @@ TEST_CASE("silent cases") {
   CHECK(
     ret
     == magic_args::invoke_subcommands<CommandFooBar, CommandHerp>(
-      argv.size(), argv.data()));
+      static_cast<int>(argv.size()), argv.data()));
   REQUIRE(ret.has_value());
   CHECK(
     ret.value()

@@ -26,7 +26,7 @@ TEST_CASE("non-invoked cases") {
   CHECK(
     ret
     == magic_args::invoke_subcommands_silent<CommandFooBar, CommandHerp>(
-      argv.size(), argv.data()));
+      static_cast<int>(argv.size()), argv.data()));
 
   REQUIRE_FALSE(ret.has_value());
   CHECK(
