@@ -67,14 +67,15 @@ template <
 TExpected parse_subcommands_silent(
   detail::argv_range auto&& argv,
   const program_info& help = {}) {
-  if (argv.size() < 2) {
+  const auto commandIndex = detail::skip_args_count<Traits>();
+  if (argv.size() <= commandIndex) {
     return std::unexpected {missing_required_argument {
       .mSource = {.mName = "COMMAND"},
     }};
   }
   using CommonArguments = detail::common_arguments_t<Traits>;
 
-  const std::string_view command {*(std::ranges::begin(argv) + 1)};
+  const std::string_view command {*(std::ranges::begin(argv) + commandIndex)};
   if (
     command == CommonArguments::long_help
     || command == CommonArguments::short_help || command == "help") {
