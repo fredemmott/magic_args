@@ -318,6 +318,10 @@ struct counted_flag_value_t {
   };
   kind mKind {};
   std::size_t mCount {};
+
+  static constexpr counted_flag_value_t increment() {
+    return {kind::Increase, 1};
+  }
 };
 
 template <parsing_traits Traits>
@@ -346,13 +350,11 @@ template <class TArg, class TValue>
   requires requires(TArg& arg, TValue&& value) {
     arg = std::forward<TValue>(value);
   }
-void assign_option_value(TArg& arg, TValue&& value) {
+void assign_value(TArg& arg, TValue&& value) {
   arg = std::forward<TValue>(value);
 }
 
-inline void assign_option_value(
-  counted_flag& arg,
-  const counted_flag_value_t& value) {
+inline void assign_value(counted_flag& arg, const counted_flag_value_t& value) {
   using enum counted_flag_value_t::kind;
   switch (value.mKind) {
     case Increase:

@@ -4,11 +4,13 @@
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "detail/get_argument_definition.hpp"
+#include "detail/overloaded.hpp"
 #include "detail/parse.hpp"
 #include "detail/print_incomplete_parse_reason.hpp"
 #include "detail/reflection.hpp"
 #include "detail/usage.hpp"
 #include "detail/validation.hpp"
+#include "detail/visitors.hpp"
 #include "gnu_style_parsing_traits.hpp"
 #include "program_info.hpp"
 #endif
@@ -45,9 +47,7 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
 
   const auto arg0 = std::filesystem::path {args.front()}.stem().string();
   T ret {};
-  auto tuple = tie_struct(ret);
 
-  constexpr auto N = count_members<T>();
   std::vector<std::string_view> positionalArgs;
 
   // Handle options
@@ -60,24 +60,21 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
       break;
     }
 
-    const auto matchedOption
-      = [&]<std::size_t... I>(std::index_sequence<I...>) {
-          // returns bool: matched option
-          return ([&] {
-            const auto def = get_argument_definition<T, I, Traits>();
-            auto result = parse_option<Traits>(def, std::views::drop(args, i));
-            if (!result) {
-              return false;
-            }
-            if (!result->has_value()) {
-              failure = result->error();
-              return true;
-            }
-            assign_option_value(get<I>(tuple), std::move((*result)->mValue));
-            i += (*result)->mConsumed;
-            return true;
-          }() || ...);
-        }(std::make_index_sequence<N> {});
+    const auto matchedOption = detail::visit_options<Traits>(
+      [&](const auto& def, auto& out) {
+        auto result = parse_option<Traits>(def, std::views::drop(args, i));
+        if (!result) {
+          return false;
+        }
+        if (!result->has_value()) {
+          failure = result->error();
+          return true;
+        }
+        assign_value(out, std::move((*result)->mValue));
+        i += (*result)->mConsumed;
+        return true;
+      },
+      ret);
 
     if (failure) {
       return std::unexpected {failure.value()};
@@ -100,35 +97,25 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
         const auto flags
           = arg.substr(std::string_view {Traits::short_arg_prefix}.size());
         for (const char it: flags) {
-          const bool matched = [&]<std::size_t... I>(
-                                 std::index_sequence<I...>) {
-            return ([&]() {
-              const auto& def = get_argument_definition<T, I, Traits>();
-              if constexpr (basic_option<decltype(def)>) {
-                if (
-                  def.mShortName.size() != 1 || def.mShortName.front() != it) {
-                  return false;
-                }
-                if constexpr (detail::
-                                same_as_ignoring_cvref<decltype(def), flag>) {
-                  assign_option_value(get<I>(tuple), true);
-                  return true;
-                } else if constexpr (detail::same_as_ignoring_cvref<
-                                       decltype(def),
-                                       counted_flag>) {
-                  assign_option_value(
-                    get<I>(tuple),
-                    detail::counted_flag_value_t {
-                      counted_flag_value_t::kind::Increase, 1});
-                  return true;
-                } else {
-                  return false;
-                }
-              } else {
+          const bool matched = detail::visit_options<Traits>(
+            [&](const auto& def, auto& out) {
+              if (def.mShortName != std::string_view {&it, 1}) {
                 return false;
               }
-            }() || ...);
-          }(std::make_index_sequence<N> {});
+
+              return overloaded {
+                [](flag& v) {
+                  assign_value(v, true);
+                  return true;
+                },
+                [](counted_flag& v) {
+                  assign_value(v, counted_flag_value_t::increment());
+                  return true;
+                },
+                [](auto&) { return false; },
+              }(out);
+            },
+            ret);
           if (!matched) {
             return std::unexpected {invalid_argument {
               .mKind = invalid_argument::kind::Option,
@@ -163,30 +150,22 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
   static_assert(
     (first_optional_positional_argument<T>() == -1)
     || (first_optional_positional_argument<T>() >= last_mandatory_positional_argument<T>()));
-  [&]<std::size_t... I>(std::index_sequence<I...>) {
-    (void)([&] {
-      // returns bool: continue
-      const auto def = get_argument_definition<T, I, Traits>();
-      if constexpr (basic_option<decltype(def)>) {
-        std::ignore = def;
-        return true;
-      } else {
-        auto result = parse_positional_argument<Traits>(def, positionalArgs);
-        if (!result) {
-          return true;
-        }
-        if (!result->has_value()) {
-          failure = result->error();
-          return false;
-        }
-        get<I>(tuple) = std::move((*result)->mValue);
-        positionalArgs.erase(
-          positionalArgs.begin(),
-          positionalArgs.begin() + (*result)->mConsumed);
+  std::ignore = detail::visit_positional_arguments<Traits>(
+    [&](const auto& def, auto& out) {
+      auto result = parse_positional_argument<Traits>(def, positionalArgs);
+      if (!result) {
+        return false;
+      }
+      if (!result->has_value()) {
+        failure = result->error();
         return true;
       }
-    }() && ...);
-  }(std::make_index_sequence<N> {});
+      assign_value(out, std::move((*result)->mValue));
+      positionalArgs.erase(
+        positionalArgs.begin(), positionalArgs.begin() + (*result)->mConsumed);
+      return false;
+    },
+    ret);
   if (failure) {
     return std::unexpected {failure.value()};
   }

@@ -15,6 +15,8 @@ set(
   incomplete_parse_reason.hpp
   detail/from_string.hpp
   detail/to_formattable.hpp
+  detail/visitors.hpp
+  detail/overloaded.hpp
   detail/parse.hpp
   dump.hpp
   detail/usage.hpp
@@ -23,7 +25,6 @@ set(
   magic_args.hpp
   # Extensions that build on top of the core functionality
   ## Subcommands
-  detail/overloaded.hpp
   value_wrapper_t.hpp
   subcommands/declarations.hpp
   subcommands/parse_subcommands_silent.hpp
