@@ -38,4 +38,13 @@ struct CommandHerp {
   }
 };
 
+template <magic_args::invocable_subcommand Parent>
+struct CommandReturnsVoid : Parent {
+  static inline std::optional<typename Parent::arguments_type> invocation {};
+  static void main(typename Parent::arguments_type&& args) {
+    invocation.emplace(args);
+    std::ignore = Parent::main(std::forward<decltype(args)>(args));
+  }
+};
+
 }// namespace TestSubcommands

@@ -27,11 +27,22 @@ TExpected invoke_subcommands_silent(
     return std::unexpected {std::move(result).error()};
   }
 
-  return std::visit(
-    []<class T>(subcommand_match<T>&& match) {
-      return std::invoke(T::main, std::move(match).value());
-    },
-    std::move(result).value());
+  if constexpr (std::is_void_v<std::invoke_result_t<
+                  decltype(First::main),
+                  typename First::arguments_type&&>>) {
+    std::visit(
+      []<class T>(subcommand_match<T>&& match) {
+        std::invoke(T::main, std::move(match).value());
+      },
+      std::move(result).value());
+    return {};
+  } else {
+    return std::visit(
+      []<class T>(subcommand_match<T>&& match) {
+        return std::invoke(T::main, std::move(match).value());
+      },
+      std::move(result).value());
+  }
 }
 
 // Convenience helper for separate argc + argv

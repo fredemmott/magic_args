@@ -30,6 +30,23 @@ TEST_CASE("silent cases") {
     == magic_args::invoke_subcommands_silent<CommandFooBar, CommandHerp>(argv));
 }
 
+TEST_CASE("void returns") {
+  Output out, err;
+  using Foo = CommandReturnsVoid<CommandFooBar>;
+  using Herp = CommandReturnsVoid<CommandHerp>;
+  Foo::invocation.reset();
+  const auto ret = magic_args::invoke_subcommands<Foo, Herp>(
+    std::array {"myApp", "foo", "--bar=TestBar"}, {}, out, err);
+  CHECK(ret.has_value());
+  CHECK(out.empty());
+  CHECK(err.empty());
+  STATIC_CHECK(std::is_void_v<std::decay_t<decltype(ret)>::value_type>);
+
+  CHECKED_IF(Foo::invocation.has_value()) {
+    CHECK(Foo::invocation->mBar == "TestBar");
+  }
+}
+
 TEST_CASE("output cases") {
   struct params_t {
     std::vector<std::string_view> argv;

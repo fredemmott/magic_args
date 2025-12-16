@@ -62,3 +62,17 @@ TEST_CASE("invoke bar subcommand, arg") {
   REQUIRE(ret.has_value());
   CHECK(*ret == "TEST RESULT CommandHerp --derp=DERP");
 }
+
+TEST_CASE("void returns") {
+  using Foo = CommandReturnsVoid<CommandFooBar>;
+  using Herp = CommandReturnsVoid<CommandHerp>;
+  Foo::invocation.reset();
+  const auto ret = magic_args::invoke_subcommands_silent<Foo, Herp>(
+    std::array {"myApp", "foo", "--bar=TestBar"});
+  CHECK(ret.has_value());
+  STATIC_CHECK(std::is_void_v<std::decay_t<decltype(ret)>::value_type>);
+
+  CHECKED_IF(Foo::invocation.has_value()) {
+    CHECK(Foo::invocation->mBar == "TestBar");
+  }
+}
