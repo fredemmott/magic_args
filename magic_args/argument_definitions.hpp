@@ -179,7 +179,26 @@ struct flag final {
   bool operator==(const flag&) const noexcept = default;
 };
 
+
+  // e.g. for `-vvv` -> triple-verbose
+struct counted_flag final {
+  using value_type = bool;
+  std::string mName;
+  std::string mHelp;
+  std::string mShortName;
+
+  std::size_t mCount {};
+
+  operator bool() const noexcept {
+    return mCount > 0;
+  }
+
+  bool operator==(const counted_flag&) const noexcept = default;
+};
+
 static_assert(basic_option<flag>);
+static_assert(basic_option<counted_flag>);
 static_assert(basic_option<option<std::string>>);
 static_assert(std::is_aggregate_v<option<std::string>>);
+
 }// namespace magic_args::inline public_api

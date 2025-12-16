@@ -94,9 +94,15 @@ void show_option_usage(
     }
     return std::string {};
   }();
-  const auto longArg = same_as_ignoring_cvref<flag, TArg>
-    ? std::format("{}{}", Traits::long_arg_prefix, argDef.mName)
-    : std::format("{}{}=VALUE", Traits::long_arg_prefix, argDef.mName);
+  const auto longArg = [&] {
+    if constexpr (same_as_ignoring_cvref<flag, TArg>) {
+      return std::format("{}{}", Traits::long_arg_prefix, argDef.mName);
+    } else if constexpr (same_as_ignoring_cvref<counted_flag, TArg>) {
+      return std::format("{}{}[=VALUE]", Traits::long_arg_prefix, argDef.mName);
+    } else {
+      return std::format("{}{}=VALUE", Traits::long_arg_prefix, argDef.mName);
+    }
+  }();
 
   const auto header = std::format("  {:3} {}", shortArg, longArg);
 

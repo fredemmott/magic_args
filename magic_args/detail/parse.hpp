@@ -311,6 +311,59 @@ arg_parse_result<bool> parse_option(
   return std::nullopt;
 }
 
+struct counted_flag_value_t {
+  enum class kind {
+    Increase,
+    Assign,
+  };
+  kind mKind {};
+  std::size_t mCount {};
+};
+
+template <parsing_traits Traits>
+arg_parse_result<counted_flag_value_t> parse_option(
+  const counted_flag& arg,
+  const random_access_range_of<std::string_view> auto& args) {
+  using enum counted_flag_value_t::kind;
+  const auto match = option_matches<Traits>(arg, *std::ranges::begin(args));
+  if (!match) {
+    return std::nullopt;
+  }
+
+  if (!match->has_value()) {
+    return {arg_parse_match {counted_flag_value_t {Increase, 1}, 1}};
+  }
+
+  std::size_t value {};
+  if (const auto ret = from_string(value, *match->mValue); !ret) {
+    return map_value_parse_error<Traits>(
+      args, arg, *match->mValue, ret.error());
+  }
+  return {arg_parse_match {counted_flag_value_t {Assign, value}, 1}};
+}
+
+template <class TArg, class TValue>
+  requires requires(TArg& arg, TValue&& value) {
+    arg = std::forward<TValue>(value);
+  }
+void assign_option_value(TArg& arg, TValue&& value) {
+  arg = std::forward<TValue>(value);
+}
+
+inline void assign_option_value(
+  counted_flag& arg,
+  const counted_flag_value_t& value) {
+  using enum counted_flag_value_t::kind;
+  switch (value.mKind) {
+    case Increase:
+      arg.mCount += value.mCount;
+      break;
+    case Assign:
+      arg.mCount = value.mCount;
+      break;
+  }
+}
+
 template <
   parsing_traits Traits,
   basic_argument T,

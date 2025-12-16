@@ -73,7 +73,7 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
               failure = result->error();
               return true;
             }
-            get<I>(tuple) = std::move((*result)->mValue);
+            assign_option_value(get<I>(tuple), std::move((*result)->mValue));
             i += (*result)->mConsumed;
             return true;
           }() || ...);
@@ -100,23 +100,35 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
         const auto flags
           = arg.substr(std::string_view {Traits::short_arg_prefix}.size());
         for (const char it: flags) {
-          const bool matched =
-            [&]<std::size_t... I>(std::index_sequence<I...>) {
-              return ([&]() {
-                const auto& def = get_argument_definition<T, I, Traits>();
-                if constexpr (!detail::
-                                same_as_ignoring_cvref<decltype(def), flag>) {
-                  std::ignore = def;
+          const bool matched = [&]<std::size_t... I>(
+                                 std::index_sequence<I...>) {
+            return ([&]() {
+              const auto& def = get_argument_definition<T, I, Traits>();
+              if constexpr (basic_option<decltype(def)>) {
+                if (
+                  def.mShortName.size() != 1 || def.mShortName.front() != it) {
                   return false;
-                } else if (
-                  def.mShortName.size() == 1 && def.mShortName.front() == it) {
-                  get<I>(tuple) = true;
+                }
+                if constexpr (detail::
+                                same_as_ignoring_cvref<decltype(def), flag>) {
+                  assign_option_value(get<I>(tuple), true);
+                  return true;
+                } else if constexpr (detail::same_as_ignoring_cvref<
+                                       decltype(def),
+                                       counted_flag>) {
+                  assign_option_value(
+                    get<I>(tuple),
+                    detail::counted_flag_value_t {
+                      counted_flag_value_t::kind::Increase, 1});
                   return true;
                 } else {
                   return false;
                 }
-              }() || ...);
-            }(std::make_index_sequence<N> {});
+              } else {
+                return false;
+              }
+            }() || ...);
+          }(std::make_index_sequence<N> {});
           if (!matched) {
             return std::unexpected {invalid_argument {
               .mKind = invalid_argument::kind::Option,
@@ -126,7 +138,7 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
         }
         ++i;
         continue;
-        }
+      }
     }
 
     // The short prefixes have other meanings, e.g.:
@@ -155,18 +167,24 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
     (void)([&] {
       // returns bool: continue
       const auto def = get_argument_definition<T, I, Traits>();
-      auto result = parse_positional_argument<Traits>(def, positionalArgs);
-      if (!result) {
+      if constexpr (basic_option<decltype(def)>) {
+        std::ignore = def;
+        return true;
+      } else {
+        auto result = parse_positional_argument<Traits>(def, positionalArgs);
+        if (!result) {
+          return true;
+        }
+        if (!result->has_value()) {
+          failure = result->error();
+          return false;
+        }
+        get<I>(tuple) = std::move((*result)->mValue);
+        positionalArgs.erase(
+          positionalArgs.begin(),
+          positionalArgs.begin() + (*result)->mConsumed);
         return true;
       }
-      if (!result->has_value()) {
-        failure = result->error();
-        return false;
-      }
-      get<I>(tuple) = std::move((*result)->mValue);
-      positionalArgs.erase(
-        positionalArgs.begin(), positionalArgs.begin() + (*result)->mConsumed);
-      return true;
     }() && ...);
   }(std::make_index_sequence<N> {});
   if (failure) {
