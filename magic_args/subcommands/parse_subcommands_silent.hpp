@@ -26,7 +26,7 @@ void parse_subcommands_silent_impl(
   }
 
   // Skip argv[0] and argv[1], instead of just argv[0]
-  struct SubcommandTraits : Traits, detail::prefix_args_count_trait<2> {};
+  struct SubcommandTraits : Traits, detail::skip_args_count_trait<2> {};
   const auto subcommandInfo = [&] {
     if constexpr (subcommand_with_info<First>) {
       return First::subcommand_info();

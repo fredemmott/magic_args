@@ -26,18 +26,18 @@ static_assert(
 namespace magic_args::detail {
 
 template <size_t N>
-struct prefix_args_count_trait {
-  static constexpr std::size_t prefix_args_count = N;
+struct skip_args_count_trait {
+  static constexpr std::size_t skip_args_count = N;
 };
 
 template <parsing_traits Traits>
-constexpr std::size_t prefix_args_count() {
+constexpr std::size_t skip_args_count() {
   if constexpr (requires {
                   {
-                    Traits::prefix_args_count
+                    Traits::skip_args_count
                   } -> std::convertible_to<std::size_t>;
                 }) {
-    return Traits::prefix_args_count;
+    return Traits::skip_args_count;
   } else {
     // By default, skip argv[0]
     return 1;
@@ -54,7 +54,7 @@ template <parsing_traits Traits>
 std::string get_prefix_for_user_messages(argv_range auto&& argv) {
   auto prefix
     = std::filesystem::path {*std::ranges::begin(argv)}.stem().string();
-  for (std::size_t i = 1; i < detail::prefix_args_count<Traits>(); ++i) {
+  for (std::size_t i = 1; i < detail::skip_args_count<Traits>(); ++i) {
     const auto it = std::ranges::begin(argv) + i;
     if (it >= std::ranges::end(argv)) {
       break;
