@@ -44,7 +44,7 @@ template <
   compatible_invocable_subcommand<First>... Rest>
 auto invoke_subcommands(
   const int argc,
-  char** argv,
+  const char* const* argv,
   const program_info& info = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {

@@ -11,6 +11,8 @@
 #include "output.hpp"
 #include "subcommand-definitions.hpp"
 
+#define CHECKED_IF_FALSE CHECKED_ELSE
+
 using namespace TestSubcommands;
 
 TEST_CASE("silent cases") {
@@ -81,4 +83,56 @@ TEST_CASE("output cases") {
   CHECK(ret.error() == parseRet.error());
   CHECK(out.get() == parseOut.get());
   CHECK(err.get() == parseErr.get());
+}
+
+TEST_CASE("powershell-style success (no output)") {
+  constexpr std::array gnuArgv {"mytest", "foo", "--bar=TEST_BAR"};
+  constexpr std::array psArgv {"mytest", "foo", "-Bar", "TEST_BAR"};
+  Output out, err;
+
+  const auto ps = magic_args::invoke_subcommands<
+    magic_args::powershell_style_parsing_traits,
+    CommandFooBar,
+    CommandHerp>(psArgv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.empty());
+
+  const auto gnu = magic_args::invoke_subcommands<CommandFooBar, CommandHerp>(
+    gnuArgv, {}, out, err);
+  CHECK(ps == gnu);
+
+  const auto psWithArgc = magic_args::invoke_subcommands<
+    magic_args::powershell_style_parsing_traits,
+    CommandFooBar,
+    CommandHerp>(static_cast<int>(psArgv.size()), psArgv.data(), {}, out, err);
+  CHECK(psWithArgc == ps);
+}
+
+TEST_CASE("powershell-style non-invoked") {
+  const auto argv = GENERATE(
+    values<std::vector<const char*>>({
+      {"mytest"},
+      {"mytest", "-Help"},
+      {"mytest", "invalid"},
+      {"mytest", "foo", "-Invalid"},
+      {"mytest", "foo", "-Bar" /* missing value */},
+      {"mytest", "herp", "-Invalid" /* missing value */},
+    }));
+
+  Output invokedOut, invokedErr;
+  const auto invoked = magic_args::invoke_subcommands<
+    magic_args::powershell_style_parsing_traits,
+    CommandFooBar,
+    CommandHerp>(argv, {}, invokedOut, invokedErr);
+  REQUIRE_FALSE(invoked.has_value());
+  Output parsedOut, parsedErr;
+  const auto parsed = magic_args::parse_subcommands<
+    magic_args::powershell_style_parsing_traits,
+    CommandFooBar,
+    CommandHerp>(argv, {}, parsedOut, parsedErr);
+  REQUIRE_FALSE(parsed.has_value());
+
+  CHECK(invoked.error() == parsed.error());
+  CHECK(invokedOut.get() == parsedOut.get());
+  CHECK(invokedErr.get() == parsedErr.get());
 }
