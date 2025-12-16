@@ -90,11 +90,6 @@ struct invalid_argument_value {
   source_t mSource;
   constexpr bool operator==(const invalid_argument_value&) const = default;
 };
-struct invalid_encoding {
-  static constexpr bool is_error = true;
-  static constexpr bool user_requested = false;
-  constexpr bool operator==(const invalid_encoding&) const = default;
-};
 
 }// namespace incomplete_parse_reasons
 
@@ -135,8 +130,7 @@ using incomplete_parse_reason_t = detail::constrained_pack<
     missing_required_argument,
     missing_argument_value,
     invalid_argument,
-    invalid_argument_value,
-    invalid_encoding>;
+    invalid_argument_value>;
 
 template <incomplete_parse_reason T>
 [[nodiscard]]

@@ -22,8 +22,20 @@ int WINAPI wWinMain(
   [[maybe_unused]] HINSTANCE hPrevInstance,
   [[maybe_unused]] LPWSTR lpCmdLine,
   [[maybe_unused]] int nCmdShow) {
-  magic_args::attach_to_parent_terminal();
-  const auto args = magic_args::parse<MyArgs>(GetCommandLineW());
+  magic_args::win32::attach_to_parent_terminal();
+
+  // *NOT* passing in `lpCmdLine`, because Windows is inconsistent in whether
+  // that includes the program name. If a command line is not provided,
+  // magic_args will use `GetCommandLineW()`.
+  const auto argv = magic_args::win32::make_argv();
+  if (!argv) {
+    // Most likely an encoding error
+    std::println(
+      "Win32 error {} when attempting to parse command line", argv.error());
+    return EXIT_FAILURE;
+  }
+
+  const auto args = magic_args::parse<MyArgs>(*argv);
   if (!args.has_value()) {
     if (const auto& e = args.error();
         holds_alternative<magic_args::help_requested>(e)

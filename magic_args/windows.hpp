@@ -15,11 +15,11 @@
 #endif
 
 namespace magic_args::detail::win32 {
-inline std::expected<void, incomplete_parse_reason_t> utf8_from_wide(
+inline std::expected<void, DWORD> utf8_from_wide(
   std::string& buffer,
   const std::wstring_view wide) {
   if (wide.empty()) {
-    buffer = {};
+    buffer.clear();
     return {};
   }
   const auto convert = [&wide](const LPSTR out, const std::size_t byteCount) {
@@ -34,13 +34,13 @@ inline std::expected<void, incomplete_parse_reason_t> utf8_from_wide(
       nullptr);
   };
   const auto byteCount = convert(nullptr, 0);
-  if (byteCount <= 0) {
-    return std::unexpected {invalid_encoding {}};
+  if (byteCount <= 0) [[unlikely]] {
+    return std::unexpected {GetLastError()};
   }
 
   buffer.resize_and_overwrite(byteCount, convert);
-  if (buffer.empty()) {
-    return std::unexpected {invalid_encoding {}};
+  if (buffer.empty()) [[unlikely]] {
+    return std::unexpected {GetLastError()};
   }
   return {};
 }
@@ -51,78 +51,9 @@ struct local_free_deleter {
   }
 };
 
-inline std::expected<std::vector<std::string>, incomplete_parse_reason_t>
-make_argv(const wchar_t* commandLine) {
-  int argc {};
-  const std::unique_ptr<LPWSTR, local_free_deleter> wargv {
-    CommandLineToArgvW(commandLine, &argc)};
-  std::vector<std::string> argv;
-  argv.reserve(argc);
-
-  std::string buffer;
-  for (auto&& arg: std::span {wargv.get(), static_cast<std::size_t>(argc)}) {
-    if (const auto converted = utf8_from_wide(buffer, arg); !converted) {
-      return std::unexpected {converted.error()};
-    }
-    argv.push_back(buffer);
-  }
-
-  return argv;
-}
-
-inline std::expected<std::vector<std::string>, incomplete_parse_reason_t>
-make_argv(const std::string_view commandLine) {
-  const auto convert
-    = [&commandLine](wchar_t* out, const std::size_t wideCount) {
-        return MultiByteToWideChar(
-          CP_ACP,
-          MB_ERR_INVALID_CHARS,
-          commandLine.data(),
-          static_cast<INT>(commandLine.size()),
-          out,
-          static_cast<INT>(wideCount));
-      };
-  const auto wideCount = convert(nullptr, 0);
-  std::wstring buffer;
-  buffer.resize_and_overwrite(wideCount, convert);
-  if (buffer.empty()) {
-    return std::unexpected {invalid_encoding {}};
-  }
-  return make_argv(buffer.c_str());
-}
-
 }// namespace magic_args::detail::win32
 
-namespace magic_args::inline public_api {
-template <
-  class T,
-  parsing_traits Traits = gnu_style_parsing_traits,
-  class TChar>
-std::expected<T, incomplete_parse_reason_t> parse(
-  const TChar* const commandLine,
-  const program_info& help = {},
-  FILE* outputStream = stdout,
-  FILE* errorStream = stderr) {
-  const auto argv = detail::win32::make_argv(commandLine);
-  if (!argv) {
-    return std::unexpected {argv.error()};
-  }
-  return parse<T, Traits>(*argv, help, outputStream, errorStream);
-}
-
-template <
-  class T,
-  parsing_traits Traits = gnu_style_parsing_traits,
-  class TChar>
-std::expected<T, incomplete_parse_reason_t> parse_silent(
-  const TChar* const commandLine,
-  const program_info& help = {}) {
-  const auto argv = detail::win32::make_argv(commandLine);
-  if (!argv) {
-    return std::unexpected {argv.error()};
-  }
-  return parse_silent<T, Traits>(*argv, help);
-}
+namespace magic_args::inline public_api::win32 {
 
 inline void attach_to_parent_terminal() {
   AttachConsole(ATTACH_PARENT_PROCESS);
@@ -147,6 +78,74 @@ inline void attach_to_parent_terminal() {
   }
 }
 
-}// namespace magic_args::inline public_api
+/** Returns a UTF-8 encoded argv, or a Win32 error code.
+ *
+ * Returns `ERROR_INVALID_PARAMETER` on empty or nullptr input, or
+ * `GetLastError()` for other issues.
+ *
+ * `ERROR_NO_UNICODE_TRANSLATION` (1113, 0x459) is a likely error code.
+ */
+inline std::expected<std::vector<std::string>, DWORD> make_argv(
+  const wchar_t* commandLine = GetCommandLineW()) {
+  if (commandLine == nullptr || commandLine[0] == 0) [[unlikely]] {
+    return std::unexpected {ERROR_INVALID_PARAMETER};
+  }
+  using namespace detail::win32;
+  int argc {};
+  const std::unique_ptr<LPWSTR, local_free_deleter> wargv {
+    CommandLineToArgvW(commandLine, &argc)};
+  if (!wargv) [[unlikely]] {
+    return std::unexpected {GetLastError()};
+  }
+  std::vector<std::string> argv;
+  argv.reserve(argc);
+
+  std::string buffer;
+  for (auto&& arg: std::span {wargv.get(), static_cast<std::size_t>(argc)}) {
+    if (const auto converted = utf8_from_wide(buffer, arg); !converted)
+      [[unlikely]] {
+      return std::unexpected {converted.error()};
+    }
+    argv.push_back(buffer);
+  }
+
+  return argv;
+}
+
+/** Returns a UTF-8 encoded argv, or a Win32 error code.
+ *
+ * Returns `ERROR_INVALID_PARAMETER` on empty input, or
+ * `GetLastError()` for other issues.
+ *
+ * `ERROR_NO_UNICODE_TRANSLATION` (1113, 0x459) is a likely error code.
+ */
+inline std::expected<std::vector<std::string>, DWORD> make_argv(
+  const std::string_view commandLine,
+  const UINT codePage = CP_ACP) {
+  if (commandLine.empty()) [[unlikely]] {
+    return std::unexpected {ERROR_INVALID_PARAMETER};
+  }
+  const auto convert
+    = [&commandLine, codePage](wchar_t* out, const std::size_t wideCount) {
+        return MultiByteToWideChar(
+          codePage,
+          MB_ERR_INVALID_CHARS,
+          commandLine.data(),
+          static_cast<INT>(commandLine.size()),
+          out,
+          static_cast<INT>(wideCount));
+      };
+  const auto wideCount = convert(nullptr, 0);
+  if (wideCount == 0) [[unlikely]] {
+    return std::unexpected {GetLastError()};
+  }
+  std::wstring buffer;
+  buffer.resize_and_overwrite(wideCount, convert);
+  if (buffer.empty()) [[unlikely]] {
+    return std::unexpected {GetLastError()};
+  }
+  return make_argv(buffer.c_str());
+}
+}// namespace magic_args::inline public_api::win32
 
 #endif

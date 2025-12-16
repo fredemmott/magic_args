@@ -98,15 +98,6 @@ void print_incomplete_parse_reason(
       r.mSource.mArgvSlice.front(),
       [](auto acc, auto it) { return std::format("{} {}", acc, it); }));
 }
-template <class T, parsing_traits Traits>
-void print_incomplete_parse_reason(
-  const invalid_encoding&,
-  const program_info&,
-  [[maybe_unused]] argv_range auto&& argv,
-  [[maybe_unused]] FILE* outputStream,
-  [[maybe_unused]] FILE* errorStream) {
-  // TODO
-}
 
 template <class T, parsing_traits Traits>
 void print_incomplete_parse_reason(
@@ -118,11 +109,7 @@ void print_incomplete_parse_reason(
   std::visit(
     [=, &help]<class R>(R&& it) {
       detail::print_incomplete_parse_reason<T, Traits>(
-        std::forward<R>(it),
-        help,
-        argv,
-        outputStream,
-        errorStream);
+        std::forward<R>(it), help, argv, outputStream, errorStream);
       if constexpr (std::decay_t<R>::is_error) {
         detail::print(errorStream, "\n\n");
         show_usage<T, Traits>(errorStream, argv, help);
