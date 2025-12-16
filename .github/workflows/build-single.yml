@@ -42,10 +42,14 @@ jobs:
           xcode-version: latest-stable
       - name: Configure
         id: configure
+        shell: pwsh
         run: |
           mkdir build
           cd build
-          cmake ../source --preset "${{inputs.cmake-preset}}" ${{inputs.cmake-args}}
+          cmake ../source `
+            --preset "${{inputs.cmake-preset}}" `
+            -DDISCOVER_SINGLE_HEADER_TESTS=ON `
+            ${{inputs.cmake-args}}
       - name: Build
         working-directory: build
         shell: pwsh
