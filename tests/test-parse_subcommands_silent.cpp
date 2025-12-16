@@ -5,6 +5,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <catch2/generators/catch_generators.hpp>
 #include "subcommand-definitions.hpp"
 
 using namespace TestSubcommands;
@@ -130,4 +131,43 @@ TEST_CASE("match foo command via argc/argv") {
   REQUIRE(holds_alternative<magic_args::subcommand_match<CommandFooBar>>(v));
   const auto& match = std::get<magic_args::subcommand_match<CommandFooBar>>(v);
   CHECK(match->mBar == "BAR");
+}
+
+TEST_CASE("powershell-style") {
+  const magic_args::program_info info {
+    .mVersion = "TestApp v1.2.3",
+  };
+  struct params_t {
+    std::vector<const char*> gnuStyle;
+    std::vector<const char*> powershellStyle;
+  };
+  const auto [gnuArgv, psArgv] = GENERATE(
+    values<params_t>({
+      {
+        {"mytest", "--help"},
+        {"mytest", "-Help"},
+      },
+      {
+        {"mytest", "--version"},
+        {"mytest", "-Version"},
+      },
+      {
+        {"mytest", "foo", "--bar=TEST_BAR"},
+        {"mytest", "foo", "-Bar", "TEST_BAR"},
+      },
+    }));
+
+  const auto gnu
+    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
+      gnuArgv, info);
+  const auto ps = magic_args::parse_subcommands_silent<
+    magic_args::powershell_style_parsing_traits,
+    CommandFooBar,
+    CommandHerp>(psArgv, info);
+  CHECK(ps == gnu);
+  const auto psWithArgc = magic_args::parse_subcommands_silent<
+    magic_args::powershell_style_parsing_traits,
+    CommandFooBar,
+    CommandHerp>(static_cast<int>(psArgv.size()), psArgv.data(), info);
+  CHECK(psWithArgc == ps);
 }
