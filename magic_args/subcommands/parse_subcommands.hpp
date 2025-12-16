@@ -66,14 +66,25 @@ auto parse_subcommands(
     argv, info, outputStream, errorStream);
 }
 
-template <class... Args>
+template <parsing_traits Traits, subcommand First, subcommand... Rest>
 auto parse_subcommands(
   const int argc,
-  char** argv,
+  const char* const* argv,
   const program_info& help = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
-  return parse_subcommands<Args...>(
+  return parse_subcommands<Traits, First, Rest...>(
+    std::views::counted(argv, argc), help, outputStream, errorStream);
+}
+
+template <subcommand First, subcommand... Rest>
+auto parse_subcommands(
+  const int argc,
+  const char* const* argv,
+  const program_info& help = {},
+  FILE* outputStream = stdout,
+  FILE* errorStream = stderr) {
+  return parse_subcommands<First, Rest...>(
     std::views::counted(argv, argc), help, outputStream, errorStream);
 }
 

@@ -24,6 +24,10 @@ TEST_CASE("silent cases") {
 
   const auto ret
     = magic_args::invoke_subcommands<CommandFooBar, CommandHerp>(argv);
+  CHECK(
+    ret
+    == magic_args::invoke_subcommands<CommandFooBar, CommandHerp>(
+      argv.size(), argv.data()));
   REQUIRE(ret.has_value());
   CHECK(
     ret.value()

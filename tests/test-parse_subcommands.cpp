@@ -23,6 +23,11 @@ TEST_CASE("match foo subcommand: success") {
   CHECK(ret == silent);
   CHECK(out.empty());
   CHECK(err.empty());
+
+  CHECK(
+    ret
+    == magic_args::parse_subcommands<CommandFooBar, CommandHerp>(
+      argv.size(), argv.data(), {}, out, err));
 }
 
 TEST_CASE("match herp subcommand: success") {

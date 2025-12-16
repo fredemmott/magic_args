@@ -4,31 +4,35 @@
 #include <magic_args/magic_args.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
+
 #include "subcommand-definitions.hpp"
 using namespace TestSubcommands;
 
-template <class... Args>
-void CheckErrorMatches(Args&&... args) {
+TEST_CASE("non-invoked cases") {
+  const auto argv = GENERATE(values({
+    std::vector {"myApp"},
+    std::vector {"myApp", "NOT_A_VALID_COMMAND"},
+    std::vector {"myApp", "--help"},
+    std::vector {"myApp", "--version"},
+    std::vector {"myApp", "foo", "--help"},
+    std::vector {"myApp", "foo", "--bar"},// missing value
+    std::vector {"myApp", "foo", "--derp"},// arg for wrong command
+    std::vector {"myApp", "herp", "--bar"},// ditto
+  }));
+
   const auto ret
-    = magic_args::invoke_subcommands_silent<CommandFooBar, CommandHerp>(
-      args...);
+    = magic_args::invoke_subcommands_silent<CommandFooBar, CommandHerp>(argv);
+  CHECK(
+    ret
+    == magic_args::invoke_subcommands_silent<CommandFooBar, CommandHerp>(
+      argv.size(), argv.data()));
+
   REQUIRE_FALSE(ret.has_value());
   CHECK(
     ret.error()
-    == magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(args...)
+    == magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(argv)
          .error());
-};
-
-TEST_CASE("non-invoked cases") {
-  CheckErrorMatches(std::array {"myApp"});
-  CheckErrorMatches(std::array {"myApp", "NOT_A_VALID_COMMAND"});
-  CheckErrorMatches(std::array {"myApp", "--help"});
-  CheckErrorMatches(std::array {"myApp", "--version"});
-  CheckErrorMatches(std::array {"myApp", "foo", "--help"});
-  CheckErrorMatches(std::array {"myApp", "foo", "--bar"});// missing value
-  CheckErrorMatches(
-    std::array {"myApp", "foo", "--derp"});// arg for wrong command
-  CheckErrorMatches(std::array {"myApp", "herp", "--bar"});// ditto
 }
 
 TEST_CASE("invoke foo subcommand, no args") {
