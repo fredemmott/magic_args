@@ -16,10 +16,14 @@ void show_command_usage(
   argv_range auto&& argv,
   FILE* stream) {
   using CommonArguments = common_arguments_t<Traits>;
-  detail::println(
-    stream,
-    "Usage: {} COMMAND [OPTIONS...]",
-    get_prefix_for_user_messages<Traits>(argv));
+  if constexpr (detail::skip_args_count<Traits>() == 0) {
+    detail::println(stream, "Usage: COMMAND [OPTIONS...]");
+  } else {
+    detail::println(
+      stream,
+      "Usage: {} COMMAND [OPTIONS...]",
+      get_prefix_for_user_messages<Traits>(argv));
+  }
   if (!info.mDescription.empty()) {
     detail::println(stream, "{}", info.mDescription);
   }
@@ -48,11 +52,18 @@ void show_command_usage(
       stream, "      {:24} print program version", *CommonArguments::version);
   }
 
-  detail::println(
-    stream,
-    "\nFor more information, run:\n\n  {} COMMAND {}",
-    get_prefix_for_user_messages<Traits>(argv),
-    *CommonArguments::long_help);
+  if constexpr (detail::skip_args_count<Traits>() == 0) {
+    detail::println(
+      stream,
+      "\nFor more information, run:\n\n  COMMAND {}",
+      *CommonArguments::long_help);
+  } else {
+    detail::println(
+      stream,
+      "\nFor more information, run:\n\n  {} COMMAND {}",
+      get_prefix_for_user_messages<Traits>(argv),
+      *CommonArguments::long_help);
+  }
 }
 
 template <parsing_traits Traits, subcommand... Ts>
