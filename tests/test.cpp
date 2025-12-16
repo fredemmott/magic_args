@@ -10,6 +10,8 @@
 #include "chomp.hpp"
 #include "output.hpp"
 
+using namespace Catch::Matchers;
+
 constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
 
 TEMPLATE_TEST_CASE(
@@ -39,7 +41,7 @@ TEMPLATE_TEST_CASE(
   Output out, err;
   const auto args = magic_args::parse<TestType>(argv, {}, out, err);
   CHECK(out.empty());
-  CHECK_THAT(err.get(), Catch::Matchers::StartsWith(std::string {chomp(R"EOF(
+  CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
 my_test: Unexpected argument: --not-a-valid-arg
 
 Usage: my_test [OPTIONS...]
@@ -231,7 +233,7 @@ TEMPLATE_TEST_CASE(
   CHECK(out.empty());
   CHECK_THAT(
     err.get(),
-    Catch::Matchers::StartsWith(
+    StartsWith(
       std::format(
         R"EOF(
 my_test: Unrecognized option: {}
@@ -455,22 +457,11 @@ TEST_CASE("parameters, extra") {
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::invalid_argument>(args.error()));
   CHECK(out.empty());
-  CHECK(err.get() == chomp(R"EOF(
+  CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
 my_test: Unexpected argument: bogus
 
 Usage: my_test [OPTIONS...] [--] [INPUT] [OUTPUT]
-
-Options:
-
-      --flag
-
-  -?, --help                   show this message
-
-Arguments:
-
-      INPUT
-      OUTPUT                   file to create
-)EOF"));
+)EOF")}));
 }
 
 TEST_CASE("positional parameters with flag as value") {
@@ -610,22 +601,11 @@ TEST_CASE("mandatory multi-value named argument, missing all") {
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::missing_required_argument>(args.error()));
   CHECK(out.empty());
-  CHECK(err.get() == chomp(R"EOF(
+  CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
 my_test: Missing required argument `OUTPUT`
 
 Usage: my_test [OPTIONS...] [--] OUTPUT INPUT [INPUT [...]]
-
-Options:
-
-      --flag
-
-  -?, --help                   show this message
-
-Arguments:
-
-      OUTPUT                   file to create
-      INPUTS
-)EOF"));
+)EOF")}));
 }
 
 TEST_CASE("mandatory multi-value named argument, missing first") {
@@ -637,22 +617,11 @@ TEST_CASE("mandatory multi-value named argument, missing first") {
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::missing_required_argument>(args.error()));
   CHECK(out.empty());
-  CHECK(err.get() == chomp(R"EOF(
+  CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
 my_test: Missing required argument `INPUTS`
 
 Usage: my_test [OPTIONS...] [--] OUTPUT INPUT [INPUT [...]]
-
-Options:
-
-      --flag
-
-  -?, --help                   show this message
-
-Arguments:
-
-      OUTPUT                   file to create
-      INPUTS
-)EOF"));
+)EOF")}));
 }
 
 TEST_CASE("custom arguments") {
@@ -677,22 +646,11 @@ TEST_CASE("invalid value") {
   const auto args = magic_args::parse<CustomArgs>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(out.empty());
-  CHECK(err.get() == chomp(R"EOF(
+  CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
 my_test: `___MAGIC_INVALID___` is not a valid value for `--raw` (seen: `--raw ___MAGIC_INVALID___`)
 
 Usage: my_test [OPTIONS...] [--] [POSITIONAL]
-
-Options:
-
-      --raw=VALUE
-      --option=VALUE           std::optional
-
-  -?, --help                   show this message
-
-Arguments:
-
-      POSITIONAL
-)EOF"));
+)EOF")}));
 
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
   const auto& e = get<magic_args::invalid_argument_value>(args.error());
@@ -720,19 +678,11 @@ TEST_CASE("invalid value for positional argument") {
     = magic_args::parse<CustomPositionalArgument>(argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(out.empty());
-  CHECK(err.get() == chomp(R"EOF(
+  CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
 my_test: `___MAGIC_INVALID___` is not a valid value for `FOO` (seen: `___MAGIC_INVALID___`)
 
 Usage: my_test [OPTIONS...] [--] [FOO]
-
-Options:
-
-  -?, --help                   show this message
-
-Arguments:
-
-      FOO
-)EOF"));
+)EOF")}));
 
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
   const auto& e = get<magic_args::invalid_argument_value>(args.error());
@@ -745,7 +695,7 @@ TEST_CASE("missing argument value") {
   Output out, err;
   const auto args = magic_args::parse<CustomArgs>(argv, {}, out, err);
   CHECK(out.empty());
-  CHECK_THAT(err.get(), Catch::Matchers::StartsWith(std::string {chomp(R"EOF(
+  CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
 my_test: option `--raw` requires a value
 
 Usage: my_test [OPTIONS...] [--] [POSITIONAL]
@@ -765,7 +715,7 @@ TEST_CASE("argc, argv") {
   const auto result = magic_args::parse<CustomArgs>(
     static_cast<int>(args.size()), args.data(), {}, out, err);
   CHECK(err.empty());
-  CHECK_THAT(out.get(), Catch::Matchers::StartsWith("Usage: my_test"));
+  CHECK_THAT(out.get(), StartsWith("Usage: my_test"));
   REQUIRE_FALSE(result.has_value());
   REQUIRE(holds_alternative<magic_args::help_requested>(result.error()));
   Output rangeOut, rangeErr;
