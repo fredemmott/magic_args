@@ -63,14 +63,19 @@ function(add_test_executables NAME)
   add_dependencies(all-single-header-tests "${SINGLE_HEADER_NAME}")
 endfunction()
 
+# Core features
 add_test_executables(test test.cpp)
+add_test_executables(test-counted_flag test-counted_flag.cpp)
+add_test_executables(test-default-values test-default-values.cpp)
+add_test_executables(test-std-optional test-std-optional.cpp)
 add_test_executables(test-styles test-styles.cpp)
+
+# Extra features building on top of the core
 add_test_executables(test-parse_subcommands_silent test-parse_subcommands_silent.cpp)
 add_test_executables(test-parse_subcommands test-parse_subcommands.cpp)
 add_test_executables(test-invoke_subcommands_silent test-invoke_subcommands_silent.cpp)
 add_test_executables(test-invoke_subcommands test-invoke_subcommands.cpp)
 add_test_executables(test-multicall test-multicall.cpp)
-add_test_executables(test-counted_flag test-counted_flag.cpp)
 
 if (WIN32)
   add_test_executables(test-windows test-windows.cpp utf8-process-code-page.manifest)

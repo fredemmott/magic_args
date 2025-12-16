@@ -9,6 +9,7 @@
 #include "magic_args/powershell_style_parsing_traits.hpp"
 #endif
 
+#include "arg-type-definitions.hpp"
 #include "chomp.hpp"
 #include "output.hpp"
 
@@ -86,4 +87,144 @@ TEST_CASE("args, powershell-style") {
   CHECK(args->mString == "stringValue");
   CHECK(args->mFlag);
   CHECK(args->mDocumentedFlag);
+}
+TEST_CASE("PowerShell-style invalid value") {
+  constexpr std::string_view argv[] {
+    "my_test", "-Raw", MyValueType::InvalidValue};
+
+  Output out, err;
+  const auto args = magic_args::
+    parse<CustomArgs, magic_args::powershell_style_parsing_traits>(
+      argv, {}, out, err);
+  CHECK(out.empty());
+  CHECK(err.get() == chomp(R"EOF(
+my_test: `___MAGIC_INVALID___` is not a valid value for `-Raw` (seen: `-Raw ___MAGIC_INVALID___`)
+
+Usage: my_test [OPTIONS...] [--] [POSITIONAL]
+
+Options:
+
+      -Raw=VALUE
+      -Option=VALUE            std::optional
+
+  -?, -Help                    show this message
+
+Arguments:
+
+      POSITIONAL
+)EOF"));
+
+  REQUIRE_FALSE(args.has_value());
+  REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
+  const auto& e = get<magic_args::invalid_argument_value>(args.error());
+  CHECK(e.mSource.mName == "-Raw");
+  CHECK(e.mSource.mValue == MyValueType::InvalidValue);
+}
+
+TEST_CASE("PowerShell-style normalization") {
+  std::vector<std::string_view> argv {"my_test", "-Help"};
+
+  Output out, err;
+  const auto args = magic_args::
+    parse<Normalization, magic_args::powershell_style_parsing_traits>(
+      argv, {}, out, err);
+  CHECK(err.empty());
+  CHECK(out.get() == chomp(R"EOF(
+Usage: my_test [OPTIONS...]
+
+Options:
+
+      -EmUpperCamel=VALUE
+      -EmUnderscoreUpperCamel=VALUE
+      -UnderscoreUpperCamel=VALUE
+      -UnderscoreLowerCamel=VALUE
+      -UpperCamel=VALUE
+      -LowerCamel=VALUE
+      -EmSnakeCase=VALUE
+      -SnakeCase=VALUE
+
+  -?, -Help                    show this message
+)EOF"));
+  REQUIRE_FALSE(args.has_value());
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
+}
+
+TEST_CASE("GNU-style normalization") {
+  std::vector<std::string_view> argv {"my_test", "--help"};
+
+  Output out, err;
+  const auto args = magic_args::parse<Normalization>(argv, {}, out, err);
+  CHECK(err.empty());
+  CHECK(out.get() == chomp(R"EOF(
+Usage: my_test [OPTIONS...]
+
+Options:
+
+      --em-upper-camel=VALUE
+      --em-underscore-upper-camel=VALUE
+      --underscore-upper-camel=VALUE
+      --underscore-lower-camel=VALUE
+      --upper-camel=VALUE
+      --lower-camel=VALUE
+      --em-snake-case=VALUE
+      --snake-case=VALUE
+
+  -?, --help                   show this message
+)EOF"));
+  REQUIRE_FALSE(args.has_value());
+  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
+}
+
+TEST_CASE("GNU-style verbatim names") {
+  std::vector<std::string_view> argv {"my_test", "--help"};
+
+  Output out, err;
+  const auto args = magic_args::parse<
+    Normalization,
+    magic_args::verbatim_names<magic_args::gnu_style_parsing_traits>>(
+    argv, {}, out, err);
+  CHECK(err.empty());
+  CHECK(out.get() == chomp(R"EOF(
+Usage: my_test [OPTIONS...]
+
+Options:
+
+      --mEmUpperCamel=VALUE
+      --m_EmUnderscoreUpperCamel=VALUE
+      --_UnderscoreUpperCamel=VALUE
+      --_underscoreLowerCamel=VALUE
+      --UpperCamel=VALUE
+      --lowerCamel=VALUE
+      --m_em_snake_case=VALUE
+      --snake_case=VALUE
+
+  -?, --help                   show this message
+)EOF"));
+}
+
+TEST_CASE("PowerShell-style verbatim names") {
+  std::vector<std::string_view> argv {"my_test", "-Help"};
+
+  Output out, err;
+  const auto args = magic_args::parse<
+    Normalization,
+    magic_args::verbatim_names<magic_args::powershell_style_parsing_traits>>(
+    argv, {}, out, err);
+  CHECK(err.get() == "");
+  CHECK(out.get() == chomp(R"EOF(
+Usage: my_test [OPTIONS...]
+
+Options:
+
+      -mEmUpperCamel=VALUE
+      -m_EmUnderscoreUpperCamel=VALUE
+      -_UnderscoreUpperCamel=VALUE
+      -_underscoreLowerCamel=VALUE
+      -UpperCamel=VALUE
+      -lowerCamel=VALUE
+      -m_em_snake_case=VALUE
+      -snake_case=VALUE
+
+  -?, -Help                    show this message
+)EOF"));
 }

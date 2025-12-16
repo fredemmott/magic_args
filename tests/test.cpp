@@ -6,132 +6,9 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
+#include "arg-type-definitions.hpp"
 #include "chomp.hpp"
 #include "output.hpp"
-
-struct EmptyStruct {};
-
-namespace MyNS {
-struct MyValueType {
-  static constexpr std::string_view InvalidValue {"___MAGIC_INVALID___"};
-  std::string mValue;
-};
-std::expected<void, magic_args::invalid_argument_value> from_string_argument(
-  MyValueType& v,
-  std::string_view arg) {
-  if (arg == MyValueType::InvalidValue) {
-    return std::unexpected {magic_args::invalid_argument_value {}};
-  }
-  v.mValue = std::string {arg};
-  return {};
-}
-}// namespace MyNS
-using MyNS::MyValueType;
-
-struct CustomArgs {
-  MyValueType mRaw;
-  magic_args::option<MyValueType> mOption {
-    .mHelp = "std::optional",
-  };
-  magic_args::optional_positional_argument<MyValueType> mPositional;
-};
-
-struct Normalization {
-  std::string mEmUpperCamel;
-  std::string m_EmUnderscoreUpperCamel;
-  std::string _UnderscoreUpperCamel;
-  std::string _underscoreLowerCamel;
-  std::string UpperCamel;
-  std::string lowerCamel;
-  std::string m_em_snake_case;
-  std::string snake_case;
-};
-
-struct Optional {
-  std::optional<std::string> mValue;
-  magic_args::option<std::optional<std::string>> mDocumentedValue {
-    .mHelp = "documented value",
-  };
-  magic_args::optional_positional_argument<std::optional<std::string>>
-    mPositional {
-      .mHelp = "absent != empty",
-    };
-};
-
-struct FlagsOnly {
-  bool mFoo {false};
-  bool mBar {false};
-  magic_args::flag mBaz {
-    "baz",
-    "do the bazzy thing",
-    "b",
-  };
-
-  bool operator==(const FlagsOnly&) const noexcept = default;
-};
-
-struct ShortFlags {
-  magic_args::flag mFlagA {.mShortName = "a"};
-  magic_args::flag mFlagB {.mShortName = "b"};
-  magic_args::flag mFlagC {.mShortName = "c"};
-};
-
-struct OptionsOnly {
-  std::string mString;
-  int mInt {0};
-  magic_args::option<std::string> mDocumentedString {
-    {},
-    "foo",
-    "do the foo thing",
-    "f",
-  };
-
-  bool operator==(const OptionsOnly&) const noexcept = default;
-};
-
-struct FlagsAndPositionalArguments {
-  bool mFlag {false};
-  magic_args::optional_positional_argument<std::string> mInput;
-  magic_args::optional_positional_argument<std::string> mOutput {
-    .mHelp = "file to create",
-  };
-};
-
-struct MandatoryPositionalArgument {
-  bool mFlag {false};
-  magic_args::mandatory_positional_argument<std::string> mInput;
-  magic_args::optional_positional_argument<std::string> mOutput {
-    .mHelp = "file to create",
-  };
-};
-
-struct MultiValuePositionalArgument {
-  bool mFlag {false};
-  magic_args::optional_positional_argument<std::string> mOutput {
-    .mHelp = "file to create",
-  };
-  magic_args::optional_positional_argument<std::vector<std::string>> mInputs;
-};
-
-struct MandatoryMultiValuePositionalArgument {
-  bool mFlag {false};
-  magic_args::mandatory_positional_argument<std::string> mOutput {
-    .mHelp = "file to create",
-  };
-  magic_args::mandatory_positional_argument<std::vector<std::string>> mInputs;
-};
-
-struct CustomPositionalArgument {
-  magic_args::optional_positional_argument<MyValueType> mFoo;
-};
-
-struct WithDefaults {
-  std::string mMyArg {"testValue"};
-  magic_args::option<std::string> mMyArgWithHelp {
-    .mValue = "testValue2",
-    .mHelp = "Test help text",
-  };
-};
 
 constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
 
@@ -778,90 +655,6 @@ Arguments:
 )EOF"));
 }
 
-TEST_CASE("std::optional") {
-  std::vector<std::string_view> argv {testName};
-  Output out, err;
-  auto args = magic_args::parse<Optional>(argv, {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-  REQUIRE(args.has_value());
-  CHECK_FALSE(args->mValue.has_value());
-
-  argv.push_back("--value=");
-  args = magic_args::parse<Optional>(argv, {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-  REQUIRE(args.has_value());
-  CHECK(args->mValue.has_value());
-  CHECK(args->mValue.value() == "");
-
-  argv.push_back("--value=foo");
-  args = magic_args::parse<Optional>(argv, {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-  REQUIRE(args.has_value());
-  CHECK(args->mValue.has_value());
-  CHECK(args->mValue.value() == "foo");
-}
-
-TEST_CASE("option<std::optional>") {
-  std::vector<std::string_view> argv {testName};
-  Output out, err;
-  auto args = magic_args::parse<Optional>(argv, {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-  REQUIRE(args.has_value());
-  CHECK_FALSE(args->mDocumentedValue.has_value());
-
-  argv.push_back("--documented-value=");
-  args = magic_args::parse<Optional>(argv, {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-  REQUIRE(args.has_value());
-  CHECK(args->mDocumentedValue.has_value());
-  CHECK(args->mDocumentedValue.value() == "");
-
-  argv.push_back("--documented-value=foo");
-  args = magic_args::parse<Optional>(argv, {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-  REQUIRE(args.has_value());
-  CHECK(args->mDocumentedValue.has_value());
-  CHECK(args->mDocumentedValue.value() == "foo");
-
-  // Check it's a mutable reference
-  *args->mDocumentedValue = "bar";
-  CHECK(args->mDocumentedValue.value() == "bar");
-}
-
-TEST_CASE("optional_positional_argument<std::optional>") {
-  std::vector<std::string_view> argv {testName};
-  Output out, err;
-  auto args = magic_args::parse<Optional>(argv, {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-  REQUIRE(args.has_value());
-  CHECK_FALSE(args->mPositional.has_value());
-
-  argv.emplace_back("");
-  args = magic_args::parse<Optional>(argv, {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-  REQUIRE(args.has_value());
-  REQUIRE(args->mPositional.has_value());
-  CHECK(args->mPositional.value() == "");
-
-  argv.pop_back();
-  argv.push_back("foo");
-  CHECK(args->mPositional.value() == "");
-  args = magic_args::parse<Optional>(argv, {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-  REQUIRE(args.has_value());
-  REQUIRE(args->mPositional.has_value());
-  CHECK(args->mPositional.value() == "foo");
-}
-
 TEST_CASE("custom arguments") {
   std::vector<std::string_view> argv {
     testName, "--raw=123", "--option=456", "789"};
@@ -876,115 +669,7 @@ TEST_CASE("custom arguments") {
   CHECK(args->mPositional.mValue.mValue == "789");
 }
 
-TEST_CASE("GNU-style normalization") {
-  std::vector<std::string_view> argv {testName, "--help"};
-
-  Output out, err;
-  const auto args = magic_args::parse<Normalization>(argv, {}, out, err);
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...]
-
-Options:
-
-      --em-upper-camel=VALUE
-      --em-underscore-upper-camel=VALUE
-      --underscore-upper-camel=VALUE
-      --underscore-lower-camel=VALUE
-      --upper-camel=VALUE
-      --lower-camel=VALUE
-      --em-snake-case=VALUE
-      --snake-case=VALUE
-
-  -?, --help                   show this message
-)EOF"));
-  REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
-}
-
-TEST_CASE("PowerShell-style normalization") {
-  std::vector<std::string_view> argv {testName, "-Help"};
-
-  Output out, err;
-  const auto args = magic_args::
-    parse<Normalization, magic_args::powershell_style_parsing_traits>(
-      argv, {}, out, err);
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...]
-
-Options:
-
-      -EmUpperCamel=VALUE
-      -EmUnderscoreUpperCamel=VALUE
-      -UnderscoreUpperCamel=VALUE
-      -UnderscoreLowerCamel=VALUE
-      -UpperCamel=VALUE
-      -LowerCamel=VALUE
-      -EmSnakeCase=VALUE
-      -SnakeCase=VALUE
-
-  -?, -Help                    show this message
-)EOF"));
-  REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
-}
-
-TEST_CASE("GNU-style verbatim names") {
-  std::vector<std::string_view> argv {testName, "--help"};
-
-  Output out, err;
-  const auto args = magic_args::parse<
-    Normalization,
-    magic_args::verbatim_names<magic_args::gnu_style_parsing_traits>>(
-    argv, {}, out, err);
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...]
-
-Options:
-
-      --mEmUpperCamel=VALUE
-      --m_EmUnderscoreUpperCamel=VALUE
-      --_UnderscoreUpperCamel=VALUE
-      --_underscoreLowerCamel=VALUE
-      --UpperCamel=VALUE
-      --lowerCamel=VALUE
-      --m_em_snake_case=VALUE
-      --snake_case=VALUE
-
-  -?, --help                   show this message
-)EOF"));
-}
-
-TEST_CASE("PowerShell-style verbatim names") {
-  std::vector<std::string_view> argv {testName, "-Help"};
-
-  Output out, err;
-  const auto args = magic_args::parse<
-    Normalization,
-    magic_args::verbatim_names<magic_args::powershell_style_parsing_traits>>(
-    argv, {}, out, err);
-  CHECK(err.get() == "");
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...]
-
-Options:
-
-      -mEmUpperCamel=VALUE
-      -m_EmUnderscoreUpperCamel=VALUE
-      -_UnderscoreUpperCamel=VALUE
-      -_underscoreLowerCamel=VALUE
-      -UpperCamel=VALUE
-      -lowerCamel=VALUE
-      -m_em_snake_case=VALUE
-      -snake_case=VALUE
-
-  -?, -Help                    show this message
-)EOF"));
-}
-
-TEST_CASE("GNU-style invalid value") {
+TEST_CASE("invalid value") {
   constexpr std::string_view argv[] {
     testName, "--raw", MyValueType::InvalidValue};
 
@@ -1012,39 +697,6 @@ Arguments:
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
   const auto& e = get<magic_args::invalid_argument_value>(args.error());
   CHECK(e.mSource.mName == "--raw");
-  CHECK(e.mSource.mValue == MyValueType::InvalidValue);
-}
-
-TEST_CASE("PowerShell-style invalid value") {
-  constexpr std::string_view argv[] {
-    testName, "-Raw", MyValueType::InvalidValue};
-
-  Output out, err;
-  const auto args = magic_args::
-    parse<CustomArgs, magic_args::powershell_style_parsing_traits>(
-      argv, {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.get() == chomp(R"EOF(
-my_test: `___MAGIC_INVALID___` is not a valid value for `-Raw` (seen: `-Raw ___MAGIC_INVALID___`)
-
-Usage: my_test [OPTIONS...] [--] [POSITIONAL]
-
-Options:
-
-      -Raw=VALUE
-      -Option=VALUE            std::optional
-
-  -?, -Help                    show this message
-
-Arguments:
-
-      POSITIONAL
-)EOF"));
-
-  REQUIRE_FALSE(args.has_value());
-  REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
-  const auto& e = get<magic_args::invalid_argument_value>(args.error());
-  CHECK(e.mSource.mName == "-Raw");
   CHECK(e.mSource.mValue == MyValueType::InvalidValue);
 }
 
@@ -1104,62 +756,24 @@ Usage: my_test [OPTIONS...] [--] [POSITIONAL]
   CHECK(e.mSource.mName == "--raw");
 }
 
-TEST_CASE("default argument value - no options") {
-  Output out, err;
-  const auto noOptions = magic_args::parse<WithDefaults>(
-    std::initializer_list<std::string_view> {testName}, {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-
-  REQUIRE(noOptions.has_value());
-  CHECK(noOptions->mMyArg == "testValue");
-  CHECK(noOptions->mMyArgWithHelp == "testValue2");
-}
-
-TEST_CASE("default argument value - overriden") {
-  Output out, err;
-  const auto noOptions = magic_args::parse<WithDefaults>(
-    std::vector {testName, "--my-arg", "foobar"}, {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-
-  REQUIRE(noOptions.has_value());
-  CHECK(noOptions->mMyArg == "foobar");
-}
-
-TEST_CASE("default argument value - --help") {
-  Output out, err;
-  const auto result = magic_args::parse<WithDefaults>(
-    std::vector {testName, "--help"}, {}, out, err);
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
-Usage: my_test [OPTIONS...]
-
-Options:
-
-      --my-arg=VALUE           (default: testValue)
-      --my-arg-with-help=VALUE Test help text
-                               (default: testValue2)
-
-  -?, --help                   show this message
-)EOF"));
-
-  REQUIRE_FALSE(result.has_value());
-  REQUIRE(holds_alternative<magic_args::help_requested>(result.error()));
-}
-
 TEST_CASE("argc, argv") {
   constexpr std::array args {
     "my_test",
     "--help",
   };
   Output out, err;
-  const auto result = magic_args::parse<WithDefaults>(
+  const auto result = magic_args::parse<CustomArgs>(
     static_cast<int>(args.size()), args.data(), {}, out, err);
   CHECK(err.empty());
   CHECK_THAT(out.get(), Catch::Matchers::StartsWith("Usage: my_test"));
   REQUIRE_FALSE(result.has_value());
   REQUIRE(holds_alternative<magic_args::help_requested>(result.error()));
+  Output rangeOut, rangeErr;
+  const auto rangeResult
+    = magic_args::parse<CustomArgs>(args, {}, rangeOut, rangeErr);
+  CHECK(result == rangeResult);
+  CHECK(out.get() == rangeOut.get());
+  CHECK(err.get() == rangeErr.get());
 }
 
 TEST_CASE("header build mode") {
