@@ -110,11 +110,13 @@ struct encoding_traits {
     return {nl_langinfo_l(CODESET, locale.get())};
   }
 
-  static bool process_argv_are_utf8() noexcept {
-    const auto charset = environment_charset();
-    // These 7-bit encodings are also always valid UTF-8
+  static bool is_utf8(const std::string_view charset) {
     return charset == "UTF-8" || charset == "US-ASCII"
       || charset == "ANSI_X3.4-1968";
+  }
+
+  static bool process_argv_are_utf8() noexcept {
+    return is_utf8(environment_charset());
   }
   static auto make_utf8_argv(const int argc, const char* const* argv)
     -> std::expected<

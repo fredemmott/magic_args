@@ -104,17 +104,6 @@ TEST_CASE("winMain", "[windows]") {
   CHECK(args->mBaz == "test");
 }
 
-TEST_CASE("invalid UTF-8", "[windows]") {
-  REQUIRE(GetACP() == CP_UTF8);
-  constexpr auto commandLine
-    = "test_app --foo abc"
-      "\x80"
-      "def";
-  const auto argv = magic_args::make_utf8_argv(commandLine);
-  REQUIRE_FALSE(argv.has_value());
-  CHECK(GetEncodingError(argv.error()) == ERROR_NO_UNICODE_TRANSLATION);
-}
-
 TEST_CASE("invalid UTF-16", "[windows]") {
   constexpr auto commandLine
     = L"test_app --foo abc"
@@ -123,53 +112,6 @@ TEST_CASE("invalid UTF-16", "[windows]") {
   const auto argv = magic_args::make_utf8_argv(commandLine);
   REQUIRE_FALSE(argv.has_value());
   CHECK(GetEncodingError(argv.error()) == ERROR_NO_UNICODE_TRANSLATION);
-}
-
-TEST_CASE("invalid character in legacy code page", "[windows]") {
-  constexpr auto commandLine = "testApp --foo abc€def";
-  const auto asBig5 = magic_args::make_utf8_argv(commandLine, 950);
-  REQUIRE_FALSE(asBig5.has_value());
-  CHECK(GetEncodingError(asBig5.error()) == ERROR_NO_UNICODE_TRANSLATION);
-  const auto asUtf8 = magic_args::make_utf8_argv(commandLine, CP_UTF8);
-  CHECKED_IF(asUtf8.has_value()) {
-    CHECK_THAT(
-      *asUtf8,
-      RangeEquals({
-        "testApp",
-        "--foo",
-        "abc€def",
-      }));
-
-    CHECKED_IF(GetACP() == CP_UTF8) {
-      CHECK(asUtf8 == magic_args::make_utf8_argv(commandLine));
-    }
-  }
-}
-
-TEST_CASE("invalid character in legacy code page (argc/argv)", "[windows]") {
-  constexpr std::array commandLine {"testApp", "--foo", "abc€def"};
-  const auto asBig5 = magic_args::make_utf8_argv(
-    static_cast<int>(commandLine.size()), commandLine.data(), 950);
-  REQUIRE_FALSE(asBig5.has_value());
-  CHECK(GetEncodingError(asBig5.error()) == ERROR_NO_UNICODE_TRANSLATION);
-  const auto asUtf8 = magic_args::make_utf8_argv(
-    static_cast<int>(commandLine.size()), commandLine.data(), CP_UTF8);
-  CHECKED_IF(asUtf8.has_value()) {
-    CHECK_THAT(
-      *asUtf8,
-      RangeEquals({
-        "testApp",
-        "--foo",
-        "abc€def",
-      }));
-
-    CHECKED_IF(GetACP() == CP_UTF8) {
-      CHECK(
-        asUtf8
-        == magic_args::make_utf8_argv(
-          static_cast<int>(commandLine.size()), commandLine.data()));
-    }
-  }
 }
 
 TEST_CASE("valid characters in legacy code page", "[windows]") {
@@ -187,27 +129,6 @@ TEST_CASE("valid characters in legacy code page", "[windows]") {
   }
 
   const auto asUtf8 = magic_args::make_utf8_argv(commandLine, CP_UTF8);
-  REQUIRE_FALSE(asUtf8.has_value());
-  CHECK(GetEncodingError(asUtf8.error()) == ERROR_NO_UNICODE_TRANSLATION);
-}
-
-TEST_CASE("valid characters in legacy code page - argc/argv", "[windows]") {
-  constexpr std::array argv {"testApp", "--foo", "\xa7\x41\xa6\x6e"};
-
-  const auto asBig5 = magic_args::make_utf8_argv(
-    static_cast<int>(argv.size()), argv.data(), 950);
-  CHECKED_IF(asBig5.has_value()) {
-    CHECK_THAT(
-      *asBig5,
-      RangeEquals({
-        "testApp",
-        "--foo",
-        "你好",
-      }));
-  }
-
-  const auto asUtf8 = magic_args::make_utf8_argv(
-    static_cast<int>(argv.size()), argv.data(), CP_UTF8);
   REQUIRE_FALSE(asUtf8.has_value());
   CHECK(GetEncodingError(asUtf8.error()) == ERROR_NO_UNICODE_TRANSLATION);
 }

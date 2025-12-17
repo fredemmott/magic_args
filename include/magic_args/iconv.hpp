@@ -22,7 +22,7 @@
 #include "detail/encoding.hpp"
 #endif
 
-namespace magic_args::detail::iconv {
+namespace magic_args::detail {
 inline std::expected<void, std::error_code> convert_with_iconv(
   std::string& out,
   const std::string_view in,
@@ -73,6 +73,38 @@ inline std::expected<void, std::error_code> convert_with_iconv(
   return {};
 }
 
+struct iconv_t_is_valid_t {
+  static bool operator()(iconv_t p) noexcept {
+    return p && p != reinterpret_cast<iconv_t>(-1);
+  }
+};
+using unique_iconv_t = unique_any<iconv_t, &iconv_close, iconv_t_is_valid_t>;
+
+inline std::expected<std::vector<std::string>, make_utf8_argv_error_t>
+make_utf8_argv(
+  const int argc,
+  const char* const* argv,
+  const iconv_t converter) {
+  std::vector<std::string> ret;
+  ret.reserve(static_cast<size_t>(argc));
+
+  std::string converted;
+  converted.reserve(1024);
+  for (int i = 0; i < argc; ++i) {
+    const std::string_view arg {argv[i] ? argv[i] : ""};
+    if (const auto ok = detail::convert_with_iconv(converted, arg, converter);
+        !ok) {
+      return std::unexpected {encoding_conversion_failed_t {ok.error()}};
+    }
+    ret.emplace_back(converted);
+  }
+  return ret;
+}
+
+}// namespace magic_args::detail
+
+namespace magic_args::inline public_api {
+
 inline std::expected<std::vector<std::string>, make_utf8_argv_error_t>
 make_utf8_argv(
   const int argc,
@@ -82,42 +114,31 @@ make_utf8_argv(
     return std::unexpected {invalid_parameter_t {}};
   }
 
-  using TEncoding = encoding_traits<unix_like_platform_t>;
-  if (TEncoding::process_argv_are_utf8()) {
-    // TODO: validate
-    return std::vector<std::string> {argv, argv + argc};
+  using TEncoding = detail::encoding_traits<detail::unix_like_platform_t>;
+  if (TEncoding::is_utf8(charset)) {
+    // Match Windows behavior: require valid UTF-8
+    // This happens on Windows because it gets converted to UTF-16
+    const detail::unique_iconv_t validator {iconv_open("UTF-8", "UTF-8")};
+    if (!validator) {
+      // ... iconv is busted, might as well let the program work
+      return std::vector<std::string> {argv, argv + argc};
+    }
+    return detail::make_utf8_argv(argc, argv, validator.get());
   }
 
   if (charset.empty()) {
     return std::unexpected {encoding_not_supported_t {}};
   }
 
-  const unique_any<iconv_t, &iconv_close, decltype([](const auto p) {
-                     return p != reinterpret_cast<iconv_t>(-1);
-                   })>
-    converter {iconv_open(charset.c_str(), "UTF-8")};
+  const detail::unique_iconv_t converter {iconv_open("UTF-8", charset.c_str())};
   if (!converter) {
     return std::unexpected {encoding_conversion_failed_t {
       std::error_code {errno, std::system_category()}}};
   }
 
-  std::vector<std::string> ret;
-  ret.reserve(static_cast<size_t>(argc));
-
-  std::string converted;
-  converted.reserve(1024);
-  for (int i = 0; i < argc; ++i) {
-    const std::string_view arg {argv[i] ? argv[i] : ""};
-    if (const auto ok = convert_with_iconv(converted, arg, converter.get());
-        !ok) {
-      return std::unexpected {encoding_conversion_failed_t {ok.error()}};
-    }
-    ret.emplace_back(converted);
-  }
-  return ret;
+  return detail::make_utf8_argv(argc, argv, converter.get());
 }
-
-}// namespace magic_args::detail::iconv
+}// namespace magic_args::inline public_api
 
 // Provide the platform specialization that delegates to the public API above
 template <>
@@ -127,7 +148,7 @@ struct magic_args::detail::encoding_traits<
   // static constexpr bool can_convert_to_utf8 = true;
   static std::expected<std::vector<std::string>, make_utf8_argv_error_t>
   make_utf8_argv(const int argc, const char* const* argv) {
-    return iconv::make_utf8_argv(argc, argv, environment_charset());
+    return public_api::make_utf8_argv(argc, argv, environment_charset());
   }
 };
 
