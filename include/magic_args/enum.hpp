@@ -4,7 +4,7 @@
 
 #if (!defined(MAGIC_ARGS_SINGLE_FILE)) \
   || (__has_include(<magic_enum/magic_enum.hpp>) && !defined(MAGIC_ARGS_DISABLE_ENUM))
-#define MAGIC_ARGS_ENUM_HPP
+#define MAGIC_ARGS_HAVE_ENUM
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "detail/from_string.hpp"

@@ -13,12 +13,7 @@ constexpr bool is_single_header_file = false;
 #include "gnu_style_parsing_traits.hpp"
 #include "parse.hpp"
 #include "powershell_style_parsing_traits.hpp"
-#include "subcommands.hpp"
 #include "verbatim_names.hpp"
-
-#ifdef MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS
-#include "windows.hpp"
-#endif
 
 #ifndef MAGIC_ARGS_DISABLE_ENUM
 #if __has_include(<magic_enum/magic_enum.hpp>)

@@ -9,6 +9,8 @@
 #include "subcommands/parse_subcommands_silent.hpp"
 #endif
 
+#define MAGIC_ARGS_HAVE_SUBCOMMANDS
+
 namespace magic_args::inline public_api {
 template <parsing_traits T = gnu_style_parsing_traits>
 struct multicall_traits : T {

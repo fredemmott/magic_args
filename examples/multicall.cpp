@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: MIT
 
 #include <magic_args/magic_args.hpp>
+#ifndef TEST_SINGLE_HEADER
+#include <magic_args/subcommands.hpp>
+#endif
 
 struct CommandFooBar {
   static constexpr auto name = "foo";
@@ -31,8 +34,10 @@ struct CommandHerp {
 };
 
 int main(int argc, char** argv) {
-  const auto ret
-    = magic_args::invoke_subcommands<magic_args::multicall_traits<>, CommandFooBar, CommandHerp>(argc, argv);
+  const auto ret = magic_args::invoke_subcommands<
+    magic_args::multicall_traits<>,
+    CommandFooBar,
+    CommandHerp>(argc, argv);
   if (!ret) {
     if (magic_args::is_error(ret.error())) {
       return EXIT_FAILURE;

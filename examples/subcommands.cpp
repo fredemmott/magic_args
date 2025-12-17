@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <magic_args/magic_args.hpp>
+#include <magic_args/subcommands.hpp>
 
 struct CommandFooBar {
   static constexpr auto name = "foo";

@@ -7,8 +7,8 @@
  *
  * This is off by default as it depends on <Windows.h>
  */
-#define MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS
 #include <magic_args/magic_args.hpp>
+#include <magic_args/windows.hpp>
 #include <thread>
 
 struct MyArgs {

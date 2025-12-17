@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#ifndef TEST_SINGLE_HEADER
+#include <magic_args/subcommands.hpp>
+#endif
+
 #include <format>
 #include <string>
 

@@ -4,14 +4,15 @@
 #include <magic_args/magic_args.hpp>
 
 struct MyArgs {
-  bool mFoo {false};
-  std::string mBar;
-  int mBaz {0};
+  bool foo {false};
+  std::string bar;
+  int baz {0};
 };
 
 int main(int argc, char** argv) {
-  const std::expected<MyArgs, magic_args::incomplete_parse_reason_t> args
-    = magic_args::parse<MyArgs>(argc, argv);
+  // this gets you an `std::expected<MyArgs,
+  // magic_args::incomplete_parse_reason_t>`
+  const auto args = magic_args::parse<MyArgs>(argc, argv);
   if (!args.has_value()) {
     // This could be an actual error, e.g. invalid argument,
     // or something like `--help` or `--version`, which while not an error,
