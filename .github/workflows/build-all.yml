@@ -1,5 +1,11 @@
 name: Build all
-on: [ push, pull_request ]
+on:
+  push:
+    paths-ignore:
+      - "docs/**"
+  pull_request:
+    paths-ignore:
+      - "docs/**"
 jobs:
   call-build-single:
     uses: ./.github/workflows/build-single.yml
