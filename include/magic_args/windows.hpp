@@ -46,6 +46,57 @@ inline std::expected<void, DWORD> utf8_from_wide(
   return {};
 }
 
+inline std::expected<void, DWORD> wide_from_codepage(
+  std::wstring& buffer,
+  const std::string_view data,
+  const UINT codePage) {
+  if (data.empty()) {
+    buffer.clear();
+    return {};
+  }
+
+  const auto convert
+    = [&data, codePage](wchar_t* out, const std::size_t wideCount) {
+        return MultiByteToWideChar(
+          codePage,
+          MB_ERR_INVALID_CHARS,
+          data.data(),
+          static_cast<INT>(data.size()),
+          out,
+          static_cast<INT>(wideCount));
+      };
+  const auto wideCount = convert(nullptr, 0);
+  if (wideCount == 0) [[unlikely]] {
+    return std::unexpected {GetLastError()};
+  }
+  buffer.resize_and_overwrite(wideCount, convert);
+  if (buffer.empty()) [[unlikely]] {
+    return std::unexpected {GetLastError()};
+  }
+
+  return {};
+}
+
+inline std::expected<void, DWORD> utf8_from_codepage(
+  std::string& utf8,
+  const std::string_view data,
+  const UINT codePage) {
+  if (data.empty()) {
+    utf8.clear();
+    return {};
+  }
+  std::wstring wide;
+  if (const auto widen = wide_from_codepage(wide, data, codePage); !widen)
+    [[unlikely]] {
+    return std::unexpected {widen.error()};
+  }
+  if (const auto converted = utf8_from_wide(utf8, wide); !converted)
+    [[unlikely]] {
+    return std::unexpected {converted.error()};
+  }
+  return {};
+}
+
 struct local_free_deleter {
   void operator()(auto ptr) const noexcept {
     LocalFree(ptr);
@@ -126,27 +177,67 @@ inline std::expected<std::vector<std::string>, DWORD> make_argv(
   if (commandLine.empty()) [[unlikely]] {
     return std::unexpected {ERROR_INVALID_PARAMETER};
   }
-  const auto convert
-    = [&commandLine, codePage](wchar_t* out, const std::size_t wideCount) {
-        return MultiByteToWideChar(
-          codePage,
-          MB_ERR_INVALID_CHARS,
-          commandLine.data(),
-          static_cast<INT>(commandLine.size()),
-          out,
-          static_cast<INT>(wideCount));
-      };
-  const auto wideCount = convert(nullptr, 0);
-  if (wideCount == 0) [[unlikely]] {
-    return std::unexpected {GetLastError()};
-  }
   std::wstring buffer;
-  buffer.resize_and_overwrite(wideCount, convert);
-  if (buffer.empty()) [[unlikely]] {
-    return std::unexpected {GetLastError()};
+  if (const auto widen
+      = detail::win32::wide_from_codepage(buffer, commandLine, codePage);
+      !widen) {
+    return std::unexpected {widen.error()};
   }
   return make_argv(buffer.c_str());
 }
+
+inline std::expected<std::vector<std::string>, DWORD> make_argv(
+  const int argc,
+  const char* const* argv,
+  const UINT codePage = CP_ACP) {
+  if (argc == 0 || !argv) [[unlikely]] {
+    return std::unexpected {ERROR_INVALID_PARAMETER};
+  }
+  if (codePage == CP_UTF8 || (codePage == CP_ACP && GetACP() == CP_UTF8)) {
+    // Even though we don't need to convert it, validate it.
+    //
+    // This is to ensure consistency with `make_argv("foo bar");`
+    for (auto&& arg: std::views::counted(argv, argc)) {
+      if (!arg) [[unlikely]] {
+        return std::unexpected {ERROR_INVALID_PARAMETER};
+      }
+      const std::string_view argView {arg};
+      if (argView.empty()) {
+        // Empty args are valid
+        continue;
+      }
+      const auto wideCount = MultiByteToWideChar(
+        CP_UTF8,
+        MB_ERR_INVALID_CHARS,
+        argView.data(),
+        static_cast<int>(argView.size()),
+        nullptr,
+        0);
+      if (wideCount == 0) [[unlikely]] {
+        return std::unexpected {GetLastError()};
+      }
+    }
+    return std::views::counted(argv, argc)
+      | std::ranges::to<std::vector<std::string>>();
+  }
+
+  std::vector<std::string> ret;
+  ret.reserve(argc);
+
+  std::string buffer;
+  buffer.reserve(1024);
+
+  for (auto&& arg: std::views::counted(argv, argc)) {
+    const auto converted
+      = detail::win32::utf8_from_codepage(buffer, arg, codePage);
+    if (!converted) [[unlikely]] {
+      return std::unexpected {converted.error()};
+    }
+    ret.push_back(buffer);
+  }
+  return ret;
+}
+
 }// namespace magic_args::inline public_api::win32
 
 #endif
