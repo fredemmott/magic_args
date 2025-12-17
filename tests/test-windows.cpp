@@ -177,25 +177,6 @@ TEST_CASE("valid characters in legacy code page", "[windows]") {
   CHECK(asUtf8.error() == ERROR_NO_UNICODE_TRANSLATION);
 }
 
-TEST_CASE("valid characters in legacy code page", "[windows]") {
-  constexpr auto commandLine = "testApp --foo \xa7\x41\xa6\x6e";
-
-  const auto asBig5 = magic_args::win32::make_argv(commandLine, 950);
-  CHECKED_IF(asBig5.has_value()) {
-    CHECK_THAT(
-      *asBig5,
-      RangeEquals({
-        "testApp",
-        "--foo",
-        "你好",
-      }));
-  }
-
-  const auto asUtf8 = magic_args::win32::make_argv(commandLine, CP_UTF8);
-  REQUIRE_FALSE(asUtf8.has_value());
-  CHECK(asUtf8.error() == ERROR_NO_UNICODE_TRANSLATION);
-}
-
 TEST_CASE("valid characters in legacy code page - argc/argv", "[windows]") {
   constexpr std::array argv {"testApp", "--foo", "\xa7\x41\xa6\x6e"};
 
