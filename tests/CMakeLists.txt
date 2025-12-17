@@ -14,6 +14,13 @@ else ()
   target_sources(test-lib PRIVATE output-posix.cpp)
 endif ()
 
+add_compile_definitions(
+  UNICODE
+  _UNICODE
+  NOMINMAX
+  WIN32_LEAN_AND_MEAN
+)
+
 find_package(Catch2 CONFIG REQUIRED)
 include("${Catch2_DIR}/Catch.cmake")
 

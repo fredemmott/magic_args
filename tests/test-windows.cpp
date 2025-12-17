@@ -9,6 +9,7 @@
 #include <magic_args/windows.hpp>
 #endif
 
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_range_equals.hpp>
 #include <string>
@@ -27,11 +28,24 @@ struct MyArgs {
 using namespace TestWindows;
 using namespace Catch::Matchers;
 
+std::optional<DWORD> GetEncodingError(
+  const magic_args::make_utf8_argv_error_t& e) {
+  const auto p = get_if<magic_args::encoding_conversion_failed_t>(&e);
+  if (!p) {
+    return std::nullopt;
+  }
+  if (const auto code = p->mPlatformErrorCode.value();
+      std::in_range<DWORD>(code)) {
+    return static_cast<DWORD>(code);
+  }
+  return std::nullopt;
+}
+
 TEST_CASE("wWinMain", "[windows]") {
   // wWinMain gives us the command line all in one UTF-16 string
   constexpr auto commandLine
     = L"test_app --foo 💩 --bar \"Dzień dobry\" --empty \"\" --baz test";
-  const auto argv = magic_args::win32::make_argv(commandLine);
+  const auto argv = magic_args::make_utf8_argv(commandLine);
   REQUIRE(argv.has_value());
   CHECK_THAT(
     *argv,
@@ -63,7 +77,7 @@ TEST_CASE("winMain", "[windows]") {
   // winMain gives us the command line all in one active-code-page string
   constexpr auto commandLine
     = "test_app --foo 💩 --bar \"Dzień dobry\" --empty \"\" --baz test";
-  const auto argv = magic_args::win32::make_argv(commandLine);
+  const auto argv = magic_args::make_utf8_argv(commandLine);
   REQUIRE(argv.has_value());
   CHECK_THAT(
     *argv,
@@ -96,9 +110,9 @@ TEST_CASE("invalid UTF-8", "[windows]") {
     = "test_app --foo abc"
       "\x80"
       "def";
-  const auto argv = magic_args::win32::make_argv(commandLine);
+  const auto argv = magic_args::make_utf8_argv(commandLine);
   REQUIRE_FALSE(argv.has_value());
-  CHECK(argv.error() == ERROR_NO_UNICODE_TRANSLATION);
+  CHECK(GetEncodingError(argv.error()) == ERROR_NO_UNICODE_TRANSLATION);
 }
 
 TEST_CASE("invalid UTF-16", "[windows]") {
@@ -106,17 +120,17 @@ TEST_CASE("invalid UTF-16", "[windows]") {
     = L"test_app --foo abc"
       L"\xD800"
       L"def";
-  const auto argv = magic_args::win32::make_argv(commandLine);
+  const auto argv = magic_args::make_utf8_argv(commandLine);
   REQUIRE_FALSE(argv.has_value());
-  CHECK(argv.error() == ERROR_NO_UNICODE_TRANSLATION);
+  CHECK(GetEncodingError(argv.error()) == ERROR_NO_UNICODE_TRANSLATION);
 }
 
 TEST_CASE("invalid character in legacy code page", "[windows]") {
   constexpr auto commandLine = "testApp --foo abc€def";
-  const auto asBig5 = magic_args::win32::make_argv(commandLine, 950);
+  const auto asBig5 = magic_args::make_utf8_argv(commandLine, 950);
   REQUIRE_FALSE(asBig5.has_value());
-  CHECK(asBig5.error() == ERROR_NO_UNICODE_TRANSLATION);
-  const auto asUtf8 = magic_args::win32::make_argv(commandLine, CP_UTF8);
+  CHECK(GetEncodingError(asBig5.error()) == ERROR_NO_UNICODE_TRANSLATION);
+  const auto asUtf8 = magic_args::make_utf8_argv(commandLine, CP_UTF8);
   CHECKED_IF(asUtf8.has_value()) {
     CHECK_THAT(
       *asUtf8,
@@ -127,18 +141,18 @@ TEST_CASE("invalid character in legacy code page", "[windows]") {
       }));
 
     CHECKED_IF(GetACP() == CP_UTF8) {
-      CHECK(asUtf8 == magic_args::win32::make_argv(commandLine));
+      CHECK(asUtf8 == magic_args::make_utf8_argv(commandLine));
     }
   }
 }
 
 TEST_CASE("invalid character in legacy code page (argc/argv)", "[windows]") {
   constexpr std::array commandLine {"testApp", "--foo", "abc€def"};
-  const auto asBig5 = magic_args::win32::make_argv(
+  const auto asBig5 = magic_args::make_utf8_argv(
     static_cast<int>(commandLine.size()), commandLine.data(), 950);
   REQUIRE_FALSE(asBig5.has_value());
-  CHECK(asBig5.error() == ERROR_NO_UNICODE_TRANSLATION);
-  const auto asUtf8 = magic_args::win32::make_argv(
+  CHECK(GetEncodingError(asBig5.error()) == ERROR_NO_UNICODE_TRANSLATION);
+  const auto asUtf8 = magic_args::make_utf8_argv(
     static_cast<int>(commandLine.size()), commandLine.data(), CP_UTF8);
   CHECKED_IF(asUtf8.has_value()) {
     CHECK_THAT(
@@ -152,7 +166,7 @@ TEST_CASE("invalid character in legacy code page (argc/argv)", "[windows]") {
     CHECKED_IF(GetACP() == CP_UTF8) {
       CHECK(
         asUtf8
-        == magic_args::win32::make_argv(
+        == magic_args::make_utf8_argv(
           static_cast<int>(commandLine.size()), commandLine.data()));
     }
   }
@@ -161,7 +175,7 @@ TEST_CASE("invalid character in legacy code page (argc/argv)", "[windows]") {
 TEST_CASE("valid characters in legacy code page", "[windows]") {
   constexpr auto commandLine = "testApp --foo \xa7\x41\xa6\x6e";
 
-  const auto asBig5 = magic_args::win32::make_argv(commandLine, 950);
+  const auto asBig5 = magic_args::make_utf8_argv(commandLine, 950);
   CHECKED_IF(asBig5.has_value()) {
     CHECK_THAT(
       *asBig5,
@@ -172,15 +186,15 @@ TEST_CASE("valid characters in legacy code page", "[windows]") {
       }));
   }
 
-  const auto asUtf8 = magic_args::win32::make_argv(commandLine, CP_UTF8);
+  const auto asUtf8 = magic_args::make_utf8_argv(commandLine, CP_UTF8);
   REQUIRE_FALSE(asUtf8.has_value());
-  CHECK(asUtf8.error() == ERROR_NO_UNICODE_TRANSLATION);
+  CHECK(GetEncodingError(asUtf8.error()) == ERROR_NO_UNICODE_TRANSLATION);
 }
 
 TEST_CASE("valid characters in legacy code page - argc/argv", "[windows]") {
   constexpr std::array argv {"testApp", "--foo", "\xa7\x41\xa6\x6e"};
 
-  const auto asBig5 = magic_args::win32::make_argv(
+  const auto asBig5 = magic_args::make_utf8_argv(
     static_cast<int>(argv.size()), argv.data(), 950);
   CHECKED_IF(asBig5.has_value()) {
     CHECK_THAT(
@@ -192,25 +206,25 @@ TEST_CASE("valid characters in legacy code page - argc/argv", "[windows]") {
       }));
   }
 
-  const auto asUtf8 = magic_args::win32::make_argv(
+  const auto asUtf8 = magic_args::make_utf8_argv(
     static_cast<int>(argv.size()), argv.data(), CP_UTF8);
   REQUIRE_FALSE(asUtf8.has_value());
-  CHECK(asUtf8.error() == ERROR_NO_UNICODE_TRANSLATION);
+  CHECK(GetEncodingError(asUtf8.error()) == ERROR_NO_UNICODE_TRANSLATION);
 }
 
 TEST_CASE("empty string", "[windows]") {
-  const auto narrow = magic_args::win32::make_argv("");
+  const auto narrow = magic_args::make_utf8_argv("");
 
   CHECKED_ELSE(narrow.has_value()) {
-    CHECK(narrow.error() == ERROR_INVALID_PARAMETER);
+    CHECK(holds_alternative<magic_args::invalid_parameter_t>(narrow.error()));
   }
-  const auto wide = magic_args::win32::make_argv(L"");
+  const auto wide = magic_args::make_utf8_argv(L"");
   CHECKED_ELSE(wide.has_value()) {
-    CHECK(wide.error() == ERROR_INVALID_PARAMETER);
+    CHECK(holds_alternative<magic_args::invalid_parameter_t>(narrow.error()));
   }
 
-  const auto null = magic_args::win32::make_argv(nullptr);
+  const auto null = magic_args::make_utf8_argv(nullptr);
   CHECKED_ELSE(null.has_value()) {
-    CHECK(null.error() == ERROR_INVALID_PARAMETER);
+    CHECK(holds_alternative<magic_args::invalid_parameter_t>(narrow.error()));
   }
 }

@@ -27,11 +27,9 @@ int WINAPI wWinMain(
   // *NOT* passing in `lpCmdLine`, because Windows is inconsistent in whether
   // that includes the program name. If a command line is not provided,
   // magic_args will use `GetCommandLineW()`.
-  const auto argv = magic_args::win32::make_argv();
+  const auto argv = magic_args::make_utf8_argv();
   if (!argv) {
-    // Most likely an encoding error
-    std::println(
-      "Win32 error {} when attempting to parse command line", argv.error());
+    std::println(stderr, "Couldn't convert argv to utf8");
     return EXIT_FAILURE;
   }
 

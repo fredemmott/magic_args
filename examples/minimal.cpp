@@ -10,15 +10,25 @@ struct MyArgs {
 };
 
 int main(int argc, char** argv) {
-  // this gets you an `std::expected<MyArgs,
-  // magic_args::incomplete_parse_reason_t>`
-  const auto args = magic_args::parse<MyArgs>(argc, argv);
-  if (!args.has_value()) {
-    // This could be an actual error, e.g. invalid argument,
-    // or something like `--help` or `--version`, which while not an error,
-    // are an 'unexpected' outcome in the std::expected
-    return magic_args::is_error(args.error()) ? EXIT_FAILURE : EXIT_SUCCESS;
+  // This gets you an:
+  //
+  // ```
+  // std::expected<
+  //   MyArgs,
+  //   magic_args::incomplete_parse_reason_t
+  // >
+  // ```
+  //
+  // WARNING: this assumes UTF-8 argv. See `minimal-with-encoding.cpp` for
+  // a less-trusting example.
+  const auto args = magic_args::parse<MyArgs>(std::views::counted(argv, argc));
+  if (args) {
+    magic_args::dump(*args);
+    return EXIT_SUCCESS;
   }
-  magic_args::dump(*args);
-  return EXIT_SUCCESS;
+
+  // This could be an actual error, e.g. invalid argument,
+  // or something like `--help` or `--version`, which while not an error,
+  // are an 'unexpected' outcome in the std::expected
+  return magic_args::is_error(args.error()) ? EXIT_FAILURE : EXIT_SUCCESS;
 }

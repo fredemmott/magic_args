@@ -17,6 +17,7 @@ set(
   detail/to_formattable.hpp
   detail/visitors.hpp
   detail/overloaded.hpp
+  detail/encoding.hpp
   detail/parse.hpp
   dump.hpp
   detail/usage.hpp

@@ -10,6 +10,7 @@ constexpr bool is_single_header_file = true;
 namespace magic_args {
 constexpr bool is_single_header_file = false;
 }
+#include "detail/encoding.hpp"
 #include "dump.hpp"
 #include "gnu_style_parsing_traits.hpp"
 #include "parse.hpp"
