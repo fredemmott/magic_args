@@ -37,13 +37,10 @@ int main(int argc, char** argv) {
   const auto ret = magic_args::invoke_subcommands<
     magic_args::multicall_traits<>,
     CommandFooBar,
-    CommandHerp>(argc, argv);
+    CommandHerp>(std::views::counted(argv, argc));
   if (!ret) {
-    if (magic_args::is_error(ret.error())) {
-      return EXIT_FAILURE;
-    }
     // e.g. `--version`, `--help` aren't errors, but they are *unexpected*
-    return EXIT_SUCCESS;
+    return magic_args::is_error(ret.error()) ? EXIT_FAILURE : EXIT_SUCCESS;
   }
 
   std::println("Subcommand main returned {}", *ret);

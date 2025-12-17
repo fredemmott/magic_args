@@ -49,19 +49,6 @@ TExpected invoke_subcommands_silent(
   }
 }
 
-// Convenience helper for separate argc + argv
-template <
-  parsing_traits Traits,
-  invocable_subcommand First,
-  compatible_invocable_subcommand<First>... Rest>
-auto invoke_subcommands_silent(
-  const int argc,
-  const char* const* argv,
-  const program_info& info = {}) {
-  return invoke_subcommands_silent<Traits, First, Rest...>(
-    std::views::counted(argv, argc), info);
-}
-
 // Convenience helper, assuming gnu_style_parsing_traits
 template <
   invocable_subcommand First,
@@ -73,17 +60,6 @@ auto invoke_subcommands_silent(
     std::forward<decltype(argv)>(argv), info);
 }
 
-// Convenience helper, assuming gnu_style_parsing_traits
-template <
-  invocable_subcommand First,
-  compatible_invocable_subcommand<First>... Rest>
-auto invoke_subcommands_silent(
-  const int argc,
-  const char* const* argv,
-  const program_info& info = {}) {
-  return invoke_subcommands_silent<gnu_style_parsing_traits, First, Rest...>(
-    std::views::counted(argv, argc), info);
-}
 }// namespace magic_args::inline public_api
 
 #endif

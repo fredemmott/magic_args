@@ -23,10 +23,6 @@ TEST_CASE("non-invoked cases") {
 
   const auto ret
     = magic_args::invoke_subcommands_silent<CommandFooBar, CommandHerp>(argv);
-  CHECK(
-    ret
-    == magic_args::invoke_subcommands_silent<CommandFooBar, CommandHerp>(
-      static_cast<int>(argv.size()), argv.data()));
 
   REQUIRE_FALSE(ret.has_value());
   CHECK(
@@ -113,11 +109,6 @@ TEST_CASE("powershell-style success") {
     CommandFooBar,
     CommandHerp>(psArgv, info);
   CHECK(ps == gnu);
-  const auto psWithArgc = magic_args::invoke_subcommands_silent<
-    magic_args::powershell_style_parsing_traits,
-    CommandFooBar,
-    CommandHerp>(static_cast<int>(psArgv.size()), psArgv.data(), info);
-  CHECK(psWithArgc == ps);
 }
 
 TEST_CASE("powershell-style non-invoked cases") {
@@ -134,11 +125,6 @@ TEST_CASE("powershell-style non-invoked cases") {
 
   const auto ret
     = magic_args::invoke_subcommands_silent<CommandFooBar, CommandHerp>(argv);
-  CHECK(
-    ret
-    == magic_args::invoke_subcommands_silent<CommandFooBar, CommandHerp>(
-      static_cast<int>(argv.size()), argv.data()));
-
   REQUIRE_FALSE(ret.has_value());
   CHECK(
     ret.error()

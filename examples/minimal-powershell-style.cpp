@@ -12,8 +12,8 @@ struct MyArgs {
 int main(int argc, char** argv) {
   const auto args
     = magic_args::parse<magic_args::powershell_style_parsing_traits, MyArgs>(
-      argc, argv);
-  if (!args.has_value()) {
+      std::views::counted(argv, argc));
+  if (!args) {
     // This could be an actual error, e.g. invalid argument,
     // or something like `--help` or `--version`, which while not an error,
     // are an 'unexpected' outcome in the std::expected

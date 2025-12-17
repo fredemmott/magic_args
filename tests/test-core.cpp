@@ -455,24 +455,3 @@ Usage: my_test [OPTIONS...] [--] [POSITIONAL]
   const auto& e = get<magic_args::missing_argument_value>(args.error());
   CHECK(e.mSource.mName == "--raw");
 }
-
-TEST_CASE("argc, argv") {
-  constexpr std::array args {
-    "my_test",
-    "--help",
-  };
-
-  Output out, err;
-  const auto result = magic_args::parse<CustomArgs>(
-    static_cast<int>(args.size()), args.data(), {}, out, err);
-  CHECK(err.empty());
-  CHECK_THAT(out.get(), StartsWith("Usage: my_test"));
-  REQUIRE_FALSE(result.has_value());
-  REQUIRE(holds_alternative<magic_args::help_requested>(result.error()));
-  Output rangeOut, rangeErr;
-  const auto rangeResult
-    = magic_args::parse<CustomArgs>(args, {}, rangeOut, rangeErr);
-  CHECK(result == rangeResult);
-  CHECK(out.get() == rangeOut.get());
-  CHECK(err.get() == rangeErr.get());
-}

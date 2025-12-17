@@ -74,7 +74,8 @@ int main(int argc, char** argv) {
       "everything --string=someval FOO",
     },
   };
-  const auto args = magic_args::parse<MyArgs>(argc, argv, programInfo);
+  const auto args
+    = magic_args::parse<MyArgs>(std::views::counted(argv, argc), programInfo);
   if (!args.has_value()) {
     return std::visit(
       []<incomplete_parse_reason T>(T) {

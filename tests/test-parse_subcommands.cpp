@@ -27,11 +27,6 @@ TEST_CASE("success (no output)") {
   CHECK(out.empty());
   CHECK(err.empty());
 
-  const auto retWithArgc
-    = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(
-      static_cast<int>(argv.size()), argv.data(), {}, out, err);
-  CHECK(retWithArgc == ret);
-
   const auto silent
     = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
       argv, {});
@@ -170,14 +165,6 @@ TEST_CASE("powershell-style success (no output)") {
     CommandHerp>(psArgv, {}, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
-
-  const auto psWithArgc = magic_args::parse_subcommands<
-    magic_args::powershell_style_parsing_traits,
-    CommandFooBar,
-    CommandHerp>(static_cast<int>(psArgv.size()), psArgv.data(), {}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-  CHECK(ps == psWithArgc);
 
   const auto psSilent = magic_args::parse_subcommands_silent<
     magic_args::powershell_style_parsing_traits,

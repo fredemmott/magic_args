@@ -128,17 +128,6 @@ TEST_CASE("match second, but pass invalid arguments (silent)") {
   CHECK(e.mSource.mArg == "--INVALID");
 }
 
-TEST_CASE("match foo command via argc/argv") {
-  constexpr std::array argv {"mytest", "foo", "--bar=BAR"};
-  const auto ret = magic_args::parse_subcommands_silent<CommandFooBar>(
-    static_cast<int>(argv.size()), argv.data());
-  REQUIRE(ret.has_value());
-  const auto& v = ret.value();
-  REQUIRE(holds_alternative<magic_args::subcommand_match<CommandFooBar>>(v));
-  const auto& match = std::get<magic_args::subcommand_match<CommandFooBar>>(v);
-  CHECK(match->mBar == "BAR");
-}
-
 TEST_CASE("powershell-style") {
   const magic_args::program_info info {
     .mVersion = "TestApp v1.2.3",
@@ -171,9 +160,4 @@ TEST_CASE("powershell-style") {
     CommandFooBar,
     CommandHerp>(psArgv, info);
   CHECK(ps == gnu);
-  const auto psWithArgc = magic_args::parse_subcommands_silent<
-    magic_args::powershell_style_parsing_traits,
-    CommandFooBar,
-    CommandHerp>(static_cast<int>(psArgv.size()), psArgv.data(), info);
-  CHECK(psWithArgc == ps);
 }

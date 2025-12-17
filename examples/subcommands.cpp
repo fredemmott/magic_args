@@ -27,8 +27,8 @@ struct CommandHerp {
 };
 
 int main(int argc, char** argv) {
-  const auto ret
-    = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(argc, argv);
+  const auto ret = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(
+    std::views::counted(argv, argc));
   if (!ret) {
     if (magic_args::is_error(ret.error())) {
       return EXIT_FAILURE;

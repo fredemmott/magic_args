@@ -143,14 +143,6 @@ auto parse_subcommands_silent(
     std::forward<decltype(argv)>(argv), help);
 }
 
-template <class... Args>
-auto parse_subcommands_silent(
-  const int argc,
-  const char* const* argv,
-  const program_info& help = {}) {
-  return parse_subcommands_silent<Args...>(
-    std::views::counted(argv, argc), help);
-}
 }// namespace magic_args::inline public_api
 
 #endif

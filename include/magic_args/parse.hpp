@@ -43,28 +43,6 @@ std::expected<T, incomplete_parse_reason_t> parse(
     std::forward<decltype(argv)>(argv), help, outputStream, errorStream);
 }
 
-template <parsing_traits Traits, class T>
-std::expected<T, incomplete_parse_reason_t> parse(
-  const int argc,
-  const char* const* argv,
-  const program_info& help = {},
-  FILE* outputStream = stdout,
-  FILE* errorStream = stderr) {
-  return parse<Traits, T>(
-    std::views::counted(argv, argc), help, outputStream, errorStream);
-}
-
-template <class T>
-std::expected<T, incomplete_parse_reason_t> parse(
-  const int argc,
-  const char* const* argv,
-  const program_info& help = {},
-  FILE* outputStream = stdout,
-  FILE* errorStream = stderr) {
-  return parse<gnu_style_parsing_traits, T>(
-    std::views::counted(argv, argc), help, outputStream, errorStream);
-}
-
 }// namespace magic_args::inline public_api
 
 #endif

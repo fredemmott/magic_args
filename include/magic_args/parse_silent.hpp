@@ -185,23 +185,6 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
     std::forward<decltype(argv)>(argv), help);
 }
 
-template <parsing_traits Traits, class T>
-std::expected<T, incomplete_parse_reason_t> parse_silent(
-  const int argc,
-  const char* const* argv,
-  const program_info& help = {}) {
-  return parse_silent<Traits, T>(
-    std::views::counted(argv, static_cast<std::size_t>(argc)), help);
-}
-
-template <class T>
-std::expected<T, incomplete_parse_reason_t> parse_silent(
-  const int argc,
-  const char* const* argv,
-  const program_info& help = {}) {
-  return parse_silent<gnu_style_parsing_traits, T>(argc, argv, help);
-}
-
 }// namespace magic_args::inline public_api
 
 #endif

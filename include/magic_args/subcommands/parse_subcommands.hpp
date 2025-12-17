@@ -72,28 +72,6 @@ auto parse_subcommands(
     argv, info, outputStream, errorStream);
 }
 
-template <parsing_traits Traits, subcommand First, subcommand... Rest>
-auto parse_subcommands(
-  const int argc,
-  const char* const* argv,
-  const program_info& help = {},
-  FILE* outputStream = stdout,
-  FILE* errorStream = stderr) {
-  return parse_subcommands<Traits, First, Rest...>(
-    std::views::counted(argv, argc), help, outputStream, errorStream);
-}
-
-template <subcommand First, subcommand... Rest>
-auto parse_subcommands(
-  const int argc,
-  const char* const* argv,
-  const program_info& help = {},
-  FILE* outputStream = stdout,
-  FILE* errorStream = stderr) {
-  return parse_subcommands<First, Rest...>(
-    std::views::counted(argv, argc), help, outputStream, errorStream);
-}
-
 }// namespace magic_args::inline public_api
 
 #endif
