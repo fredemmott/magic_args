@@ -21,6 +21,7 @@ set(
   dump.hpp
   detail/usage.hpp
   detail/print_incomplete_parse_reason.hpp
+  parse_silent.hpp
   parse.hpp
   magic_args.hpp
   # Extensions that build on top of the core functionality

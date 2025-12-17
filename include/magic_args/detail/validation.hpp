@@ -5,6 +5,7 @@
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/gnu_style_parsing_traits.hpp>
+#include "get_argument_definition.hpp"
 #include "reflection.hpp"
 #endif
 

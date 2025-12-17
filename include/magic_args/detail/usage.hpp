@@ -8,6 +8,7 @@
 #include <magic_args/program_info.hpp>
 
 #include "concepts.hpp"
+#include "get_argument_definition.hpp"
 #include "parse.hpp"
 #include "print.hpp"
 #include "to_formattable.hpp"

@@ -49,7 +49,7 @@ TEST_CASE("help, powershell-style") {
   std::vector<std::string_view> argv {"test_app", "-Help"};
   Output out, err;
   const auto args
-    = magic_args::parse<MyArgs, magic_args::powershell_style_parsing_traits>(
+    = magic_args::parse<magic_args::powershell_style_parsing_traits, MyArgs>(
       argv, {}, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::help_requested>(args.error()));
@@ -79,7 +79,7 @@ TEST_CASE("args, powershell-style") {
   };
   Output out, err;
   const auto args
-    = magic_args::parse<MyArgs, magic_args::powershell_style_parsing_traits>(
+    = magic_args::parse<magic_args::powershell_style_parsing_traits, MyArgs>(
       argv, {}, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
@@ -93,8 +93,8 @@ TEST_CASE("PowerShell-style invalid value") {
     "my_test", "-Raw", MyValueType::InvalidValue};
 
   Output out, err;
-  const auto args = magic_args::
-    parse<CustomArgs, magic_args::powershell_style_parsing_traits>(
+  const auto args
+    = magic_args::parse<magic_args::powershell_style_parsing_traits, MyArgs>(
       argv, {}, out, err);
   CHECK(out.empty());
   CHECK(err.get() == chomp(R"EOF(
@@ -126,7 +126,7 @@ TEST_CASE("PowerShell-style normalization") {
 
   Output out, err;
   const auto args = magic_args::
-    parse<Normalization, magic_args::powershell_style_parsing_traits>(
+    parse<magic_args::powershell_style_parsing_traits, Normalization>(
       argv, {}, out, err);
   CHECK(err.empty());
   CHECK(out.get() == chomp(R"EOF(
@@ -180,9 +180,8 @@ TEST_CASE("GNU-style verbatim names") {
 
   Output out, err;
   const auto args = magic_args::parse<
-    Normalization,
-    magic_args::verbatim_names<magic_args::gnu_style_parsing_traits>>(
-    argv, {}, out, err);
+    magic_args::verbatim_names<magic_args::gnu_style_parsing_traits>,
+    Normalization>(argv, {}, out, err);
   CHECK(err.empty());
   CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
@@ -207,9 +206,8 @@ TEST_CASE("PowerShell-style verbatim names") {
 
   Output out, err;
   const auto args = magic_args::parse<
-    Normalization,
-    magic_args::verbatim_names<magic_args::powershell_style_parsing_traits>>(
-    argv, {}, out, err);
+    magic_args::verbatim_names<magic_args::powershell_style_parsing_traits>,
+    Normalization>(argv, {}, out, err);
   CHECK(err.get() == "");
   CHECK(out.get() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]

@@ -4,14 +4,14 @@
 #include <magic_args/magic_args.hpp>
 
 struct MyArgs {
-  bool mFoo {false};
-  std::string mBar;
-  std::string mBaz;
+  bool foo {false};
+  std::string bar;
+  std::string baz;
 };
 
 int main(int argc, char** argv) {
   const auto args
-    = magic_args::parse<MyArgs, magic_args::powershell_style_parsing_traits>(
+    = magic_args::parse<magic_args::powershell_style_parsing_traits, MyArgs>(
       argc, argv);
   if (!args.has_value()) {
     // This could be an actual error, e.g. invalid argument,

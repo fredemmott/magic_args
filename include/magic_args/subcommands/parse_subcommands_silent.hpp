@@ -69,7 +69,7 @@ void parse_subcommands_silent_impl(
   }();
 
   auto subcommandResult
-    = parse_silent<typename First::arguments_type, SubcommandTraits>(
+    = parse_silent<SubcommandTraits, typename First::arguments_type>(
       argv, subcommandInfo);
   if (subcommandResult) [[likely]] {
     result.emplace(
