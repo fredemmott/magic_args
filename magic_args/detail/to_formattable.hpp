@@ -60,6 +60,20 @@ struct to_formattable_t<T> {
   }
 };
 
+template <>
+struct to_formattable_t<const flag&> {
+  static constexpr auto operator()(const flag& v) {
+    return v.mValue ? "true" : "false";
+  }
+};
+
+template <>
+struct to_formattable_t<const counted_flag&> {
+  static constexpr auto operator()(const counted_flag& v) {
+    return v.mCount;
+  }
+};
+
 // For Ubuntu 24.04 (GCC 13)
 #ifndef __cpp_lib_format_ranges
 template <std::ranges::range R>

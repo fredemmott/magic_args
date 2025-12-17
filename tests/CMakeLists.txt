@@ -72,6 +72,7 @@ add_test_executables(test-std-optional test-std-optional.cpp)
 add_test_executables(test-styles test-styles.cpp)
 
 # Extra features building on top of the core
+add_test_executables(test-dump test-dump.cpp)
 add_test_executables(test-parse_subcommands_silent test-parse_subcommands_silent.cpp)
 add_test_executables(test-parse_subcommands test-parse_subcommands.cpp)
 add_test_executables(test-invoke_subcommands_silent test-invoke_subcommands_silent.cpp)
