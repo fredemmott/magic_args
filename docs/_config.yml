@@ -1,0 +1,15 @@
+repository: fredemmott/magic_args
+title: magic_args
+description: Convenience-first CLI argument parsing for C++23
+theme: just-the-docs
+color_scheme: dark
+permalink: pretty
+gh_edit_link: true
+gh_edit_link_text: "Edit this page on GitHub"
+gh_edit_repository: https://github.com/fredemmott/magic_args
+gh_edit_branch: develop
+gh_edit_source: docs
+gh_edit_view_mode: edit
+plugins:
+  - github-pages
+  - just-the-docs
