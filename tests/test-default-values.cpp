@@ -6,13 +6,28 @@
 #include "chomp.hpp"
 #include "output.hpp"
 
+struct MyCustomType {
+  std::string mValue;
+};
+std::expected<void, magic_args::invalid_argument_value> from_string_argument(
+  MyCustomType& value,
+  const std::string_view arg) {
+  value.mValue = std::string {arg};
+  return {};
+}
+auto formattable_argument_value(const MyCustomType& value) {
+  return value.mValue;
+}
+
 struct WithDefaults {
   std::string mMyArg {"testValue"};
   magic_args::option<std::string> mMyArgWithHelp {
     .mValue = "testValue2",
     .mHelp = "Test help text",
   };
+  MyCustomType mMyCustomType {"testValue3"};
 };
+
 TEST_CASE("default argument value - no options") {
   Output out, err;
   const auto noOptions
@@ -23,6 +38,7 @@ TEST_CASE("default argument value - no options") {
   REQUIRE(noOptions.has_value());
   CHECK(noOptions->mMyArg == "testValue");
   CHECK(noOptions->mMyArgWithHelp == "testValue2");
+  CHECK(noOptions->mMyCustomType.mValue == "testValue3");
 }
 
 TEST_CASE("default argument value - overriden") {
@@ -49,6 +65,7 @@ Options:
       --my-arg=VALUE           (default: testValue)
       --my-arg-with-help=VALUE Test help text
                                (default: testValue2)
+      --my-custom-type=VALUE   (default: testValue3)
 
   -?, --help                   show this message
 )EOF"));

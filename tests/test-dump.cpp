@@ -14,6 +14,21 @@ enum class MyEnum {
   Baz,
 };
 
+struct MyCustomType {
+  std::string mValue;
+};
+
+std::expected<void, magic_args::invalid_argument_value> from_string_argument(
+  MyCustomType& value,
+  const std::string_view arg) {
+  value.mValue = std::string {arg};
+  return {};
+}
+
+auto formattable_argument_value(const MyCustomType& value) {
+  return value.mValue;
+}
+
 struct Args {
   std::string mString;
   std::optional<int> mOptionalInt;
@@ -25,6 +40,7 @@ struct Args {
   magic_args::counted_flag mVerbose {
     .mShortName = "v",
   };
+  MyCustomType mCustomType;
   magic_args::optional_positional_argument<std::string> mPositional;
 };
 
@@ -43,6 +59,7 @@ mEnum                         `Foo`
 mOption                       ``
 mFlag                         `false`
 mVerbose                      `0`
+mCustomType                   ``
 mPositional                   ``
 )EOF"));
 }
@@ -58,6 +75,7 @@ TEST_CASE("all") {
       "--option=TestOption",
       "--flag",
       "-vvv",
+      "--custom-type=TestCustomValue",
       "Derp",
     },
     {},
@@ -75,6 +93,7 @@ mEnum                         `Bar`
 mOption                       `TestOption`
 mFlag                         `true`
 mVerbose                      `3`
+mCustomType                   `TestCustomValue`
 mPositional                   `Derp`
 )EOF"));
 }
