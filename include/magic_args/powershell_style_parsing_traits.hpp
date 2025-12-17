@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_POWERSHELL_STYLE_PARSING_TRAITS_HPP
+#define MAGIC_ARGS_POWERSHELL_STYLE_PARSING_TRAITS_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "gnu_style_parsing_traits.hpp"
@@ -61,3 +62,4 @@ inline void powershell_style_parsing_traits::normalize_option_name(
 }
 
 }// namespace magic_args::inline public_api
+#endif

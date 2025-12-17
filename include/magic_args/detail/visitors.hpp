@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_DETAIL_VISITORS_HPP
+#define MAGIC_ARGS_DETAIL_VISITORS_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "concepts.hpp"
@@ -66,3 +67,5 @@ bool visit_positional_arguments(const auto& visitor, auto& ret) {
 }
 
 }// namespace magic_args::detail
+
+#endif

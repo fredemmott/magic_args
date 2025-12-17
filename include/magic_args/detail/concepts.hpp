@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_DETAIL_CONCEPTS_HPP
+#define MAGIC_ARGS_DETAIL_CONCEPTS_HPP
 
 #include <concepts>
 #include <optional>
@@ -81,3 +82,5 @@ concept parsing_traits = requires(std::string arg) {
 };
 
 }// namespace magic_args::inline public_api
+
+#endif

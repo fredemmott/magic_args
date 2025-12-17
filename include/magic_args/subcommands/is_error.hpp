@@ -1,6 +1,10 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#if ( \
+  defined(MAGIC_ARGS_ENABLE_SUBCOMMANDS) || !defined(MAGIC_ARGS_SINGLE_FILE)) \
+  && !defined(MAGIC_ARGS_SUBCOMMANDS_IS_ERROR_HPP)
+#define MAGIC_ARGS_SUBCOMMANDS_IS_ERROR_HPP
+
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/detail/overloaded.hpp>
 #include <magic_args/incomplete_parse_reason.hpp>
@@ -21,3 +25,5 @@ bool is_error(const incomplete_command_parse_reason_t<First, Rest...>& reason) {
     reason);
 }
 }// namespace magic_args::inline public_api
+
+#endif

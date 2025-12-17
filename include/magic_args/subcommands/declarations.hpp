@@ -1,6 +1,10 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#if ( \
+  defined(MAGIC_ARGS_ENABLE_SUBCOMMANDS) || !defined(MAGIC_ARGS_SINGLE_FILE)) \
+  && !defined(MAGIC_ARGS_SUBCOMMANDS_DECLARATIONS_HPP)
+#define MAGIC_ARGS_SUBCOMMANDS_DECLARATIONS_HPP
+
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/incomplete_parse_reason.hpp>
 #include <magic_args/value_wrapper_t.hpp>
@@ -56,3 +60,5 @@ using incomplete_command_parse_reason_t = std::variant<
   incomplete_subcommand_parse_reason_t<First>,
   incomplete_subcommand_parse_reason_t<Rest>...>;
 }// namespace magic_args::inline public_api
+
+#endif

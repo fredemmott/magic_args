@@ -1,6 +1,11 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#if ( \
+  defined(MAGIC_ARGS_ENABLE_SUBCOMMANDS) || !defined(MAGIC_ARGS_SINGLE_FILE)) \
+  && !defined( \
+    MAGIC_ARGS_SUBCOMMANDS_PRINT_INCOMPLETE_COMMAND_PARSE_REASON_HPP)
+#define MAGIC_ARGS_SUBCOMMANDS_PRINT_INCOMPLETE_COMMAND_PARSE_REASON_HPP
+
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/detail/parse.hpp>
 #include <magic_args/detail/print.hpp>
@@ -114,3 +119,5 @@ void print_incomplete_command_parse_reason(
 }
 
 }// namespace magic_args::detail
+
+#endif

@@ -1,6 +1,10 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#if ( \
+  defined(MAGIC_ARGS_ENABLE_SUBCOMMANDS) || !defined(MAGIC_ARGS_SINGLE_FILE)) \
+  && !defined(MAGIC_ARGS_SUBCOMMANDS_PARSE_SUBCOMMANDS_SILENT_HPP)
+#define MAGIC_ARGS_SUBCOMMANDS_PARSE_SUBCOMMANDS_SILENT_HPP
+
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/detail/concepts.hpp>
 #include <magic_args/gnu_style_parsing_traits.hpp>
@@ -148,3 +152,5 @@ auto parse_subcommands_silent(
     std::views::counted(argv, argc), help);
 }
 }// namespace magic_args::inline public_api
+
+#endif

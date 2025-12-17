@@ -1,7 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
-
+#ifndef MAGIC_ARGS_VALUE_WRAPPER_T_HPP
+#define MAGIC_ARGS_VALUE_WRAPPER_T_HPP
 #include <utility>
 
 namespace magic_args {
@@ -43,3 +43,5 @@ class value_wrapper_t {
   TValue mValue;
 };
 }// namespace magic_args
+
+#endif

@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_DUMP_HPP
+#define MAGIC_ARGS_DUMP_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "detail/print.hpp"
@@ -29,3 +30,5 @@ void dump(const T& args, FILE* output = stdout) {
 }
 
 }// namespace magic_args::inline public_api
+
+#endif

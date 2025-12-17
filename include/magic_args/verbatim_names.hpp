@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_VERBATIM_NAMES_HPP
+#define MAGIC_ARGS_VERBATIM_NAMES_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "detail/concepts.hpp"
@@ -16,3 +17,4 @@ struct verbatim_names : T {
 };
 
 }// namespace magic_args::inline public_api
+#endif

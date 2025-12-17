@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_DETAIL_TO_FORMATTABLE_HPP
+#define MAGIC_ARGS_DETAIL_TO_FORMATTABLE_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "argument_definitions.hpp"
@@ -115,3 +116,5 @@ struct to_formattable_t<T> {
 };
 
 }// namespace magic_args::detail
+
+#endif

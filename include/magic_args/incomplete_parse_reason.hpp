@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_INCOMPLETE_PARSE_REASON_HPP
+#define MAGIC_ARGS_INCOMPLETE_PARSE_REASON_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "detail/concepts.hpp"
@@ -146,3 +147,5 @@ constexpr bool is_error(const std::variant<Ts...>& reason) {
 }
 
 }// namespace magic_args::inline public_api
+
+#endif

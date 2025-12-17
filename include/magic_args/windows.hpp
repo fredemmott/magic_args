@@ -1,9 +1,10 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
-
 #if (!defined(MAGIC_ARGS_SINGLE_FILE)) \
-  || defined(MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS)
+  || defined(MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS) \
+    && !defined(MAGIC_ARGS_WINDOWS_HPP)
+#define MAGIC_ARGS_WINDOWS_HPP
+
 #define MAGIC_ARGS_HAVE_WINDOWS_EXTENSIONS
 
 #include <Windows.h>

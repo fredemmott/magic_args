@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_DETAIL_PARSE_HPP
+#define MAGIC_ARGS_DETAIL_PARSE_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/argument_definitions.hpp>
@@ -423,3 +424,5 @@ arg_parse_result<V> parse_positional_argument(
 }
 
 }// namespace magic_args::detail
+
+#endif

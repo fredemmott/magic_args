@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_DETAIL_PRINT_INCOMPLETE_PARSE_REASON_HPP
+#define MAGIC_ARGS_DETAIL_PRINT_INCOMPLETE_PARSE_REASON_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/incomplete_parse_reason.hpp>
@@ -119,3 +120,5 @@ void print_incomplete_parse_reason(
 }
 
 }// namespace magic_args::detail
+
+#endif

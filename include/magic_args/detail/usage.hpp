@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_DETAIL_USAGE_HPP
+#define MAGIC_ARGS_DETAIL_USAGE_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/gnu_style_parsing_traits.hpp>
@@ -253,3 +254,5 @@ void show_usage(
   }
 }
 }// namespace magic_args::detail
+
+#endif

@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_DETAIL_VALIDATION_HPP
+#define MAGIC_ARGS_DETAIL_VALIDATION_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/gnu_style_parsing_traits.hpp>
@@ -65,3 +66,5 @@ constexpr std::ptrdiff_t first_optional_positional_argument() {
 };
 
 }// namespace magic_args::detail
+
+#endif

@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_PARSE_HPP
+#define MAGIC_ARGS_PARSE_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "detail/get_argument_definition.hpp"
@@ -216,3 +217,5 @@ std::expected<T, incomplete_parse_reason_t> parse(
 }
 
 }// namespace magic_args::inline public_api
+
+#endif

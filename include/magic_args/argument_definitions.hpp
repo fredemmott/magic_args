@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_ARGUMENT_DEFINITIONS_HPP
+#define MAGIC_ARGS_ARGUMENT_DEFINITIONS_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "detail/concepts.hpp"
@@ -179,8 +180,7 @@ struct flag final {
   bool operator==(const flag&) const noexcept = default;
 };
 
-
-  // e.g. for `-vvv` -> triple-verbose
+// e.g. for `-vvv` -> triple-verbose
 struct counted_flag final {
   using value_type = bool;
   std::string mName;
@@ -202,3 +202,5 @@ static_assert(basic_option<option<std::string>>);
 static_assert(std::is_aggregate_v<option<std::string>>);
 
 }// namespace magic_args::inline public_api
+
+#endif

@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_GNU_STYLE_PARSING_TRAITS_HPP
+#define MAGIC_ARGS_GNU_STYLE_PARSING_TRAITS_HPP
 
 #include <string>
 
@@ -72,3 +73,5 @@ inline void gnu_style_parsing_traits::normalize_positional_argument_name(
 }
 
 }// namespace magic_args::inline public_api
+
+#endif

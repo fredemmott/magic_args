@@ -1,6 +1,10 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#if ( \
+  defined(MAGIC_ARGS_ENABLE_SUBCOMMANDS) || !defined(MAGIC_ARGS_SINGLE_FILE)) \
+  && !defined(MAGIC_ARGS_SUBCOMMANDS_INVOCABLE_DECLARATIONS_HPP)
+#define MAGIC_ARGS_SUBCOMMANDS_INVOCABLE_DECLARATIONS_HPP
+
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "declarations.hpp"
 #endif
@@ -20,3 +24,5 @@ concept compatible_invocable_subcommand
         decltype(TOther::main),
         typename TOther::arguments_type&&>>;
 }// namespace magic_args::inline public_api
+
+#endif

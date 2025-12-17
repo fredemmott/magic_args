@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_MAGIC_ARGS_HPP
+#define MAGIC_ARGS_MAGIC_ARGS_HPP
 #ifdef MAGIC_ARGS_SINGLE_FILE
 namespace magic_args {
 constexpr bool is_single_header_file = true;
@@ -18,6 +19,8 @@ constexpr bool is_single_header_file = false;
 #ifndef MAGIC_ARGS_DISABLE_ENUM
 #if __has_include(<magic_enum/magic_enum.hpp>)
 #include "enum.hpp"
+#endif
+
 #endif
 #endif
 

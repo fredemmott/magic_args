@@ -1,6 +1,10 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#if ( \
+  defined(MAGIC_ARGS_ENABLE_SUBCOMMANDS) || !defined(MAGIC_ARGS_SINGLE_FILE)) \
+  && !defined(MAGIC_ARGS_SUBCOMMANDS_PARSE_SUBCOMMANDS_HPP)
+#define MAGIC_ARGS_SUBCOMMANDS_PARSE_SUBCOMMANDS_HPP
+
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/program_info.hpp>
 #include "parse_subcommands_silent.hpp"
@@ -91,3 +95,5 @@ auto parse_subcommands(
 }
 
 }// namespace magic_args::inline public_api
+
+#endif

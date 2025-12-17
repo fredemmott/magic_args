@@ -1,6 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#pragma once
+#ifndef MAGIC_ARGS_DETAIL_PRINT_HPP
+#define MAGIC_ARGS_DETAIL_PRINT_HPP
 
 #if __has_include(<print>)
 #include <print>
@@ -31,4 +32,6 @@ void println(FILE* file, std::format_string<Args...> fmt, Args&&... args) {
   std::fwrite(buffer.data(), 1, buffer.size(), file);
 }
 }// namespace magic_args::detail
+#endif
+
 #endif
