@@ -93,8 +93,8 @@ TEST_CASE("PowerShell-style invalid value") {
     "my_test", "-Raw", MyValueType::InvalidValue};
 
   Output out, err;
-  const auto args
-    = magic_args::parse<magic_args::powershell_style_parsing_traits, MyArgs>(
+  const auto args = magic_args::
+    parse<magic_args::powershell_style_parsing_traits, CustomArgs>(
       argv, {}, out, err);
   CHECK(out.empty());
   CHECK(err.get() == chomp(R"EOF(
