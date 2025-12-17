@@ -17,6 +17,8 @@
 #endif
 #endif
 
+#include <functional>
+
 namespace magic_args::detail {
 
 struct unix_like_platform_t {};
@@ -64,46 +66,55 @@ namespace magic_args::detail {
 // Not using `unique_ptr` because:
 // - `locale_t` is not guaranteed to be a pointer
 // - even when it is, it can be `void*` (e.g. on macos)
-struct unique_locale {
-  unique_locale() = delete;
-  unique_locale(const unique_locale&) = delete;
-  unique_locale(unique_locale&&) = delete;
-  unique_locale& operator=(const unique_locale&) = delete;
-  unique_locale& operator=(unique_locale&&) = delete;
+template <
+  class T,
+  std::invocable<T*> auto TDeleter,
+  std::predicate<T> TPredicate = std::identity>
+struct unique_any {
+  unique_any() = delete;
+  unique_any(const unique_any&) = delete;
+  unique_any(unique_any&&) = delete;
+  unique_any& operator=(const unique_any&) = delete;
+  unique_any& operator=(unique_any&&) = delete;
 
-  unique_locale(locale_t locale) : mLocale(locale) {
+  unique_any(T value) : mValue(value) {
   }
 
-  ~unique_locale() {
-    if (mLocale) {
-      freelocale(mLocale);
+  ~unique_any() {
+    if (*this) {
+      std::invoke(TDeleter, mValue);
     }
   }
 
-  locale_t get() const noexcept {
-    return mLocale;
+  auto get() const noexcept {
+    return mValue;
   }
 
   operator bool() const noexcept {
-    return mLocale;
+    return TPredicate {}(mValue);
   }
 
  private:
-  locale_t mLocale {};
+  T mValue {};
 };
 
 template <class TPlatform>
 struct encoding_traits {
-  static bool process_argv_are_utf8() noexcept {
-    const unique_locale locale {newlocale(LC_CTYPE_MASK, "", (locale_t)0)};
+  static std::string environment_charset() {
+    const unique_any<locale_t, &freelocale> locale {
+      newlocale(LC_CTYPE_MASK, "", (locale_t)0)};
     if (!locale) {
       // ... Let's not just break the app in this weird edge case
-      return true;
+      return "UTF-8";
     }
-    const std::string_view encoding {nl_langinfo_l(CODESET, locale.get())};
+    return {nl_langinfo_l(CODESET, locale.get())};
+  }
+
+  static bool process_argv_are_utf8() noexcept {
+    const auto charset = environment_charset();
     // These 7-bit encodings are also always valid UTF-8
-    return encoding == "UTF-8" || encoding == "US-ASCII"
-      || encoding == "ANSI_X3.4-1968";
+    return charset == "UTF-8" || charset == "US-ASCII"
+      || charset == "ANSI_X3.4-1968";
   }
   static auto make_utf8_argv(const int argc, const char* const* argv)
     -> std::expected<

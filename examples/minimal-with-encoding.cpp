@@ -4,6 +4,13 @@
 #include <magic_args/magic_args.hpp>
 #ifdef _WIN32
 #include <magic_args/windows.hpp>
+#else
+#include <magic_args/iconv.hpp>
+#endif
+
+#ifndef MAGIC_ARGS_CAN_CONVERT_TO_UTF8
+#error \
+  "Either iconv or windows extensions should have provided UTF-8 conversion support"
 #endif
 
 struct MyArgs {
@@ -25,7 +32,6 @@ static int generic_main(const auto argc, const auto* const* argv) {
     return EXIT_SUCCESS;
   }
   return magic_args::is_error(args.error()) ? EXIT_FAILURE : EXIT_SUCCESS;
-  return EXIT_SUCCESS;
 }
 
 #ifdef _WIN32

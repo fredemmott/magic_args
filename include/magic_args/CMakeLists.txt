@@ -41,6 +41,7 @@ set(
   powershell_style_parsing_traits.hpp
   verbatim_names.hpp
   windows.hpp
+  iconv.hpp
   enum.hpp
 )
 
