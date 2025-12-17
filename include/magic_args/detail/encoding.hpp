@@ -68,7 +68,7 @@ namespace magic_args::detail {
 // - even when it is, it can be `void*` (e.g. on macos)
 template <
   class T,
-  std::invocable<T*> auto TDeleter,
+  std::invocable<T> auto TDeleter,
   std::predicate<T> TPredicate = std::identity>
 struct unique_any {
   unique_any() = delete;

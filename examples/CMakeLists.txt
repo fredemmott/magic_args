@@ -11,6 +11,11 @@ add_example(example-invocable-subcommands invocable-subcommands.cpp)
 add_example(example-multicall multicall.cpp)
 add_example(example-minimal-with-encoding minimal-with-encoding.cpp)
 
+if (APPLE)
+  find_package(Iconv REQUIRED)
+  target_link_libraries(example-minimal-with-encoding PRIVATE Iconv::Iconv)
+endif ()
+
 add_custom_command(
   TARGET example-multicall POST_BUILD
   COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:example-multicall>/multicall-links"
