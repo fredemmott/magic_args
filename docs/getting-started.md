@@ -68,18 +68,32 @@ No configuration is usually required; however, you can choose to define the foll
 
 ### `MAGIC_ARGS_DISABLE_ENUM`
 
-By default, *magic_args* will support enums if [`<magic_enum/magic_enum.hpp>` is available](https://github.com/Neargye/magic_enum). You can disable this behavior by defining this macro.
+By default, *magic_args* will support enums if [`<magic_enum/magic_enum.hpp>` is available](https://github.com/Neargye/magic_enum). You can disable this behavior by defining this macro, which affects both the single-header and regular versions of *magic_args*.
 
 You might want to define this macro to prevent *magic_args* from including `<magic_enum/magic_enum.hpp>`.
+
+### `MAGIC_ARGS_ENABLE_SUBCOMMANDS`
+
+Define this macro to enable support for subcommands in the single-header version of *magic_args*.
+
+In the regular version, this has no effect; use `#include <magic_args/subcommands.hpp>` instead.
+
+If you want to support both the single-header and regular version of *magic_args*:
+
+```c++
+#define MAGIC_ARGS_ENABLE_SUBCOMMANDS
+#include <magic_args/magic_args.hpp>
+#if __has_include(<magic_args/subcommands.hpp>)
+#include <magic_args/subcommands.hpp>
+#endif
+```
 
 ### `MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS`
 
 *magic_args* contains helpers for working with Win32 `WinMain()` and `wWinMain()` programs. They are not included by
 default as they `#include <Windows.h>`.
 
-If you are using the single-header version of *magic_args*, you can enable these helpers by defining this macro.
-
-If you are not using the single-header version, this macro has no effect; use `#include <magic_args/windows.hpp>` instead.
+If you are using the single-header version of *magic_args*, you can enable these helpers by defining this macro; otherwise, this macro has no effect; use `#include <magic_args/windows.hpp>` instead.
 
 If you want to support both the single-header and regular version of *magic_args*:
 
