@@ -48,7 +48,7 @@ elseif (CONFORMANT_MSVC)
   message(FATAL_ERROR "CONFORMANT_MSVC specified, but not using MSVC")
 endif ()
 
-add_subdirectory(magic_args)
+add_subdirectory(include/magic_args)
 
 option(BUILD_TESTING "Build tests" "${PROJECT_IS_TOP_LEVEL}")
 if (BUILD_TESTING)

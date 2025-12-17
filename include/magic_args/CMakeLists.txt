@@ -73,7 +73,7 @@ target_sources(
 target_include_directories(
   magic_args
   INTERFACE
-  "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>"
+  "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include>"
 )
 target_compile_features(
