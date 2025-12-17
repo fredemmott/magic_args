@@ -88,6 +88,13 @@ If you want to support both the single-header and regular version of *magic_args
 #endif
 ```
 
+### `MAGIC_ARGS_ENABLE_ICONV_EXTENSIONS`
+
+*magic_args* can use `iconv` to convert argv to UTF-8 on Linux and macOS. This functionality is not enabled by default
+as it requires linking with `iconv` on macOS; on Linux, iconv is usually part of libc.
+
+If you are using the single-header version of *magic_args*, you can enable these helpers by defining this macro; otherwise, this macro has no effect; use `#include <magic_args/iconv.hpp>` instead.
+
 ### `MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS`
 
 *magic_args* contains helpers for working with Win32 `WinMain()` and `wWinMain()` programs. They are not included by
@@ -111,6 +118,8 @@ If you want to support both the single-header and regular version of *magic_args
 
 - `MAGIC_ARGS_HAVE_ENUM`: defined if enum support has been included in the current file
 - `MAGIC_ARGS_HAVE_SUBCOMMANDS`: defined if subcommand support has been included in the current file
+- `MAGIC_ARGS_HAVE_ICONV_EXTENSIONS`: defined if the iconv extensions have been included in the current file
 - `MAGIC_ARGS_HAVE_WINDOWS_EXTENSIONS`: defined if the windows extensions have been included in the current file
+- `MAGIC_ARGS_CAN_CONVERT_TO_UTF8`: defined by either the iconv or windows extensions. If undefined, non-utf8 inputs may be an error
 - `MAGIC_ARGS_SINGLE_FILE`: defined if the single-header-file version of *magic_args* has been included
 - `magic_args::is_single_header_file`: `constexpr bool`, set to `true` if using the single-header-file version of *magic_args*, `false` otherwise
