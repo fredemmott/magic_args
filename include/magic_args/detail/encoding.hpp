@@ -11,6 +11,10 @@
 
 #if __has_include(<langinfo.h>)
 #include <langinfo.h>
+// Needed on macOS and BSD
+#if __has_include(<xlocale.h>)
+#include <xlocale.h>
+#endif
 #endif
 
 namespace magic_args::detail {
