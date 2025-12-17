@@ -18,6 +18,10 @@ TEST_CASE("invoke foo") {
     std::vector {"foo", "--bar=BAR", "--baz=BAZ"},
     std::vector {"foo.exe", "--bar=BAR", "--baz=BAZ"},
     std::vector {".foo", "--bar=BAR", "--baz=BAZ"},
+    std::vector {"/usr/bin/foo", "--bar=BAR", "--baz=BAZ"},
+    std::vector {"./foo", "--bar=BAR", "--baz=BAZ"},
+    std::vector {"C:\\herp\\derp\\foo.exe", "--bar=BAR", "--baz=BAZ"},
+    std::vector {".\\foo.exe", "--bar=BAR", "--baz=BAZ"},
   }));
 
   const auto ret = magic_args::invoke_subcommands_silent<
@@ -33,6 +37,10 @@ TEST_CASE("invoke herp") {
     std::vector {"herp", "--derp=DERP"},
     std::vector {"herp.exe", "--derp=DERP"},
     std::vector {".herp", "--derp=DERP"},
+    std::vector {"/usr/bin/herp", "--derp=DERP"},
+    std::vector {"./herp", "--derp=DERP"},
+    std::vector {"C:\\foo\\bar\\herp.exe", "--derp=DERP"},
+    std::vector {".\\herp.exe", "--derp=DERP"},
   }));
 
   const auto ret = magic_args::invoke_subcommands_silent<
