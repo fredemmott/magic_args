@@ -200,4 +200,21 @@ When *magic_args* detects a UTF-8-compatible input encoding, it does not *conver
 - on Windows, conversion to-and-from UTF-16 is often necessary, which will fail on invalid input. *magic_args* also validates on other platforms so that application behavior is consistent across platforms
 - the performance cost is small
 
+## Process vs environment locale on Unix-like systems
+
+On Linux and macOS, *magic_args* ignores the *process* locale, and instead looks at the *environment* locale via `newlocale(3)` and `nl_langinfo_l(3)`.  This is because argv is provided by the caller, so the caller is ultimately responsible for passing argv in a way that matches `LC_CTYPE`.
+
+*magic_args* will not set the process locale; this was considered potentially surprising, and out of scope. If you wish to use the environment locale as the process locale, call `setlocale(LC_ALL, "")` or similar as usual.
+
+If you want different behavior, you can:
+- convert `argv` to UTF-8 yourself, and pass the range to `magic_args::parse()` without calling `magic_args::make_utf8_argv()`
+- include `<magic_args/iconv.hpp>` and use `magic_args::make_utf8_argv(argc, argv, charset)`, where `charset` is a string recognized by iconv, e.g. `"ISO-8859-2"`
+
+For a given locale, you can retrieve the encoding with `LANG=locale locale charmap` - while the charset is defined by `LC_CTYPE`, the strings are different. For example:
+
+```
+$ LC_CTYPE=pl_PL locale charmap
+ISO-8859-2
+```
+
 [app-manifest-utf8]: https://learn.microsoft.com/en-us/windows/apps/design/globalizing/use-utf8-code-page
