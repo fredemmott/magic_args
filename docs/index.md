@@ -21,8 +21,7 @@ struct MyArgs {
 };
 
 int main(int argc, char** argv) {
-  // this gets you an `std::expected<MyArgs, magic_args::incomplete_parse_reason_t>`,
-  // but assumes that argv is UTF-8
+  // this gets you an `std::expected<MyArgs, magic_args::incomplete_parse_reason_t>`
   const auto args = magic_args::parse<MyArgs>(std::views::counted(argv, argc));
   if (args) {
       // Your code here. In this case, we'll just print the struct
@@ -54,6 +53,9 @@ foo                           `true`
 bar                           `someValue`
 baz                           `42`
 ```
+
+{: warning}
+The above is a *minimal* example that assumes that `argv` is UTF-8 - see [encoding](features/encoding.md) for details.
 
 ## Requirements
 

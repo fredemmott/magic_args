@@ -42,8 +42,8 @@ int wmain(int argc, wchar_t** argv) {
 #else
 /* Standard main.
  *
- * You can also use this on Windows, but the `wwmain()` is generally more
- * predictable.
+ * You can also use this on Windows, but the `wmain()` is generally more
+ * reliable predictable.
  *
  * As of Windows 1903, you can force this to be UTF-8 via your application
  * manifest:
