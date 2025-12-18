@@ -16,9 +16,9 @@ title: Encodings
 
 ## Quick guide
 
-- **macOS and UTF-8 Linux only?** ➡️ Use `main()` with `utf8 = std::span(argv, argc)` from `<magic_args/iconv.hpp>`
+- **Modern macOS and Linux environments only?** ➡️ Use `main()` with `utf8 = std::span(argv, argc)`
 - **Windows CLI only?** ➡️ Use `wmain()` with `utf8 = make_utf8_argv(argc, argv)` from `<magic_args/windows.hpp>`
-- **Maximum portability?** ➡️ Use `wmain()` on Windows, `main()` on other platforms; for both, use `utf8 = make_utf8_argv(argc, argv)` from the corresponding header
+- **Maximum portability?** ➡️ Use `wmain()` on Windows, `main()` on other platforms; for both, use `utf8 = make_utf8_argv(argc, argv)` from `<magic_args/iconv.hpp>` or `<magic_args/windows.hpp>` (depending on the platform)
 
 For other cases, see the details below.
 
