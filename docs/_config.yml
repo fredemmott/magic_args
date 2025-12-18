@@ -14,6 +14,9 @@ callouts:
   warning:
     title: Warning
     color: red
+  note:
+    title: Note
+    color: green
 plugins:
   - github-pages
   - just-the-docs
