@@ -22,6 +22,25 @@ title: Encodings
 
 For other cases, see the details below.
 
+## Which encodings are considered "UTF-8"?
+
+Under Windows:
+- UTF-8 (codepage 65001)
+- 7-bit US-ASCII (codepage 20127)
+
+On Unix-like systems (including Linux and macOS):
+- `"UTF-8"`
+- `"US-ASCII"` (7-bit)
+- `"ANSI_X3.4-1968"`
+
+7-bit US-ASCII strings are treated as UTF-8 because they have the same byte sequence when converted to UTF-8.
+
+Technically, `"ANSI_X3.4-1968"` means 7-bit US-ASCII; in practice, it usually represents the `"C"` locale, which is almost always either UTF-8 or 7-bit US-ASCII, so we can treat it as UTF-8.
+
+When *magic_args* detects a UTF-8-compatible input encoding, it does not *convert* to UTF-8, but it does *validate* that the input is UTF-8:
+- on Windows, conversion to-and-from UTF-16 is often necessary, which will fail on invalid input. *magic_args* also validates on other platforms so that application behavior is consistent across platforms
+- the performance cost is small
+
 ## If you want to assume UTF-8 on all platforms
 
 The main entrypoints (e.g. `parse()`) take a UTF-8 range as input. This must be indexable, and the elements must be convertible to `std::string_view`. *magic_args* will *assume* this range is UTF-8.
@@ -188,25 +207,6 @@ if (APPLE)
   target_link_libraries(my_target PRIVATE Iconv::Iconv)
 endif ()
 ```
-
-## Which encodings are considered "UTF-8"?
-
-Under Windows:
-- UTF-8 (codepage 65001)
-- 7-bit US-ASCII (codepage 20127)
-
-On Unix-like systems (including Linux and macOS):
-- `"UTF-8"`
-- `"US-ASCII"` (7-bit)
-- `"ANSI_X3.4-1968"`
-
-7-bit US-ASCII strings are treated as UTF-8 because they have the same byte sequence when converted to UTF-8.
-
-Technically, `"ANSI_X3.4-1968"` means 7-bit US-ASCII; in practice, it usually represents the `"C"` locale, which is almost always either UTF-8 or 7-bit US-ASCII, so we can treat it as UTF-8.
-
-When *magic_args* detects a UTF-8-compatible input encoding, it does not *convert* to UTF-8, but it does *validate* that the input is UTF-8:
-- on Windows, conversion to-and-from UTF-16 is often necessary, which will fail on invalid input. *magic_args* also validates on other platforms so that application behavior is consistent across platforms
-- the performance cost is small
 
 ## Process vs environment locale on Unix-like systems
 
