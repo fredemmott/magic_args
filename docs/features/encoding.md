@@ -210,7 +210,7 @@ If you want different behavior, you can:
 - convert `argv` to UTF-8 yourself, and pass the range to `magic_args::parse()` without calling `magic_args::make_utf8_argv()`
 - include `<magic_args/iconv.hpp>` and use `magic_args::make_utf8_argv(argc, argv, charset)`, where `charset` is a string recognized by iconv, e.g. `"ISO-8859-2"`
 
-For a given locale, you can retrieve the encoding with `LANG=locale locale charmap` - while the charset is defined by `LC_CTYPE`, the strings are different. For example:
+For a given locale, you can retrieve the encoding with `LANG=xx_YY locale charmap` - while the charset is defined by `LC_CTYPE`, the strings are different. For example:
 
 ```
 $ LC_CTYPE=pl_PL locale charmap
