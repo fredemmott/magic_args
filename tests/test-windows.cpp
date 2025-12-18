@@ -118,7 +118,8 @@ TEST_CASE("valid characters in legacy code page", "[windows]") {
   constexpr auto commandLine = "testApp --foo \xa7\x41\xa6\x6e";
 
   const auto asBig5 = magic_args::make_utf8_argv(commandLine, 950);
-  CHECKED_IF(asBig5.has_value()) {
+  CHECK(asBig5.has_value());
+  if (asBig5.has_value()) {
     CHECK_THAT(
       *asBig5,
       RangeEquals({
@@ -136,16 +137,19 @@ TEST_CASE("valid characters in legacy code page", "[windows]") {
 TEST_CASE("empty string", "[windows]") {
   const auto narrow = magic_args::make_utf8_argv("");
 
-  CHECKED_ELSE(narrow.has_value()) {
+  CHECK_FALSE(narrow.has_value());
+  if (!narrow.has_value()) {
     CHECK(holds_alternative<magic_args::invalid_parameter_t>(narrow.error()));
   }
   const auto wide = magic_args::make_utf8_argv(L"");
-  CHECKED_ELSE(wide.has_value()) {
+  CHECK_FALSE(wide.has_value());
+  if (!wide.has_value()) {
     CHECK(holds_alternative<magic_args::invalid_parameter_t>(narrow.error()));
   }
 
   const auto null = magic_args::make_utf8_argv(nullptr);
-  CHECKED_ELSE(null.has_value()) {
+  CHECK_FALSE(null.has_value());
+  if (!null.has_value()) {
     CHECK(holds_alternative<magic_args::invalid_parameter_t>(narrow.error()));
   }
 }

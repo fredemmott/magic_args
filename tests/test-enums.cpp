@@ -22,8 +22,6 @@ struct PlainEnumArgs {
   ScopedEnum mScopedEnum {};
 };
 
-#define CHECKED_IF_FALSE CHECKED_ELSE
-
 TEST_CASE("defaults") {
   Output out, err;
   const auto args
@@ -39,7 +37,8 @@ TEST_CASE("defaults - --help") {
   Output out, err;
   const auto args = magic_args::parse<PlainEnumArgs>(
     std::array {"myApp", "--help"}, {}, out, err);
-  CHECKED_IF_FALSE(args.has_value()) {
+  CHECK_FALSE(args.has_value());
+  if (!args.has_value()) {
     CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
   }
 
@@ -73,10 +72,12 @@ TEST_CASE("invalid value - C enum") {
   Output out, err;
   const auto args = magic_args::parse<PlainEnumArgs>(
     std::array {"myApp", "--c-enum=INVALID"}, {}, out, err);
-  CHECKED_IF_FALSE(args.has_value()) {
-    CHECKED_IF(
-      std::holds_alternative<magic_args::invalid_argument_value>(
-        args.error())) {
+  CHECK_FALSE(args.has_value());
+  if (!args.has_value()) {
+    CHECK(
+      std::holds_alternative<magic_args::invalid_argument_value>(args.error()));
+    if (std::holds_alternative<magic_args::invalid_argument_value>(
+          args.error())) {
       const auto& e = get<magic_args::invalid_argument_value>(args.error());
       CHECK(e.mSource.mName == "--c-enum");
       CHECK(e.mSource.mValue == "INVALID");

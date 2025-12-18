@@ -72,7 +72,8 @@ TEST_CASE("void returns") {
   CHECK(ret.has_value());
   STATIC_CHECK(std::is_void_v<std::decay_t<decltype(ret)>::value_type>);
 
-  CHECKED_IF(Foo::invocation.has_value()) {
+  CHECK(Foo::invocation.has_value());
+  if (Foo::invocation.has_value()) {
     CHECK(Foo::invocation->mBar == "TestBar");
   }
 }
