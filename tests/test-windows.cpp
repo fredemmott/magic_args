@@ -150,6 +150,6 @@ TEST_CASE("empty string", "[windows]") {
   const auto null = magic_args::make_utf8_argv(nullptr);
   CHECK_FALSE(null.has_value());
   if (!null.has_value()) {
-    CHECK(holds_alternative<magic_args::invalid_parameter_t>(narrow.error()));
+    CHECK(holds_alternative<magic_args::invalid_parameter_t>(null.error()));
   }
 }
