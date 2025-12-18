@@ -149,10 +149,10 @@ int main(
 Use `#include <magic_args/windows.hpp>` and `magic_args::make_utf8_argv()`, without passing any arguments to `make_utf8_argv()`.
 
 {: .warning }
-DO NOT pass `lpCmdLine` to `make_utf8_argv()`; if `<magic_args/windows.hpp>` is included, this is supported, but usually
-undesirable: Windows does not consistently include the program name/path in this parameter - the traditional `argv[0]`.
-If you omit the parameter, *magic_args* will use `GetCommandLineW()` and `CommandLineToArgvW()`, which will consistently
-include `argv[0]` and avoid encoding issues.
+DO NOT pass `lpCmdLine` to `make_utf8_argv()`; Windows does not consistently include the program name/path in this
+parameter - the traditional `argv[0]`. If you omit the parameter, *magic_args* will call `GetCommandLineW()` and
+`CommandLineToArgvW()` internally, which will consistently include `argv[0]`, while also avoid encoding issues. While
+passing an `lpCmdLine` to `make_utf8_argv()` is supported, this is primarily intended for automated tests.
 
 Avoid `WinMain` and `wWinMain` unless you *need* a single executable to be launchable both as a CLI and a GUI
 application. I *strongly* recommend avoiding this if at all possible: if an executable uses `WinMain` or `wWinMain`, CLI
