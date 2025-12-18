@@ -41,6 +41,32 @@ std::optional<DWORD> GetEncodingError(
   return std::nullopt;
 }
 
+template <>
+struct Catch::StringMaker<std::filesystem::path> {
+  static std::string convert(const std::filesystem::path& value) {
+    return value.string();
+  }
+};
+
+struct PathIsEquivalent : MatcherBase<std::filesystem::path> {
+  PathIsEquivalent() = delete;
+  explicit PathIsEquivalent(std::filesystem::path expected)
+    : mExpected(std::move(expected)) {
+  }
+  bool match(const std::filesystem::path& actual) const override {
+    std::error_code ec;
+    return std::filesystem::equivalent(actual, mExpected, ec);
+  }
+
+  std::string describe() const override {
+    return std::format(
+      "is equivalent to {}", Catch::Detail::stringify(mExpected));
+  }
+
+ private:
+  std::filesystem::path mExpected;
+};
+
 TEST_CASE("wWinMain", "[windows]") {
   // wWinMain gives us the command line all in one UTF-16 string
   constexpr auto commandLine
@@ -135,16 +161,35 @@ TEST_CASE("valid characters in legacy code page", "[windows]") {
 }
 
 TEST_CASE("empty string", "[windows]") {
+  // Unicode paths on Windows can be larger than MAX_PATH
+  wchar_t thisExeBuffer[32768];
+  const std::wstring_view thisExeWide {
+    thisExeBuffer,
+    GetModuleFileNameW(
+      nullptr, thisExeBuffer, static_cast<DWORD>(std::size(thisExeBuffer))),
+  };
+  const auto thisExe = [thisExeWide] {
+    std::string buffer;
+    REQUIRE(magic_args::detail::win32::utf8_from_wide(buffer, thisExeWide));
+    return std::filesystem::path {buffer};
+  }();
+
   const auto narrow = magic_args::make_utf8_argv("");
 
-  CHECK_FALSE(narrow.has_value());
-  if (!narrow.has_value()) {
-    CHECK(holds_alternative<magic_args::invalid_parameter_t>(narrow.error()));
+  CHECK(narrow);
+  if (narrow) {
+    CHECK_FALSE(narrow->empty());
+    if (!narrow->empty()) {
+      CHECK_THAT(narrow->front(), PathIsEquivalent(thisExe));
+    }
   }
   const auto wide = magic_args::make_utf8_argv(L"");
-  CHECK_FALSE(wide.has_value());
-  if (!wide.has_value()) {
-    CHECK(holds_alternative<magic_args::invalid_parameter_t>(narrow.error()));
+  CHECK(wide);
+  if (wide) {
+    CHECK_FALSE(wide->empty());
+    if (!wide->empty()) {
+      CHECK_THAT(wide->front(), PathIsEquivalent(thisExe));
+    }
   }
 
   const auto null = magic_args::make_utf8_argv(nullptr);

@@ -222,7 +222,7 @@ make_utf8_argv(const int argc, const wchar_t* const* wargv) {
  */
 inline std::expected<std::vector<std::string>, make_utf8_argv_error_t>
 make_utf8_argv(const wchar_t* commandLine = GetCommandLineW()) {
-  if (commandLine == nullptr || commandLine[0] == 0) [[unlikely]] {
+  if (commandLine == nullptr) [[unlikely]] {
     return std::unexpected {invalid_parameter_t {}};
   }
   int argc {};
@@ -247,9 +247,6 @@ inline std::expected<std::vector<std::string>, make_utf8_argv_error_t>
 make_utf8_argv(
   const std::string_view commandLine,
   const UINT codePage = CP_ACP) {
-  if (commandLine.empty()) [[unlikely]] {
-    return std::unexpected {invalid_parameter_t {}};
-  }
   std::wstring buffer;
   if (const auto widen
       = detail::win32::wide_from_codepage(buffer, commandLine, codePage);
