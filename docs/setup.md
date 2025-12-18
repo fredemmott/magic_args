@@ -1,10 +1,10 @@
 ---
 layout: default
-title: Getting started
+title: Setup
 nav_order: 2
 ---
 
-# Getting started
+# Setup
 {: .no_toc}
 
 ## Table of contents
