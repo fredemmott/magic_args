@@ -92,6 +92,7 @@ int wmain(int argc, wchar_t** argv) {
     magic_args::dump(*args);
     return EXIT_SUCCESS;
   }
+  // `--help` and `--version` are 'unexpected', but not actually an error
   return magic_args::is_error(args.error()) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 ```
