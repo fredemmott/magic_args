@@ -23,7 +23,7 @@ If you are happy to assume UTF-8, you can use a standard C++ range, e.g.:
 - `magic_args::parse<MyArgs>(std::views::counted(argv, argc)`
 - `magic_args::parse<MyArgs>(std::span(argv, argc))`
 
-## If you're happy to assume UTF-8 on Linux and macOS, but want to handle Windows
+## If you're happy to assume UTF-8 on Linux and macOS but want to handle Windows
 
 Windows is particularly problematic for CLI encodings:
 
@@ -70,7 +70,7 @@ int wmain(int argc, wchar_t** argv) {
 
 *magic_args* includes 3 implementations of `make_utf8_argv(argc, argv)`:
 
-- The default implementation on Linux and macOS: this will raise an error if the locale (as defined by the environment variables and system settings) is UTF-8
+- The default implementation on Linux and macOS: this will return an error if the locale (as defined by the environment variables and system settings) is not compatible with UTF-8
 - `<magic_args/windows.hpp>`: this converts encodings using Windows-only functions, via `<Windows.h>`
 - `<magic_args/iconv.hpp>`: this uses libiconv (generally part of libc on Linux) to convert between encodings. If you use this header on macOS, you will need to also link against the iconv library.
 
@@ -84,7 +84,7 @@ Neither `windows.hpp` nor `iconv.hpp` are included automatically, because they a
 #include <magic_args/iconv.hpp>
 #endif
 
-#Include <print>
+#include <print>
 
 struct MyArgs {
   std::string foo;
@@ -121,5 +121,83 @@ While this code could also work with `main()` on Windows, using `wmain()` has ad
 
 - When the process code page is *not* UTF-8, it avoids an extra conversion to the active code page
 - It gets you Unicode support back to Windows 2000/XP/Vista; the process code page option is only functional on Windows 10 1903 and later
+
+## Avoiding `wmain()`
+
+`int wmain(int argc, wchar_t** argv)` is a non-standard Microsoft extension; if you'd like to avoid using Microsoft extensions:
+
+```c++
+int main(
+  [[maybe_unused]] int argc,
+  [[maybe_unused]] char** argv) {
+#ifdef _WIN32
+    /** Uses `GetCommandLineW()`, `CommandLineToArgvW()`, then converts to UTF-8.
+     *
+     * The MS CRT will still make the potentially-lossy conversion from UTF-16 to the active code page and pass the
+     * result to `main()`, but as the implementation calls `GetCommandLineW()`, we're not using that lossy data
+     */
+    const auto utf8 = magic_args::make_utf8_argv();
+#else
+    const auto utf8 = magic_args::make_utf8_argv(argc, argv);
+#endif
+    // ... Remainder of the code is the same as previous examples
+}
+```
+
+## `WinMain(...)` and `wWinMain(...)`
+
+Use `#include <magic_args/windows.hpp>` and `magic_args::make_utf8_argv()`, without passing any arguments to `make_utf8_argv()`.
+
+{: .warning }
+DO NOT pass `lpCmdLine` to `make_utf8_argv()`; if `<magic_args/windows.hpp>` is included, this is supported, but usually
+undesirable: Windows does not consistently include the program name/path in this parameter - the traditional `argv[0]`.
+If you omit the parameter, *magic_args* will use `GetCommandLineW()` and `CommandLineToArgvW()`, which will consistently
+include `argv[0]` and avoid encoding issues.
+
+Avoid `WinMain` and `wWinMain` unless you *need* a single executable to be launchable both as a CLI and a GUI
+application. I *strongly* recommend avoiding this if at all possible: if an executable uses `WinMain` or `wWinMain`, CLI
+operations will usually create a new console window, even if the application was launched from a terminal.
+
+*magic_args* contains `magic_args::win32::attach_to_parent_terminal()` helper for this case, but it is 'best-effort':
+Windows is not designed to support mixed-mode programs like these, and there are issues, such as shell prompts
+being written over/underneath command output, and misbehaving control characters. Behavior also varies between terminal
+programs, e.g. between the modern 'Terminal' app and the classic `cmd.exe` host process.
+
+## Compilation and link options
+
+- Under MSVC and clang-cl, using `/utf-8` is recommended, but not required. clang and g++ will use UTF-8 by default
+- If you've chosen to use iconv:
+  - on macOS, you must explicitly link against the iconv library
+  - on Linux, iconv is usually part of libc, so no additional flags are needed
+  - while there are ports of iconv to Windows, *magic_args* is not tested with these; `<magic_args/windows.hpp>` is strongly encouraged instead
+
+If you are using CMake:
+
+```cmake
+target_compile_options(my_target PRIVATE "$<$<CXX_COMPILER_ID:MSVC>/utf-8>")
+if (APPLE)
+  find_package(Iconv REQUIRED)
+  target_link_libraries(my_target PRIVATE Iconv::Iconv)
+endif ()
+```
+
+## Which encodings are considered "UTF-8"?
+
+Under Windows:
+- UTF-8 (codepage 65001)
+- 7-bit US-ASCII (codepage 20127)
+
+On Unix-like systems (including Linux and macOS):
+- `"UTF-8"`
+- `"US-ASCII"` (7-bit)
+- `"ANSI_X3.4-1968"`
+
+7-bit US-ASCII strings are treated as UTF-8 because they have the same byte sequence when converted to UTF-8.
+
+Technically, `"ANSI_X3.4-1968"` means 7-bit US-ASCII; in practice, it usually represents the `"C"` locale, which is almost always either UTF-8 or 7-bit US-ASCII, so we can treat it as UTF-8.
+
+When *magic_args* detects a UTF-8-compatible input encoding, it does not *convert* to UTF-8, but it does *validate* that the input is UTF-8:
+- on Windows, conversion to-and-from UTF-16 is often necessary, which will fail on invalid input. *magic_args* also validates on other platforms so that application behavior is consistent across platforms
+- the performance cost is small
 
 [app-manifest-utf8]: https://learn.microsoft.com/en-us/windows/apps/design/globalizing/use-utf8-code-page
