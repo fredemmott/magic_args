@@ -14,6 +14,14 @@ title: Encodings
 - TOC
 {:toc}
 
+## Quick guide
+
+- **macOS and UTF-8 Linux only?** ➡️ Use `main()` with `utf8 = std::span(argv, argc)` from `<magic_args/iconv.hpp>`
+- **Windows CLI only?** ➡️ Use `wmain()` with `utf8 = make_utf8_argv(argc, argv)` from `<magic_args/windows.hpp>`
+- **Maximum portability?** ➡️ Use `wmain()` on Windows, `main()` on other platforms; for both, use `utf8 = make_utf8_argv(argc, argv)` from the corresponding header
+
+For other cases, see the details below.
+
 ## If you want to assume UTF-8 on all platforms
 
 The main entrypoints (e.g. `parse()`) take a UTF-8 range as input. This must be indexable, and the elements must be convertible to `std::string_view`. *magic_args* will *assume* this range is UTF-8.
