@@ -1,16 +1,15 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#if (((!defined(MAGIC_ARGS_SINGLE_FILE)) \
-      || (__has_include(<magic_enum/magic_enum.hpp>) && !defined(MAGIC_ARGS_DISABLE_ENUM))) \
-  && !defined(MAGIC_ARGS_ENUM_HPP))
+#ifndef MAGIC_ARGS_ENUM_HPP
 #define MAGIC_ARGS_ENUM_HPP
 
-#define MAGIC_ARGS_HAVE_ENUM
-
 #ifndef MAGIC_ARGS_SINGLE_FILE
+#include "detail/config.hpp"
 #include "detail/from_string.hpp"
 #include "detail/to_formattable.hpp"
 #endif
+
+#ifndef MAGIC_ARGS_DISABLE_ENUM
 
 #include <type_traits>
 
@@ -94,4 +93,5 @@ struct get_argument_help_t<TArg> {
 
 }// namespace magic_args::detail
 
+#endif
 #endif

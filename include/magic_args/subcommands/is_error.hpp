@@ -1,8 +1,6 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#if ( \
-  defined(MAGIC_ARGS_ENABLE_SUBCOMMANDS) || !defined(MAGIC_ARGS_SINGLE_FILE)) \
-  && !defined(MAGIC_ARGS_SUBCOMMANDS_IS_ERROR_HPP)
+#ifndef MAGIC_ARGS_SUBCOMMANDS_IS_ERROR_HPP
 #define MAGIC_ARGS_SUBCOMMANDS_IS_ERROR_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE

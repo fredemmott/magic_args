@@ -8,11 +8,6 @@
 #include <magic_args/iconv.hpp>
 #endif
 
-#ifndef MAGIC_ARGS_CAN_CONVERT_TO_UTF8
-#error \
-  "Either iconv or windows extensions should have provided UTF-8 conversion support"
-#endif
-
 struct MyArgs {
   bool foo {false};
   std::string bar;

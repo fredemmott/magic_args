@@ -1,13 +1,14 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#if ( \
-  defined(MAGIC_ARGS_ENABLE_ICONV_EXTENSIONS) \
-  || !defined(MAGIC_ARGS_SINGLE_FILE)) \
-  && !defined(MAGIC_ARGS_ICONV_HPP)
+#ifndef MAGIC_ARGS_ICONV_HPP
 #define MAGIC_ARGS_ICONV_HPP
 
-#define MAGIC_ARGS_HAVE_ICONV_EXTENSIONS
-#define MAGIC_ARGS_CAN_CONVERT_TO_UTF8
+#ifndef MAGIC_ARGS_SINGLE_FILE
+#include "detail/config.hpp"
+#include "detail/encoding.hpp"
+#endif
+
+#ifndef MAGIC_ARGS_DISABLE_ICONV
 
 #include <cerrno>
 #include <expected>
@@ -17,10 +18,6 @@
 #include <vector>
 
 #include <iconv.h>
-
-#ifndef MAGIC_ARGS_SINGLE_FILE
-#include "detail/encoding.hpp"
-#endif
 
 namespace magic_args::detail {
 inline std::expected<void, std::error_code> convert_with_iconv(
@@ -152,4 +149,5 @@ struct magic_args::detail::encoding_traits<
   }
 };
 
-#endif// MAGIC_ARGS_ICONV_HPP
+#endif
+#endif

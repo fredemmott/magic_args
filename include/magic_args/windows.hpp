@@ -1,20 +1,15 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#if ( \
-  defined(MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS) \
-  || !defined(MAGIC_ARGS_SINGLE_FILE)) \
-  && !defined(MAGIC_ARGS_WINDOWS_HPP)
+#ifndef MAGIC_ARGS_WINDOWS_HPP
 #define MAGIC_ARGS_WINDOWS_HPP
-
-#define MAGIC_ARGS_HAVE_WINDOWS_EXTENSIONS
-#define MAGIC_ARGS_CAN_CONVERT_TO_UTF8 1
-
-#include <string>
+#ifdef _WIN32
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "detail/encoding.hpp"
 #include "detail/win32_api.hpp"
 #endif
+
+#include <string>
 
 namespace magic_args::detail::win32 {
 
@@ -281,4 +276,6 @@ struct magic_args::detail::encoding_traits<
     return public_api::make_utf8_argv(argc, argv, WIN32_CP_ACP);
   }
 };
+
+#endif
 #endif

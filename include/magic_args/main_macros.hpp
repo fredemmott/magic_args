@@ -1,39 +1,13 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
-#if defined(MAGIC_ARGS_ENABLE_MAIN_MACROS) || !defined(MAGIC_ARGS_SINGLE_FILE)
 #ifndef MAGIC_ARGS_MAIN_MACROS_HPP
 #define MAGIC_ARGS_MAIN_MACROS_HPP
 
-#ifdef MAGIC_ARGS_SINGLE_FILE
-
-#if __has_include(<Windows.h>) && !defined(MAGIC_ARGS_DISABLE_IMPLICIT_WINDOWS_EXTENSIONS)
-#undef MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS
-#define MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS
-#elif __has_include(<iconv.h>) && !defined(MAGIC_ARGS_DISABLE_IMPLICIT_ICONV)
-#undef MAGIC_ARGS_ENABLE_ICONV_EXTENSIONS
-#define MAGIC_ARGS_ENABLE_ICONV_EXTENSIONS
-#endif
-
-#include "magic_args.hpp"
-
-#else
-
-#include "magic_args.hpp"
-#if __has_include(<Windows.h>) && !defined(MAGIC_ARGS_DISABLE_IMPLICIT_WINDOWS_EXTENSIONS)
-#include "windows.hpp"
-#elif __has_include(<iconv.h>)
-
-#if defined(MAGIC_ARGS_ENABLE_IMPLICIT_ICONV_EXTENSIONS_WARNING)
-#warning "UTF-8 conversion is not available; u
-#else
+#ifndef MAGIC_ARGS_SINGLE_FILE
 #include "iconv.hpp"
+#include "windows.hpp"
 #endif
 
-#endif
-
-#endif
-
-// region MAGIC_ARGS_UTF8_MAIN
 namespace magic_args::detail {
 template <class TChar>
 using utf8_argv_t = decltype(public_api::make_utf8_argv(
@@ -89,5 +63,4 @@ int parsed_main(TArgv&& argv) {
   } \
   int magic_args_parsed_main(ARGS_TYPE_AND_NAME)
 
-#endif
 #endif
