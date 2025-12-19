@@ -4,6 +4,7 @@ set(
   # DO NOT SORT THESE
   #
   # These are in the order required for the single-header version
+  detail/config.hpp
   detail/concepts.hpp
   detail/reflection.hpp
   gnu_style_parsing_traits.hpp
@@ -43,6 +44,7 @@ set(
   windows.hpp
   iconv.hpp
   enum.hpp
+  main_macros.hpp
 )
 
 # Safety check: verify all .hpp files are listed in HEADER_FILES, so the header-only
