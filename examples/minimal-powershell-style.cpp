@@ -11,14 +11,7 @@ struct MyArgs {
   std::string baz;
 };
 
-int main(int argc, char** argv) {
-  const auto args = magic_args::parse<MyArgs>(std::views::counted(argv, argc));
-  if (!args) {
-    // This could be an actual error, e.g. invalid argument,
-    // or something like `--help` or `--version`, which while not an error,
-    // are an 'unexpected' outcome in the std::expected
-    return magic_args::is_error(args.error()) ? EXIT_FAILURE : EXIT_SUCCESS;
-  }
-  magic_args::dump(*args);
+MAGIC_ARGS_MAIN(MyArgs&& args) {
+  magic_args::dump(args);
   return EXIT_SUCCESS;
 }
