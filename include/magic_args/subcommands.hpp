@@ -67,7 +67,7 @@ struct invoke_multicall_t<TTraits, First, Rest...> {
   template <class TArgv>
   auto operator()(TArgv&& argv) {
     return invoke_subcommands<Traits, First, Rest...>(
-      std::forward<TArgv>, argv);
+      std::forward<TArgv>(argv));
   }
 };
 

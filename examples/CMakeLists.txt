@@ -15,8 +15,9 @@ add_example(example-minimal-powershell-style minimal-powershell-style.cpp)
 add_example(example-everything everything.cpp)
 add_example(example-subcommands subcommands.cpp)
 add_example(example-invocable-subcommands invocable-subcommands.cpp)
-add_example(example-multicall multicall.cpp)
 add_example(example-minimal-with-encoding minimal-with-encoding.cpp)
+add_example(example-multicall multicall.cpp)
+add_example(example-multicall-powershell-style multicall-powershell-style.cpp)
 
 add_custom_command(
   TARGET example-multicall POST_BUILD
@@ -27,6 +28,17 @@ add_custom_command(
   COMMAND "${CMAKE_COMMAND}" -E create_hardlink
   "$<TARGET_FILE:example-multicall>"
   "$<TARGET_FILE_DIR:example-multicall>/multicall-links/herp.exe"
+)
+
+add_custom_command(
+  TARGET example-multicall-powershell-style POST_BUILD
+  COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:example-multicall-powershell-style>/multicall-links-powershell-style"
+  COMMAND "${CMAKE_COMMAND}" -E create_hardlink
+  "$<TARGET_FILE:example-multicall-powershell-style>"
+  "$<TARGET_FILE_DIR:example-multicall>/multicall-links-powershell-style/foo.exe"
+  COMMAND "${CMAKE_COMMAND}" -E create_hardlink
+  "$<TARGET_FILE:example-multicall-powershell-style>"
+  "$<TARGET_FILE_DIR:example-multicall>/multicall-links-powershell-style/herp.exe"
 )
 
 if (WIN32)
