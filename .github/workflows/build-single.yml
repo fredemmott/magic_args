@@ -48,7 +48,7 @@ jobs:
           cd build
           cmake ../source `
             --preset "${{inputs.cmake-preset}}" `
-            -DDISCOVER_SINGLE_HEADER_TESTS=ON `
+            -DENABLE_SINGLE_HEADER_TESTS=ON `
             ${{inputs.cmake-args}}
       - name: Build
         working-directory: build
