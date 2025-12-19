@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include <magic_args/magic_args.hpp>
-#ifndef TEST_SINGLE_HEADER
 #include <magic_args/subcommands.hpp>
-#endif
 
 struct CommandFooBar {
   static constexpr auto name = "foo";
@@ -33,16 +31,5 @@ struct CommandHerp {
   }
 };
 
-int main(int argc, char** argv) {
-  const auto ret = magic_args::invoke_subcommands<
-    magic_args::multicall_traits<>,
-    CommandFooBar,
-    CommandHerp>(std::views::counted(argv, argc));
-  if (!ret) {
-    // e.g. `--version`, `--help` aren't errors, but they are *unexpected*
-    return magic_args::is_error(ret.error()) ? EXIT_FAILURE : EXIT_SUCCESS;
-  }
-
-  std::println("Subcommand main returned {}", *ret);
-  return 0;
-}
+// Invoke as `foo` or `herp`, *not* `example-multicall foo`
+MAGIC_ARGS_MULTI_CALL_MAIN(CommandFooBar, CommandHerp);

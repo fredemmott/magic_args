@@ -10,6 +10,11 @@ struct CommandFooBar {
     std::string mBar;
     std::string mBaz;
   };
+  static int main(arguments_type&& args) {
+    std::println("in CommandFooBar::main");
+    magic_args::dump(args);
+    return EXIT_SUCCESS;
+  }
 };
 
 struct CommandHerp {
@@ -21,23 +26,12 @@ struct CommandHerp {
 
     std::string mDerp;
   };
-};
 
-int main(int argc, char** argv) {
-  const auto ret = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(
-    std::views::counted(argv, argc));
-  if (!ret) {
-    if (magic_args::is_error(ret.error())) {
-      return EXIT_FAILURE;
-    }
+  static int main(arguments_type&& args) {
+    std::println("in CommandFooBar::main");
+    magic_args::dump(args);
     return EXIT_SUCCESS;
   }
+};
 
-  std::visit(
-    []<class T>(const magic_args::subcommand_match<T>& match) {
-      std::println("Matched {}", T::name);
-      magic_args::dump(*match);
-    },
-    ret.value());
-  return 0;
-}
+MAGIC_ARGS_SUBCOMMANDS_MAIN(CommandFooBar, CommandHerp);
