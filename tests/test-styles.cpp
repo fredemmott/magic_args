@@ -9,7 +9,6 @@
 #include "magic_args/powershell_style_parsing_traits.hpp"
 #endif
 
-#include "../cmake-build-debug-wsl/include/magic_args/Debug/single-header/magic_args/magic_args.hpp"
 #include "arg-type-definitions.hpp"
 #include "chomp.hpp"
 #include "output.hpp"
