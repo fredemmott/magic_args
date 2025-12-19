@@ -15,6 +15,7 @@ constexpr bool is_single_header_file = false;
 #include "enum.hpp"
 #include "gnu_style_parsing_traits.hpp"
 #include "iconv.hpp"
+#include "main_macros.hpp"
 #include "parse.hpp"
 #include "powershell_style_parsing_traits.hpp"
 #include "verbatim_names.hpp"

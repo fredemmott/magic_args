@@ -5,6 +5,7 @@
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "iconv.hpp"
+#include "parse.hpp"
 #include "windows.hpp"
 #endif
 
