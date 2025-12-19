@@ -29,13 +29,48 @@ struct function_argument_type_t {
   using type = std::remove_cvref_t<T>;
 };
 
+template <class T>
+struct argument_parsing_traits {
+  using type = gnu_style_parsing_traits;
+};
+template <class T>
+  requires requires { typename T::parsing_traits; }
+struct argument_parsing_traits<T> {
+  static_assert(
+    parsing_traits<typename T::parsing_traits>,
+    "cli_parsing_traits is defined, but the type does not satisfy the "
+    "parsing_traits concept");
+  using type = T::parsing_traits;
+};
+template <class T>
+using argument_parsing_traits_t = argument_parsing_traits<T>::type;
+
 template <auto TImpl, class TArgv>
 int parsed_main(TArgv&& argv) {
-  using TArg = decltype(function_argument_type_t {TImpl})::type;
-  static_assert(std::same_as<std::invoke_result_t<decltype(TImpl), TArg>, int>);
-  auto parsed = magic_args::parse<TArg>(std::forward<TArgv>(argv));
-  // TODO: error handling
-  return std::invoke(TImpl, *std::move(parsed));
+  using Parsed = decltype(function_argument_type_t {TImpl})::type;
+  static_assert(
+    std::same_as<std::invoke_result_t<decltype(TImpl), Parsed>, int>);
+
+  program_info info {};
+  if constexpr (requires { Parsed::description; }) {
+    info.mDescription = std::string {Parsed::description};
+  }
+  if constexpr (requires { Parsed::version; }) {
+    info.mVersion = std::string {Parsed::version};
+  }
+  if constexpr (requires { Parsed::examples; }) {
+    info.mExamples
+      = std::ranges::to<std::vector<std::string>>(Parsed::examples);
+  }
+
+  using Traits = argument_parsing_traits_t<Parsed>;
+  auto parsed
+    = magic_args::parse<Traits, Parsed>(std::forward<TArgv>(argv), info);
+  if (parsed) [[likely]] {
+    return std::invoke(TImpl, *std::move(parsed));
+  }
+
+  return is_error(parsed.error()) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 }// namespace magic_args::detail
 
