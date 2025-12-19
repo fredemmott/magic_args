@@ -22,17 +22,25 @@ std::expected<void, magic_args::invalid_argument_value> from_string_argument(
 }// namespace MyNS
 using MyNS::MyValueType;
 
-struct CustomArgs {
+template <magic_args::parsing_traits T>
+struct BasicCustomArgs {
+  using parsing_traits = T;
   MyValueType mRaw;
   magic_args::option<MyValueType> mOption {
     .mHelp = "std::optional",
   };
   magic_args::optional_positional_argument<MyValueType> mPositional;
 
-  constexpr bool operator==(const CustomArgs&) const noexcept = default;
+  constexpr bool operator==(const BasicCustomArgs&) const noexcept = default;
 };
+using CustomArgs = BasicCustomArgs<magic_args::gnu_style_parsing_traits>;
+using CustomArgsPS
+  = BasicCustomArgs<magic_args::powershell_style_parsing_traits>;
 
-struct Normalization {
+template <magic_args::parsing_traits T>
+struct BasicNormalization {
+  using parsing_traits = T;
+
   std::string mEmUpperCamel;
   std::string m_EmUnderscoreUpperCamel;
   std::string _UnderscoreUpperCamel;
@@ -42,6 +50,9 @@ struct Normalization {
   std::string m_em_snake_case;
   std::string snake_case;
 };
+using Normalization = BasicNormalization<magic_args::gnu_style_parsing_traits>;
+using NormalizationPS
+  = BasicNormalization<magic_args::powershell_style_parsing_traits>;
 
 struct Optional {
   std::optional<std::string> mValue;

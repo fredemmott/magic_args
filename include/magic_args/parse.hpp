@@ -8,7 +8,6 @@
 #include "detail/usage.hpp"
 #include "gnu_style_parsing_traits.hpp"
 #include "parse_silent.hpp"
-#include "program_info.hpp"
 #endif
 
 #include <expected>
@@ -18,29 +17,18 @@
 
 namespace magic_args::inline public_api {
 
-template <parsing_traits Traits, class T>
-std::expected<T, incomplete_parse_reason_t> parse(
-  detail::argv_range auto&& argv,
-  const program_info& help = {},
-  FILE* outputStream = stdout,
-  FILE* errorStream = stderr) {
-  const auto ret
-    = parse_silent<Traits, T>(std::forward<decltype(argv)>(argv), help);
-  if (!ret) [[unlikely]] {
-    detail::print_incomplete_parse_reason<T, Traits>(
-      ret.error(), help, argv, outputStream, errorStream);
-  }
-  return ret;
-}
-
 template <class T>
 std::expected<T, incomplete_parse_reason_t> parse(
   detail::argv_range auto&& argv,
-  const program_info& help = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
-  return parse<gnu_style_parsing_traits, T>(
-    std::forward<decltype(argv)>(argv), help, outputStream, errorStream);
+  const auto ret = parse_silent<T>(std::forward<decltype(argv)>(argv));
+  if (!ret) [[unlikely]] {
+    using Traits = detail::parsing_traits_for_args_t<T>;
+    detail::print_incomplete_parse_reason<Traits, T>(
+      ret.error(), argv, outputStream, errorStream);
+  }
+  return ret;
 }
 
 }// namespace magic_args::inline public_api

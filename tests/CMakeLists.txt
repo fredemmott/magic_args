@@ -35,38 +35,39 @@ add_custom_target(all-split-header-tests)
 add_custom_target(all-single-header-tests)
 
 # This is off by default because:
-# - single-header issues will practically always be a build failure, not a runtime failure
 # - split-headers provide a much better developer experience when debugging the tests, especially
 #   when IDE ctest/catch2 support comes into the picture
 # - similarly, IDE integrations work better when each `TEST_CASE()` is only in a single executable
 #
-# Trust CI for this.
-option(DISCOVER_SINGLE_HEADER_TESTS "Also run tests in single-header mode" OFF)
-if (DISCOVER_SINGLE_HEADER_TESTS)
+# Depend on CI for this.
+option(ENABLE_SINGLE_HEADER_TESTS "Also run tests in single-header mode" OFF)
+if (ENABLE_SINGLE_HEADER_TESTS)
   message(STATUS "Single-header tests will be included in test runs")
 else ()
-  message(WARNING "Single-header tests will be built, but not ran. Set DISCOVER_SINGLE_HEADER_TESTS=ON to enable")
+  message(WARNING "Single-header tests are excluded from this build and test run")
 endif ()
 
 function(add_test_executables NAME)
   set(SOURCES "${ARGN}")
 
   set(SPLIT_HEADERS_NAME "split-headers-${NAME}")
-  set(SINGLE_HEADER_NAME "single-header-${NAME}")
 
   add_executable("${SPLIT_HEADERS_NAME}" ${SOURCES})
   target_link_libraries("${SPLIT_HEADERS_NAME}" PRIVATE split-headers-test-deps)
   catch_discover_tests("${SPLIT_HEADERS_NAME}" PROPERTIES LABELS "split-headers" TEST_PREFIX "split-headers:${NAME}:")
+  add_dependencies(all-split-header-tests "${SPLIT_HEADERS_NAME}")
+
+  if (NOT ENABLE_SINGLE_HEADER_TESTS)
+    return()
+  endif ()
+
+  set(SINGLE_HEADER_NAME "single-header-${NAME}")
 
   add_executable("${SINGLE_HEADER_NAME}" ${SOURCES})
   target_link_libraries("${SINGLE_HEADER_NAME}" PRIVATE single-header-test-deps)
   target_compile_definitions("${SINGLE_HEADER_NAME}" PRIVATE TEST_SINGLE_HEADER)
+  catch_discover_tests("${SINGLE_HEADER_NAME}" PROPERTIES LABELS "single-header" TEST_PREFIX "single-header:${NAME}:")
 
-  if (DISCOVER_SINGLE_HEADER_TESTS)
-    catch_discover_tests("${SINGLE_HEADER_NAME}" PROPERTIES LABELS "single-header" TEST_PREFIX "single-header:${NAME}:")
-  endif ()
-
-  add_dependencies(all-split-header-tests "${SPLIT_HEADERS_NAME}")
   add_dependencies(all-single-header-tests "${SINGLE_HEADER_NAME}")
 endfunction()
 

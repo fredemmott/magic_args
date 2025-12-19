@@ -8,6 +8,7 @@
 #include <string>
 
 namespace magic_args::inline public_api {
+
 template <class T>
 concept basic_argument = requires(T v) {
   typename std::decay_t<T>::value_type;
@@ -25,6 +26,22 @@ concept basic_option = requires(T v) {
 }// namespace magic_args::inline public_api
 
 namespace magic_args::detail {
+template <class T>
+concept has_description = requires {
+  { T::description } -> std::convertible_to<std::string_view>;
+};
+template <class T>
+concept has_version = requires {
+  { T::version } -> std::convertible_to<std::string_view>;
+};
+template <class T>
+concept has_examples = requires {
+  requires std::ranges::input_range<decltype(T::examples)>;
+  requires std::convertible_to<
+    std::ranges::range_reference_t<decltype(T::examples)>,
+    std::string_view>;
+};
+
 template <class T>
 concept vector_like = requires { typename T::value_type; }
   && requires(T c, typename T::value_type v) { c.push_back(v); }
@@ -80,6 +97,10 @@ concept parsing_traits = requires(std::string arg) {
   { T::normalize_option_name(arg) } -> std::same_as<void>;
   { T::normalize_positional_argument_name(arg) } -> std::same_as<void>;
 };
+
+template <class T>
+concept has_parsing_traits
+  = requires { requires parsing_traits<typename T::parsing_traits>; };
 
 }// namespace magic_args::inline public_api
 

@@ -4,14 +4,15 @@
 #define MAGIC_ARGS_PARSE_SILENT_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
+#include "detail/concepts.hpp"
 #include "detail/config.hpp"
 #include "detail/overloaded.hpp"
 #include "detail/parse.hpp"
+#include "detail/parsing_traits_for_args.hpp"
 #include "detail/static_assert_not_an_enum.hpp"
 #include "detail/validation.hpp"
 #include "detail/visitors.hpp"
 #include "gnu_style_parsing_traits.hpp"
-#include "program_info.hpp"
 #endif
 
 #include <expected>
@@ -22,8 +23,7 @@ namespace magic_args::inline public_api {
 
 template <parsing_traits Traits, class T>
 std::expected<T, incomplete_parse_reason_t> parse_silent(
-  detail::argv_range auto&& argv,
-  const program_info& help = {}) {
+  detail::argv_range auto&& argv) {
   using namespace detail;
   using CommonArguments = common_arguments_t<Traits>;
 
@@ -49,8 +49,10 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
       arg == CommonArguments::long_help || arg == CommonArguments::short_help) {
       return std::unexpected {help_requested {}};
     }
-    if (arg == CommonArguments::version && !help.mVersion.empty()) {
-      return std::unexpected {version_requested {}};
+    if constexpr (has_version<T>) {
+      if (arg == CommonArguments::version) {
+        return std::unexpected {version_requested {}};
+      }
     }
   }
 
@@ -190,10 +192,9 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
 
 template <class T>
 std::expected<T, incomplete_parse_reason_t> parse_silent(
-  detail::argv_range auto&& argv,
-  const program_info& help = {}) {
-  return parse_silent<gnu_style_parsing_traits, T>(
-    std::forward<decltype(argv)>(argv), help);
+  detail::argv_range auto&& argv) {
+  using Traits = detail::parsing_traits_for_args_t<T>;
+  return parse_silent<Traits, T>(std::forward<decltype(argv)>(argv));
 }
 
 }// namespace magic_args::inline public_api

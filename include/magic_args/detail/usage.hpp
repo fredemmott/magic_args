@@ -5,11 +5,11 @@
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/gnu_style_parsing_traits.hpp>
-#include <magic_args/program_info.hpp>
 
 #include "concepts.hpp"
 #include "get_argument_definition.hpp"
 #include "parse.hpp"
+#include "parsing_traits_for_args.hpp"
 #include "print.hpp"
 #include "to_formattable.hpp"
 #endif
@@ -20,7 +20,7 @@
 
 namespace magic_args::detail {
 
-template <parsing_traits Traits, basic_argument TArg>
+template <parsing_traits, basic_argument TArg>
   requires(!basic_option<TArg>)
 void show_option_usage(FILE*, const TArg&, const typename TArg::value_type&) {
 }
@@ -149,11 +149,8 @@ void show_positional_argument_usage(FILE* output, const T& arg) {
   detail::println(output, "      {:25}{}", arg.mName, arg.mHelp);
 }
 
-template <class T, parsing_traits Traits = gnu_style_parsing_traits>
-void show_usage(
-  FILE* output,
-  argv_range auto&& argv,
-  const program_info& extraHelp = {}) {
+template <parsing_traits Traits, class T>
+void show_usage(FILE* output, argv_range auto&& argv) {
   using namespace detail;
   constexpr auto N = count_members<T>();
 
@@ -208,14 +205,14 @@ void show_usage(
     detail::println(output, "");
   }
 
-  if (!extraHelp.mDescription.empty()) {
-    detail::println(output, "{}", extraHelp.mDescription);
+  if constexpr (has_description<T>) {
+    detail::println(output, "{}", std::string_view {T::description});
   }
 
-  if (!extraHelp.mExamples.empty()) {
+  if constexpr (has_examples<T>) {
     detail::print(output, "\nExamples:\n\n");
-    for (auto&& example: extraHelp.mExamples) {
-      detail::println(output, "  {}", example);
+    for (auto&& example: T::examples) {
+      detail::println(output, "  {}", std::string_view {example});
     }
   }
 
@@ -240,7 +237,7 @@ void show_usage(
     show_option_usage<Traits>(
       output, flag {Traits::long_help_arg, "show this message"}, {});
   }
-  if (!extraHelp.mVersion.empty()) {
+  if constexpr (has_version<T>) {
     show_option_usage<Traits>(
       output, flag {Traits::version_arg, "print program version"}, {});
   }

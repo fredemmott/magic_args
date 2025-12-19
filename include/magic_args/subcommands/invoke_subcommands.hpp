@@ -5,12 +5,13 @@
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "invoke_subcommands_silent.hpp"
+#include "parse_subcommands.hpp"
 #endif
 
 namespace magic_args::inline public_api {
 
 template <
-  parsing_traits Traits,
+  root_command_traits Traits,
   invocable_subcommand First,
   compatible_invocable_subcommand<First>... Rest,
   class TSuccess = std::
@@ -19,11 +20,10 @@ template <
   class TExpected = std::expected<TSuccess, TIncomplete>>
 TExpected invoke_subcommands(
   detail::argv_range auto&& argv,
-  const program_info& info = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
   auto result = parse_subcommands<Traits, First, Rest...>(
-    argv, info, outputStream, errorStream);
+    argv, outputStream, errorStream);
   if (!result) [[unlikely]] {
     return std::unexpected {std::move(result).error()};
   }
@@ -45,11 +45,10 @@ template <
   compatible_invocable_subcommand<First>... Rest>
 auto invoke_subcommands(
   detail::argv_range auto&& argv,
-  const program_info& info = {},
   FILE* outputStream = stdout,
   FILE* errorStream = stderr) {
   return invoke_subcommands<gnu_style_parsing_traits, First, Rest...>(
-    std::forward<decltype(argv)>(argv), info, outputStream, errorStream);
+    std::forward<decltype(argv)>(argv), outputStream, errorStream);
 }
 
 }// namespace magic_args::inline public_api

@@ -36,7 +36,7 @@ TEST_CASE("void returns") {
   using Herp = CommandReturnsVoid<CommandHerp>;
   Foo::invocation.reset();
   const auto ret = magic_args::invoke_subcommands<Foo, Herp>(
-    std::array {"myApp", "foo", "--bar=TestBar"}, {}, out, err);
+    std::array {"myApp", "foo", "--bar=TestBar"}, out, err);
   CHECK(ret.has_value());
   CHECK(out.empty());
   CHECK(err.empty());
@@ -49,31 +49,23 @@ TEST_CASE("void returns") {
 }
 
 TEST_CASE("output cases") {
-  struct params_t {
-    std::vector<std::string_view> argv;
-    magic_args::program_info info {};
-  };
-  const auto [argv, info] = GENERATE(
-    values<params_t>({
-      {{"MyApp", "--help"}},
-      {{"MyApp", "--version"}},
-      {
-        {"MyApp", "--version"},
-        {.mDescription = "Test", .mVersion = "MyApp v1.2.3"},
-      },
-      {{"MyApp", "foo", "--help"}},
-      {{"MyApp", "foo", "--bar"}},// missing argument value
-      {{"MyApp", "foo", "--invalid"}},
+  const auto argv = GENERATE(
+    values<std::vector<const char*>>({
+      {"MyApp", "--help"},
+      {"MyApp", "foo", "--help"},
+      {"MyApp", "foo", "--bar"},// missing argument value
+      {"MyApp", "foo", "--invalid"},
+      {"MyApp", "foo", "--version"},
     }));
   Output out, err;
   const auto ret = magic_args::invoke_subcommands<CommandFooBar, CommandHerp>(
-    argv, info, out, err);
+    argv, out, err);
   REQUIRE_FALSE(ret.has_value());
 
   Output parseOut, parseErr;
   const auto parseRet
     = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(
-      argv, info, parseOut, parseErr);
+      argv, parseOut, parseErr);
   REQUIRE_FALSE(parseRet.has_value());
   CHECK(ret.error() == parseRet.error());
   CHECK(out.get() == parseOut.get());
@@ -88,12 +80,12 @@ TEST_CASE("powershell-style success (no output)") {
   const auto ps = magic_args::invoke_subcommands<
     magic_args::powershell_style_parsing_traits,
     CommandFooBar,
-    CommandHerp>(psArgv, {}, out, err);
+    CommandHerp>(psArgv, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
 
   const auto gnu = magic_args::invoke_subcommands<CommandFooBar, CommandHerp>(
-    gnuArgv, {}, out, err);
+    gnuArgv, out, err);
   CHECK(ps == gnu);
 }
 
@@ -112,16 +104,55 @@ TEST_CASE("powershell-style non-invoked") {
   const auto invoked = magic_args::invoke_subcommands<
     magic_args::powershell_style_parsing_traits,
     CommandFooBar,
-    CommandHerp>(argv, {}, invokedOut, invokedErr);
+    CommandHerp>(argv, invokedOut, invokedErr);
   REQUIRE_FALSE(invoked.has_value());
   Output parsedOut, parsedErr;
   const auto parsed = magic_args::parse_subcommands<
     magic_args::powershell_style_parsing_traits,
     CommandFooBar,
-    CommandHerp>(argv, {}, parsedOut, parsedErr);
+    CommandHerp>(argv, parsedOut, parsedErr);
   REQUIRE_FALSE(parsed.has_value());
 
   CHECK(invoked.error() == parsed.error());
   CHECK(invokedOut.get() == parsedOut.get());
   CHECK(invokedErr.get() == parsedErr.get());
+}
+
+template <magic_args::parsing_traits T>
+struct WithVersion {
+  using parsing_traits = T;
+  static constexpr auto version = "MyTest v1.2.3";
+};
+
+TEST_CASE("root version") {
+  constexpr auto gnuArgv = std::array {"my_args", "--version"};
+  constexpr auto psArgv = std::array {"my_args", "-Version"};
+
+  Output gnuOut, gnuErr;
+  const auto gnu = magic_args::invoke_subcommands<
+    WithVersion<magic_args::gnu_style_parsing_traits>,
+    CommandFooBar,
+    CommandHerp>(gnuArgv, gnuOut, gnuErr);
+  CHECK(
+    gnu
+    == magic_args::invoke_subcommands_silent<
+      WithVersion<magic_args::gnu_style_parsing_traits>,
+      CommandFooBar,
+      CommandHerp>(gnuArgv));
+  CHECK(gnuErr.empty());
+  CHECK(gnuOut.get() == "MyTest v1.2.3\n");
+
+  Output psOut, psErr;
+  const auto ps = magic_args::invoke_subcommands<
+    WithVersion<magic_args::powershell_style_parsing_traits>,
+    CommandFooBar,
+    CommandHerp>(psArgv, psOut, psErr);
+  CHECK(
+    ps
+    == magic_args::invoke_subcommands_silent<
+      WithVersion<magic_args::powershell_style_parsing_traits>,
+      CommandFooBar,
+      CommandHerp>(psArgv));
+  CHECK(psOut.get() == gnuOut.get());
+  CHECK(psErr.get() == gnuErr.get());
 }

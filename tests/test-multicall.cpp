@@ -58,7 +58,7 @@ TEST_CASE("invalid command") {
   const auto ret = magic_args::invoke_subcommands<
     magic_args::multicall_traits<>,
     CommandFooBar,
-    CommandHerp>(argv, {}, out, err);
+    CommandHerp>(argv, out, err);
   CHECK_FALSE(ret.has_value());
   CHECK(out.empty());
   CHECK(err.get() == chomp(R"EOF(
@@ -86,7 +86,7 @@ TEST_CASE("foo --help") {
   const auto ret = magic_args::invoke_subcommands<
     magic_args::multicall_traits<>,
     CommandFooBar,
-    CommandHerp>(argv, {}, out, err);
+    CommandHerp>(argv, out, err);
   CHECK_FALSE(ret.has_value());
   CHECK(err.empty());
   CHECK(out.get() == chomp(R"EOF(

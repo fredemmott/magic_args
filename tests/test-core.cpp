@@ -40,7 +40,7 @@ TEMPLATE_TEST_CASE(
   MultiValuePositionalArgument) {
   std::vector<std::string_view> argv {testName};
   Output out, err;
-  const auto args = magic_args::parse<TestType>(argv, {}, out, err);
+  const auto args = magic_args::parse<TestType>(argv, out, err);
   CHECK(args.has_value());
   STATIC_CHECK(std::same_as<const TestType&, decltype(*args)>);
   CHECK(out.empty());
@@ -55,7 +55,7 @@ TEMPLATE_TEST_CASE(
   FlagsOnly) {
   std::vector<std::string_view> argv {testName, "--", "--not-a-valid-arg"};
   Output out, err;
-  const auto args = magic_args::parse<TestType>(argv, {}, out, err);
+  const auto args = magic_args::parse<TestType>(argv, out, err);
   CHECK(out.empty());
   CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
 my_test: Unexpected argument: --not-a-valid-arg
@@ -73,7 +73,7 @@ TEMPLATE_TEST_CASE(
   OptionsOnly,
   FlagsOnly) {
   std::vector<std::string_view> argv {testName, "--", "--not-a-valid-arg"};
-  const auto args = magic_args::parse_silent<TestType>(argv, {});
+  const auto args = magic_args::parse_silent<TestType>(argv);
   REQUIRE_FALSE(args.has_value());
   REQUIRE(holds_alternative<magic_args::invalid_argument>(args.error()));
   const auto& e = get<magic_args::invalid_argument>(args.error());
@@ -82,17 +82,15 @@ TEMPLATE_TEST_CASE(
   CHECK(e.mSource.mArg == "--not-a-valid-arg");
 }
 
+struct EmptyWithVersion {
+  static constexpr auto version = "MyApp v1.2.3";
+};
+
 TEST_CASE("empty struct, --version") {
   std::vector<std::string_view> argv {testName, "--version"};
 
   Output out, err;
-  const auto args = magic_args::parse<EmptyStruct>(
-    argv,
-    {
-      .mVersion = "MyApp v1.2.3",
-    },
-    out,
-    err);
+  const auto args = magic_args::parse<EmptyWithVersion>(argv, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(std::holds_alternative<magic_args::version_requested>(args.error()));
 
@@ -109,7 +107,7 @@ TEMPLATE_TEST_CASE(
   std::vector<std::string_view> argv {testName, invalid};
 
   Output out, err;
-  const auto args = magic_args::parse<TestType>(argv, {}, out, err);
+  const auto args = magic_args::parse<TestType>(argv, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(std::holds_alternative<magic_args::invalid_argument>(args.error()));
   CHECK(out.empty());
@@ -134,7 +132,7 @@ TEMPLATE_TEST_CASE(
   const auto invalid = GENERATE("--abc", "-z");
   std::vector<std::string_view> argv {testName, invalid};
 
-  const auto args = magic_args::parse_silent<TestType>(argv, {});
+  const auto args = magic_args::parse_silent<TestType>(argv);
   REQUIRE_FALSE(args.has_value());
   REQUIRE(std::holds_alternative<magic_args::invalid_argument>(args.error()));
   const auto& e = get<magic_args::invalid_argument>(args.error());
@@ -156,26 +154,26 @@ TEST_CASE("flags only, specifying flags") {
 
   Output out, err;
 
-  auto args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
+  auto args = magic_args::parse<FlagsOnly>(argv, out, err);
   REQUIRE(args.has_value());
   CHECK(args->mFoo);
   CHECK_FALSE(args->mBar);
   CHECK_FALSE(args->mBaz);
 
   argv.push_back("--bar");
-  args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
+  args = magic_args::parse<FlagsOnly>(argv, out, err);
   CHECK(args->mFoo);
   CHECK(args->mBar);
   CHECK_FALSE(args->mBaz);
 
   argv.push_back("--baz");
-  args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
+  args = magic_args::parse<FlagsOnly>(argv, out, err);
   CHECK(args->mFoo);
   CHECK(args->mBar);
   CHECK(args->mBaz);
 
   argv = {testName, "--baz"};
-  args = magic_args::parse<FlagsOnly>(argv, {}, out, err);
+  args = magic_args::parse<FlagsOnly>(argv, out, err);
   CHECK_FALSE(args->mFoo);
   CHECK_FALSE(args->mBar);
   CHECK(args->mBaz);
@@ -195,7 +193,7 @@ TEST_CASE("options only, all provided, --foo value") {
     "abc",
   };
   Output out, err;
-  const auto args = magic_args::parse<OptionsOnly>(argv, {}, out, err);
+  const auto args = magic_args::parse<OptionsOnly>(argv, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
   REQUIRE(args.has_value());
@@ -207,7 +205,7 @@ TEST_CASE("options only, all provided, --foo value") {
 TEST_CASE("options only, --foo=value") {
   std::vector<std::string_view> argv {testName, "--foo=abc"};
   Output out, err;
-  const auto args = magic_args::parse<OptionsOnly>(argv, {}, out, err);
+  const auto args = magic_args::parse<OptionsOnly>(argv, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
   REQUIRE(args.has_value());
@@ -221,7 +219,7 @@ TEST_CASE("options only, short") {
     "abc",
   };
   Output out, err;
-  const auto args = magic_args::parse<OptionsOnly>(argv, {}, out, err);
+  const auto args = magic_args::parse<OptionsOnly>(argv, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
   REQUIRE(args.has_value());
@@ -236,7 +234,7 @@ TEMPLATE_TEST_CASE(
   std::vector<std::string_view> argv {testName, "in", "out"};
 
   Output out, err;
-  const auto args = magic_args::parse<TestType>(argv, {}, out, err);
+  const auto args = magic_args::parse<TestType>(argv, out, err);
   REQUIRE(args.has_value());
   CHECK(out.empty());
   CHECK(err.empty());
@@ -250,7 +248,7 @@ TEST_CASE("parameters, omitted optional") {
 
   Output out, err;
   const auto args
-    = magic_args::parse<FlagsAndPositionalArguments>(argv, {}, out, err);
+    = magic_args::parse<FlagsAndPositionalArguments>(argv, out, err);
   REQUIRE(args.has_value());
   CHECK(out.empty());
   CHECK(err.empty());
@@ -264,7 +262,7 @@ TEST_CASE("parameters, extra") {
 
   Output out, err;
   const auto args
-    = magic_args::parse<FlagsAndPositionalArguments>(argv, {}, out, err);
+    = magic_args::parse<FlagsAndPositionalArguments>(argv, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::invalid_argument>(args.error()));
   CHECK(out.empty());
@@ -280,7 +278,7 @@ TEST_CASE("positional parameters with flag as value") {
 
   Output out, err;
   const auto args
-    = magic_args::parse<FlagsAndPositionalArguments>(argv, {}, out, err);
+    = magic_args::parse<FlagsAndPositionalArguments>(argv, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
 
@@ -297,7 +295,7 @@ TEST_CASE("missing mandatory named parameter") {
 
   Output out, err;
   const auto args
-    = magic_args::parse<MandatoryPositionalArgument>(argv, {}, out, err);
+    = magic_args::parse<MandatoryPositionalArgument>(argv, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::missing_required_argument>(args.error()));
   CHECK(out.empty());
@@ -316,7 +314,7 @@ TEMPLATE_TEST_CASE(
   std::vector<std::string_view> argv {testName, "out", "in"};
 
   Output out, err;
-  const auto args = magic_args::parse<TestType>(argv, {}, out, err);
+  const auto args = magic_args::parse<TestType>(argv, out, err);
   REQUIRE(args.has_value());
   CHECK(err.empty());
   CHECK(out.empty());
@@ -333,7 +331,7 @@ TEMPLATE_TEST_CASE(
   std::vector<std::string_view> argv {testName, "out", "in1", "in2"};
 
   Output out, err;
-  const auto args = magic_args::parse<TestType>(argv, {}, out, err);
+  const auto args = magic_args::parse<TestType>(argv, out, err);
   REQUIRE(args.has_value());
   CHECK(err.empty());
   CHECK(out.empty());
@@ -346,8 +344,8 @@ TEST_CASE("mandatory multi-value named argument, missing all") {
   std::vector<std::string_view> argv {testName, "--flag"};
 
   Output out, err;
-  const auto args = magic_args::parse<MandatoryMultiValuePositionalArgument>(
-    argv, {}, out, err);
+  const auto args
+    = magic_args::parse<MandatoryMultiValuePositionalArgument>(argv, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::missing_required_argument>(args.error()));
   CHECK(out.empty());
@@ -362,8 +360,8 @@ TEST_CASE("mandatory multi-value named argument, missing first") {
   std::vector<std::string_view> argv {testName, "--flag", "OUTPUT"};
 
   Output out, err;
-  const auto args = magic_args::parse<MandatoryMultiValuePositionalArgument>(
-    argv, {}, out, err);
+  const auto args
+    = magic_args::parse<MandatoryMultiValuePositionalArgument>(argv, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::missing_required_argument>(args.error()));
   CHECK(out.empty());
@@ -379,7 +377,7 @@ TEST_CASE("custom arguments") {
     testName, "--raw=123", "--option=456", "789"};
 
   Output out, err;
-  const auto args = magic_args::parse<CustomArgs>(argv, {}, out, err);
+  const auto args = magic_args::parse<CustomArgs>(argv, out, err);
   CHECK(out.empty());
   CHECK(err.get() == "");
   REQUIRE(args.has_value());
@@ -393,7 +391,7 @@ TEST_CASE("invalid value") {
     testName, "--raw", MyValueType::InvalidValue};
 
   Output out, err;
-  const auto args = magic_args::parse<CustomArgs>(argv, {}, out, err);
+  const auto args = magic_args::parse<CustomArgs>(argv, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(out.empty());
   CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
@@ -412,8 +410,7 @@ TEST_CASE("positional argument with custom type") {
   constexpr std::string_view argv[] {testName, "ABC"};
 
   Output out, err;
-  const auto args
-    = magic_args::parse<CustomPositionalArgument>(argv, {}, out, err);
+  const auto args = magic_args::parse<CustomPositionalArgument>(argv, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
   REQUIRE(args.has_value());
@@ -424,8 +421,7 @@ TEST_CASE("invalid value for positional argument") {
   constexpr std::string_view argv[] {testName, MyValueType::InvalidValue};
 
   Output out, err;
-  const auto args
-    = magic_args::parse<CustomPositionalArgument>(argv, {}, out, err);
+  const auto args = magic_args::parse<CustomPositionalArgument>(argv, out, err);
   REQUIRE_FALSE(args.has_value());
   CHECK(out.empty());
   CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
@@ -443,7 +439,7 @@ Usage: my_test [OPTIONS...] [--] [FOO]
 TEST_CASE("missing argument value") {
   constexpr std::string_view argv[] {testName, "--raw"};
   Output out, err;
-  const auto args = magic_args::parse<CustomArgs>(argv, {}, out, err);
+  const auto args = magic_args::parse<CustomArgs>(argv, out, err);
   CHECK(out.empty());
   CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
 my_test: option `--raw` requires a value

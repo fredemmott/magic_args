@@ -90,7 +90,7 @@ TEST_CASE("wWinMain", "[windows]") {
     }));
 
   Output out, err;
-  const auto args = magic_args::parse<MyArgs>(*argv, {}, out, err);
+  const auto args = magic_args::parse<MyArgs>(*argv, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
   REQUIRE(args.has_value());
@@ -122,7 +122,7 @@ TEST_CASE("winMain", "[windows]") {
     }));
 
   Output out, err;
-  const auto args = magic_args::parse<MyArgs>(*argv, {}, out, err);
+  const auto args = magic_args::parse<MyArgs>(*argv, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
   REQUIRE(args.has_value());

@@ -67,7 +67,7 @@ TEST_CASE("mixed setters") {
 TEST_CASE("help") {
   Output out, err;
   const auto args
-    = magic_args::parse<MyArgs>(std::array {"myapp", "--help"}, {}, out, err);
+    = magic_args::parse<MyArgs>(std::array {"myapp", "--help"}, out, err);
   CHECK(!args);
   if (!args) {
     CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));

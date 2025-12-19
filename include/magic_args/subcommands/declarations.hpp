@@ -21,11 +21,6 @@ concept subcommand = requires(T v) {
   { T::name } -> std::convertible_to<std::string_view>;
 };
 
-template <class T>
-concept subcommand_with_info = subcommand<T> && requires {
-  { T::subcommand_info() } -> std::convertible_to<program_info>;
-};
-
 template <
   subcommand T,
   class TParent = value_wrapper_t<typename T::arguments_type>>
@@ -57,6 +52,12 @@ using incomplete_command_parse_reason_t = std::variant<
   invalid_argument_value,
   incomplete_subcommand_parse_reason_t<First>,
   incomplete_subcommand_parse_reason_t<Rest>...>;
+
+template <class T>
+concept root_command_traits = (!subcommand<T>)
+  && (detail::has_version<T> || detail::has_description<T>
+      || detail::has_examples<T> || has_parsing_traits<T> || parsing_traits<T>);
+
 }// namespace magic_args::inline public_api
 
 #endif

@@ -25,7 +25,7 @@ struct PlainEnumArgs {
 TEST_CASE("defaults") {
   Output out, err;
   const auto args
-    = magic_args::parse<PlainEnumArgs>(std::array {"myApp"}, {}, out, err);
+    = magic_args::parse<PlainEnumArgs>(std::array {"myApp"}, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
   REQUIRE(args.has_value());
@@ -36,7 +36,7 @@ TEST_CASE("defaults") {
 TEST_CASE("defaults - --help") {
   Output out, err;
   const auto args = magic_args::parse<PlainEnumArgs>(
-    std::array {"myApp", "--help"}, {}, out, err);
+    std::array {"myApp", "--help"}, out, err);
   CHECK_FALSE(args.has_value());
   if (!args.has_value()) {
     CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
@@ -60,7 +60,7 @@ Options:
 TEST_CASE("valid values") {
   Output out, err;
   const auto args = magic_args::parse<PlainEnumArgs>(
-    std::array {"myApp", "--c-enum=Bar", "--scoped-enum=Derp"}, {}, out, err);
+    std::array {"myApp", "--c-enum=Bar", "--scoped-enum=Derp"}, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
   REQUIRE(args.has_value());
@@ -71,7 +71,7 @@ TEST_CASE("valid values") {
 TEST_CASE("invalid value - C enum") {
   Output out, err;
   const auto args = magic_args::parse<PlainEnumArgs>(
-    std::array {"myApp", "--c-enum=INVALID"}, {}, out, err);
+    std::array {"myApp", "--c-enum=INVALID"}, out, err);
   CHECK_FALSE(args.has_value());
   if (!args.has_value()) {
     CHECK(

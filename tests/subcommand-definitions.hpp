@@ -29,13 +29,11 @@ struct CommandFooBar {
 
 struct CommandHerp {
   static constexpr auto name = "herp";
-  static magic_args::program_info subcommand_info() noexcept {
-    return {
-      .mDescription = "Description goes here",
-      .mVersion = "Version goes here",
-    };
-  }
+
   struct arguments_type {
+    static constexpr auto description = "Description goes here";
+    static constexpr auto version = "Version goes here";
+
     std::string mDerp;
     constexpr bool operator==(const arguments_type&) const noexcept = default;
   };

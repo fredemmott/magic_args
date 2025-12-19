@@ -5,35 +5,36 @@
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/incomplete_parse_reason.hpp>
-#include <magic_args/program_info.hpp>
 #include "print.hpp"
 #include "usage.hpp"
 #endif
 
 namespace magic_args::detail {
-template <class T, parsing_traits Traits>
+template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const help_requested&,
-  const program_info& help,
   argv_range auto&& argv,
   FILE* outputStream,
   [[maybe_unused]] FILE* errorStream) {
-  show_usage<T, Traits>(outputStream, argv, help);
+  show_usage<Traits, T>(outputStream, argv);
 }
 
-template <class T, parsing_traits Traits>
+template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const version_requested&,
-  const program_info& help,
   [[maybe_unused]] argv_range auto&& argv,
-  FILE* outputStream,
+  [[maybe_unused]] FILE* outputStream,
   [[maybe_unused]] FILE* errorStream) {
-  detail::println(outputStream, "{}", help.mVersion);
+  if constexpr (has_version<T>) {
+    detail::println(outputStream, "{}", T::version);
+  } else {
+    throw std::logic_error(
+      "magic_args: somehow got version_requested without a version");
+  }
 }
-template <class T, parsing_traits Traits>
+template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const missing_required_argument& r,
-  const program_info&,
   argv_range auto&& argv,
   [[maybe_unused]] FILE* outputStream,
   FILE* errorStream) {
@@ -43,10 +44,9 @@ void print_incomplete_parse_reason(
     get_prefix_for_user_messages<Traits>(argv),
     r.mSource.mName);
 }
-template <class T, parsing_traits Traits>
+template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const missing_argument_value& r,
-  [[maybe_unused]] const program_info&,
   argv_range auto&& argv,
   [[maybe_unused]] FILE* outputStream,
   FILE* errorStream) {
@@ -56,10 +56,9 @@ void print_incomplete_parse_reason(
     get_prefix_for_user_messages<Traits>(argv),
     r.mSource.mName);
 }
-template <class T, parsing_traits Traits>
+template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const invalid_argument& arg,
-  const program_info&,
   argv_range auto&& argv,
   [[maybe_unused]] FILE* outputStream,
   FILE* errorStream) {
@@ -80,10 +79,9 @@ void print_incomplete_parse_reason(
       break;
   }
 }
-template <class T, parsing_traits Traits>
+template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const invalid_argument_value& r,
-  const program_info&,
   argv_range auto&& argv,
   [[maybe_unused]] FILE* outputStream,
   FILE* errorStream) {
@@ -100,20 +98,19 @@ void print_incomplete_parse_reason(
       [](auto acc, auto it) { return std::format("{} {}", acc, it); }));
 }
 
-template <class T, parsing_traits Traits>
+template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const incomplete_parse_reason_t& reason,
-  const program_info& help,
   argv_range auto&& argv,
   FILE* outputStream,
   FILE* errorStream) {
   std::visit(
-    [=, &help]<class R>(R&& it) {
-      detail::print_incomplete_parse_reason<T, Traits>(
-        std::forward<R>(it), help, argv, outputStream, errorStream);
+    [=]<class R>(R&& it) {
+      detail::print_incomplete_parse_reason<Traits, T>(
+        std::forward<R>(it), argv, outputStream, errorStream);
       if constexpr (std::decay_t<R>::is_error) {
         detail::print(errorStream, "\n\n");
-        show_usage<T, Traits>(errorStream, argv, help);
+        show_usage<Traits, T>(errorStream, argv);
       }
     },
     reason);

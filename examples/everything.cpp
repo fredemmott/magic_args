@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 #include <magic_args/magic_args.hpp>
-#include <magic_args/enum.hpp>
 
 using namespace magic_args::public_api;
 
@@ -20,6 +19,15 @@ std::string formattable_argument_value(const MyCustomType& value) {
 }
 
 struct MyArgs {
+  static constexpr auto description = "This program shows all the features.";
+  static constexpr auto version = "everything example v1.2.3";
+  static constexpr auto examples = {
+    "everything FOO",
+    "everything --flag FOO",
+    "everything --string someval FOO",
+    "everything --string=someval FOO",
+  };
+
   bool mFlag {false};
   std::string mString;
   option<std::string> mWithDocs {
@@ -64,25 +72,10 @@ struct overload : Ts... {
 };
 
 int main(int argc, char** argv) {
-  const magic_args::program_info programInfo {
-    .mDescription = "This program shows all the features.",
-    .mVersion = "everything example v1.2.3",
-    .mExamples = {
-      "everything FOO",
-      "everything --flag FOO",
-      "everything --string someval FOO",
-      "everything --string=someval FOO",
-    },
-  };
-  const auto args
-    = magic_args::parse<MyArgs>(std::views::counted(argv, argc), programInfo);
-  if (!args.has_value()) {
-    return std::visit(
-      []<incomplete_parse_reason T>(T) {
-        return T::is_error ? EXIT_FAILURE : EXIT_SUCCESS;
-      },
-      args.error());
+  const auto args = magic_args::parse<MyArgs>(std::views::counted(argv, argc));
+  if (args) [[likely]] {
+    magic_args::dump(*args);
+    return EXIT_SUCCESS;
   }
-  magic_args::dump(*args);
-  return EXIT_SUCCESS;
+  return magic_args::is_error(args.error()) ? EXIT_FAILURE : EXIT_SUCCESS;
 }

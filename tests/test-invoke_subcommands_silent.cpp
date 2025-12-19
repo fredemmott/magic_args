@@ -50,7 +50,7 @@ TEST_CASE("invoke foo subcommand, both args") {
 TEST_CASE("invoke bar subcommand, no args") {
   const auto ret
     = magic_args::invoke_subcommands_silent<CommandFooBar, CommandHerp>(
-      std::array {"myApp", "herp"}, {});
+      std::array {"myApp", "herp"});
   REQUIRE(ret.has_value());
   CHECK(*ret == "TEST RESULT CommandHerp --derp=");
 }
@@ -58,7 +58,7 @@ TEST_CASE("invoke bar subcommand, no args") {
 TEST_CASE("invoke bar subcommand, arg") {
   const auto ret
     = magic_args::invoke_subcommands_silent<CommandFooBar, CommandHerp>(
-      std::array {"myApp", "herp", "--derp=DERP"}, {});
+      std::array {"myApp", "herp", "--derp=DERP"});
   REQUIRE(ret.has_value());
   CHECK(*ret == "TEST RESULT CommandHerp --derp=DERP");
 }
@@ -78,10 +78,12 @@ TEST_CASE("void returns") {
   }
 }
 
+template <magic_args::parsing_traits T>
+struct WithVersion : T {
+  static constexpr auto version = "TestApp v1.2.3";
+};
+
 TEST_CASE("powershell-style success") {
-  const magic_args::program_info info {
-    .mVersion = "TestApp v1.2.3",
-  };
   struct params_t {
     std::vector<const char*> gnuStyle;
     std::vector<const char*> powershellStyle;
@@ -93,22 +95,19 @@ TEST_CASE("powershell-style success") {
         {"mytest", "-Help"},
       },
       {
-        {"mytest", "--version"},
-        {"mytest", "-Version"},
-      },
-      {
         {"mytest", "foo", "--bar=TEST_BAR"},
         {"mytest", "foo", "-Bar", "TEST_BAR"},
       },
     }));
 
-  const auto gnu
-    = magic_args::invoke_subcommands_silent<CommandFooBar, CommandHerp>(
-      gnuArgv, info);
+  const auto gnu = magic_args::invoke_subcommands_silent<
+    magic_args::gnu_style_parsing_traits,
+    CommandFooBar,
+    CommandHerp>(gnuArgv);
   const auto ps = magic_args::invoke_subcommands_silent<
     magic_args::powershell_style_parsing_traits,
     CommandFooBar,
-    CommandHerp>(psArgv, info);
+    CommandHerp>(psArgv);
   CHECK(ps == gnu);
 }
 

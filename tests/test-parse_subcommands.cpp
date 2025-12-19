@@ -22,14 +22,13 @@ TEST_CASE("success (no output)") {
       {"myApp", "herp", "--derp=DERP"},
     }));
   Output out, err;
-  const auto ret = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(
-    argv, {}, out, err);
+  const auto ret
+    = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(argv, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
 
   const auto silent
-    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      argv, {});
+    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(argv);
   CHECK(ret == silent);
 }
 
@@ -37,11 +36,10 @@ TEST_CASE("'--help' without subcommand") {
   constexpr std::array argv {"myApp", "--help"};
 
   Output out, err;
-  const auto ret = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(
-    argv, {}, out, err);
+  const auto ret
+    = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(argv, out, err);
   const auto silent
-    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      argv, {});
+    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(argv);
   CHECK(ret == silent);
   CHECK(holds_alternative<magic_args::help_requested>(ret.error()));
 
@@ -62,22 +60,47 @@ For more information, run:
 )EOF"));
 }
 
+template <magic_args::parsing_traits T = magic_args::gnu_style_parsing_traits>
+struct RootCommandInfo {
+  using parsing_traits = T;
+  static constexpr auto description = "Do stuff with subcommands";
+  static constexpr auto version = "MyApp v1.2.3";
+};
+
+TEST_CASE("root version") {
+  Output gnuOut, gnuErr;
+  const auto gnu = magic_args::
+    parse_subcommands<RootCommandInfo<>, CommandFooBar, CommandHerp>(
+      std::array {"myApp", "--version"}, gnuOut, gnuErr);
+  CHECK_FALSE(gnu);
+  if (!gnu) {
+    CHECK(holds_alternative<magic_args::version_requested>(gnu.error()));
+  }
+  CHECK(gnuErr.empty());
+  CHECK(gnuOut.get() == "MyApp v1.2.3\n");
+
+  Output psOut, psErr;
+  const auto ps = magic_args::parse_subcommands<
+    RootCommandInfo<magic_args::powershell_style_parsing_traits>,
+    CommandFooBar,
+    CommandHerp>(std::array {"myApp", "-Version"}, psOut, psErr);
+  CHECK(ps == gnu);
+  CHECK(psOut.get() == gnuOut.get());
+  CHECK(psErr.get() == gnuErr.get());
+}
+
 TEST_CASE("'--help' without subcommand, but with extra info") {
   constexpr std::array argv {"myApp", "--help"};
 
-  const magic_args::program_info info {
-    .mDescription = "Do stuff with subcommands",
-    .mVersion = "MyApp v1.2.3",
-  };
-
   Output out, err;
-  const auto ret = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(
-    argv, info, out, err);
-  const auto silent
-    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      argv, info);
-  CHECK(ret == silent);
+  const auto ret = magic_args::
+    parse_subcommands<RootCommandInfo<>, CommandFooBar, CommandHerp>(
+      argv, out, err);
   CHECK(holds_alternative<magic_args::help_requested>(ret.error()));
+  const auto silent = magic_args::
+    parse_subcommands_silent<RootCommandInfo<>, CommandFooBar, CommandHerp>(
+      argv);
+  CHECK(ret == silent);
 
   CHECK(err.empty());
   CHECK(out.get() == chomp(R"EOF(
@@ -101,11 +124,10 @@ For more information, run:
 TEST_CASE("'--version' as subcommand, when not defined") {
   constexpr std::array argv {"myApp", "--version"};
   Output out, err;
-  const auto ret = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(
-    argv, {}, out, err);
+  const auto ret
+    = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(argv, out, err);
   const auto silent
-    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      argv, {});
+    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(argv);
   CHECK(ret == silent);
   CHECK(out.empty());
   CHECK_THAT(err.get(), Catch::Matchers::StartsWith(std::string {chomp(R"EOF(
@@ -115,17 +137,19 @@ Usage: myApp COMMAND [OPTIONS...]
 )EOF")}));
 }
 
+struct RootCommandVersion {
+  static constexpr auto version = "MyApp v1.2.3";
+};
+
 TEST_CASE("'--version' as subcommand, when defined") {
   constexpr std::array argv {"myApp", "--version"};
-  const magic_args::program_info info {
-    .mVersion = "MyApp v1.2.3",
-  };
   Output out, err;
-  const auto ret = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(
-    argv, info, out, err);
-  const auto silent
-    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      argv, info);
+  const auto ret = magic_args::
+    parse_subcommands<RootCommandVersion, CommandFooBar, CommandHerp>(
+      argv, out, err);
+  const auto silent = magic_args::
+    parse_subcommands_silent<RootCommandVersion, CommandFooBar, CommandHerp>(
+      argv);
   CHECK(ret == silent);
   CHECK(err.empty());
   CHECK(out.get() == "MyApp v1.2.3\n");
@@ -134,11 +158,10 @@ TEST_CASE("'--version' as subcommand, when defined") {
 TEST_CASE("Subcommand --help") {
   constexpr std::array argv {"myApp", "herp", "--help"};
   Output out, err;
-  const auto ret = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(
-    argv, {}, out, err);
+  const auto ret
+    = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(argv, out, err);
   const auto silent
-    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      argv, {});
+    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(argv);
   CHECK(ret == silent);
   CHECK(err.empty());
   CHECK(out.get() == chomp(R"EOF(
@@ -162,35 +185,35 @@ TEST_CASE("powershell-style success (no output)") {
   const auto ps = magic_args::parse_subcommands<
     magic_args::powershell_style_parsing_traits,
     CommandFooBar,
-    CommandHerp>(psArgv, {}, out, err);
+    CommandHerp>(psArgv, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
 
   const auto psSilent = magic_args::parse_subcommands_silent<
     magic_args::powershell_style_parsing_traits,
     CommandFooBar,
-    CommandHerp>(psArgv, {});
+    CommandHerp>(psArgv);
   CHECK(ps == psSilent);
 
   const auto gnu = magic_args::parse_subcommands<CommandFooBar, CommandHerp>(
-    gnuArgv, {}, out, err);
+    gnuArgv, out, err);
   CHECK(ps == gnu);
 }
 
+struct PowershellCommandVersion : RootCommandVersion {
+  using parsing_traits = magic_args::powershell_style_parsing_traits;
+};
+
 TEST_CASE("powershell-style root help") {
   constexpr std::array argv {"mytest", "-Help"};
-  const magic_args::program_info info {
-    .mVersion = "MyApp v1.2.3",
-  };
   Output out, err;
-  const auto ret = magic_args::parse_subcommands<
-    magic_args::powershell_style_parsing_traits,
-    CommandFooBar,
-    CommandHerp>(argv, info, out, err);
+  const auto ret = magic_args::
+    parse_subcommands<PowershellCommandVersion, CommandFooBar, CommandHerp>(
+      argv, out, err);
   const auto silent = magic_args::parse_subcommands_silent<
-    magic_args::powershell_style_parsing_traits,
+    PowershellCommandVersion,
     CommandFooBar,
-    CommandHerp>(argv, info);
+    CommandHerp>(argv);
   CHECK(ret == silent);
 
   CHECK(err.empty());
@@ -217,7 +240,7 @@ TEST_CASE("powershell-style with missing subcommand") {
   const auto ret = magic_args::parse_subcommands<
     magic_args::powershell_style_parsing_traits,
     CommandFooBar,
-    CommandHerp>(argv, {}, out, err);
+    CommandHerp>(argv, out, err);
   const auto silent = magic_args::parse_subcommands_silent<
     magic_args::powershell_style_parsing_traits,
     CommandFooBar,
@@ -236,7 +259,7 @@ TEST_CASE("powershell-style subcommand help") {
   const auto ret = magic_args::parse_subcommands<
     magic_args::powershell_style_parsing_traits,
     CommandFooBar,
-    CommandHerp>(argv, {}, out, err);
+    CommandHerp>(argv, out, err);
   const auto silent = magic_args::parse_subcommands_silent<
     magic_args::powershell_style_parsing_traits,
     CommandFooBar,

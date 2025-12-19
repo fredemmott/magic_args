@@ -11,6 +11,26 @@
 
 namespace magic_args::detail {
 
+template <root_command_traits>
+struct root_command_parsing_traits {
+  using type = gnu_style_parsing_traits;
+};
+
+template <root_command_traits T>
+  requires parsing_traits<T>
+struct root_command_parsing_traits<T> {
+  using type = T;
+};
+
+template <root_command_traits T>
+  requires has_parsing_traits<T>
+struct root_command_parsing_traits<T> {
+  using type = typename T::parsing_traits;
+};
+
+template <root_command_traits T>
+using root_command_parsing_traits_t = root_command_parsing_traits<T>::type;
+
 template <parsing_traits Traits>
 struct command_from_argument_t {
   static constexpr std::string_view operator()(const std::string_view arg) {
@@ -35,6 +55,20 @@ std::string_view command_from_argument(const std::string_view arg) {
   return command_from_argument_t<Traits> {}(arg);
 }
 
+template <parsing_traits TRootTraits, class T>
+struct subcommand_parsing_traits_t : TRootTraits {
+  static_assert(!subcommand<T>, "Pass T::arguments_type, not T");
+  static constexpr auto skip_args_count
+    = detail::skip_args_count<TRootTraits>() + 1;
+};
+
+template <parsing_traits TRootTraits, has_parsing_traits T>
+struct subcommand_parsing_traits_t<TRootTraits, T> : T::parsing_traits {
+  static_assert(!subcommand<T>, "Pass T::arguments_type, not T");
+  static constexpr auto skip_args_count
+    = detail::skip_args_count<TRootTraits>() + 1;
+};
+
 template <
   parsing_traits Traits,
   subcommand First,
@@ -43,32 +77,19 @@ template <
 void parse_subcommands_silent_impl(
   std::optional<TExpected>& result,
   std::string_view command,
-  argv_range auto&& argv,
-  const program_info& info) {
+  argv_range auto&& argv) {
   if (std::string_view {First::name} != command) {
     if constexpr (sizeof...(Rest) > 0) {
-      parse_subcommands_silent_impl<Traits, Rest...>(
-        result, command, argv, info);
+      parse_subcommands_silent_impl<Traits, Rest...>(result, command, argv);
     }
     return;
   }
 
   // Skip argv[0] and argv[1], instead of just argv[0]
-  struct SubcommandTraits
-    : Traits,
-      detail::skip_args_count_trait<detail::skip_args_count<Traits>() + 1> {};
-  const auto subcommandInfo = [&] {
-    if constexpr (subcommand_with_info<First>) {
-      return First::subcommand_info();
-    } else {
-      static_assert(subcommand<First>);
-      return std::reference_wrapper {info};
-    }
-  }();
+  using SubcommandArgs = typename First::arguments_type;
+  using SubcommandTraits = subcommand_parsing_traits_t<Traits, SubcommandArgs>;
 
-  auto subcommandResult
-    = parse_silent<SubcommandTraits, typename First::arguments_type>(
-      argv, subcommandInfo);
+  auto subcommandResult = parse_silent<SubcommandTraits, SubcommandArgs>(argv);
   if (subcommandResult) [[likely]] {
     result.emplace(
       subcommand_match<First>(std::move(subcommandResult).value()));
@@ -85,17 +106,16 @@ void parse_subcommands_silent_impl(
 namespace magic_args::inline public_api {
 
 template <
-  parsing_traits Traits,
+  root_command_traits Traits,
   subcommand First,
   subcommand... Rest,
   class TSuccess
   = std::variant<subcommand_match<First>, subcommand_match<Rest>...>,
   class TIncomplete = incomplete_command_parse_reason_t<First, Rest...>,
   class TExpected = std::expected<TSuccess, TIncomplete>>
-TExpected parse_subcommands_silent(
-  detail::argv_range auto&& argv,
-  const program_info& help = {}) {
-  const auto commandIndex = detail::skip_args_count<Traits>();
+TExpected parse_subcommands_silent(detail::argv_range auto&& argv) {
+  using ParsingTraits = detail::root_command_parsing_traits<Traits>::type;
+  const auto commandIndex = detail::skip_args_count<ParsingTraits>();
   if (argv.size() <= commandIndex) {
     return std::unexpected {missing_required_argument {
       .mSource = {.mName = "COMMAND"},
@@ -104,22 +124,25 @@ TExpected parse_subcommands_silent(
   const std::string_view commandArg {
     *(std::ranges::begin(argv) + commandIndex)};
   const std::string_view command {
-    detail::command_from_argument<Traits>(commandArg)};
+    detail::command_from_argument<ParsingTraits>(commandArg)};
 
-  using CommonArguments = detail::common_arguments_t<Traits>;
+  using CommonArguments = detail::common_arguments_t<ParsingTraits>;
 
   if (
     command == CommonArguments::long_help
     || command == CommonArguments::short_help || command == "help") {
     return std::unexpected {help_requested {}};
   }
-  if (command == CommonArguments::version && !help.mVersion.empty()) {
-    return std::unexpected {version_requested {}};
+
+  if constexpr (detail::has_version<Traits>) {
+    if (command == CommonArguments::version) {
+      return std::unexpected {version_requested {}};
+    }
   }
 
   std::optional<TExpected> result;
-  detail::parse_subcommands_silent_impl<Traits, First, Rest...>(
-    result, command, argv, help);
+  detail::parse_subcommands_silent_impl<ParsingTraits, First, Rest...>(
+    result, command, argv);
   if (result) [[likely]] {
     return std::move(result).value();
   }
@@ -134,11 +157,9 @@ TExpected parse_subcommands_silent(
 }
 
 template <subcommand First, subcommand... Rest>
-auto parse_subcommands_silent(
-  detail::argv_range auto&& argv,
-  const program_info& help = {}) {
+auto parse_subcommands_silent(detail::argv_range auto&& argv) {
   return parse_subcommands_silent<gnu_style_parsing_traits, First, Rest...>(
-    std::forward<decltype(argv)>(argv), help);
+    std::forward<decltype(argv)>(argv));
 }
 
 }// namespace magic_args::inline public_api

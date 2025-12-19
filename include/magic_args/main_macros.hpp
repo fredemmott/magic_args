@@ -19,7 +19,7 @@ template <auto TImpl, class TChar>
 int utf8_main(int argc, const TChar* const* argv) {
   auto utf8 = public_api::make_utf8_argv(argc, argv);
   // TODO: error handling
-  return std::invoke(TImpl, *std::move(utf8));
+  return TImpl(*std::move(utf8));
 }
 
 template <class T>
@@ -51,23 +51,9 @@ int parsed_main(TArgv&& argv) {
   static_assert(
     std::same_as<std::invoke_result_t<decltype(TImpl), Parsed>, int>);
 
-  program_info info {};
-  if constexpr (requires { Parsed::description; }) {
-    info.mDescription = std::string {Parsed::description};
-  }
-  if constexpr (requires { Parsed::version; }) {
-    info.mVersion = std::string {Parsed::version};
-  }
-  if constexpr (requires { Parsed::examples; }) {
-    info.mExamples
-      = std::ranges::to<std::vector<std::string>>(Parsed::examples);
-  }
-
-  using Traits = argument_parsing_traits_t<Parsed>;
-  auto parsed
-    = magic_args::parse<Traits, Parsed>(std::forward<TArgv>(argv), info);
+  auto parsed = magic_args::parse<Parsed>(std::forward<TArgv>(argv));
   if (parsed) [[likely]] {
-    return std::invoke(TImpl, *std::move(parsed));
+    return TImpl(*std::move(parsed));
   }
 
   return is_error(parsed.error()) ? EXIT_FAILURE : EXIT_SUCCESS;

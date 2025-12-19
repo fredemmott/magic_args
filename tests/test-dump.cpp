@@ -46,8 +46,7 @@ struct Args {
 
 TEST_CASE("defaults") {
   Output out, err;
-  const auto args
-    = magic_args::parse<Args>(std::array {"mytest"}, {}, out, err);
+  const auto args = magic_args::parse<Args>(std::array {"mytest"}, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
   REQUIRE(args.has_value());
@@ -78,7 +77,6 @@ TEST_CASE("all") {
       "--custom-type=TestCustomValue",
       "Derp",
     },
-    {},
     out,
     err);
   CHECK(out.empty());

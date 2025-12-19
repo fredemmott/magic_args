@@ -19,7 +19,7 @@ using namespace TestSubcommands;
 TEST_CASE("missing COMMAND -> missing_required_argument") {
   const auto ret
     = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      std::array {"myApp"}, {});
+      std::array {"myApp"});
   REQUIRE_FALSE(ret.has_value());
   REQUIRE(
     holds_alternative<magic_args::missing_required_argument>(ret.error()));
@@ -28,27 +28,28 @@ TEST_CASE("missing COMMAND -> missing_required_argument") {
 TEST_CASE("'--help' as COMMAND -> help_requested") {
   const auto ret
     = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      std::array {"myApp", "--help"}, {});
+      std::array {"myApp", "--help"});
   REQUIRE_FALSE(ret.has_value());
   REQUIRE(holds_alternative<magic_args::help_requested>(ret.error()));
 }
 
+struct RootCommandInfo {
+  static constexpr auto description = "Subcommands app";
+  static constexpr auto version = "1.2.3";
+};
+
 TEST_CASE("'--version' as COMMAND -> version_requested when version provided") {
-  const magic_args::program_info info {
-    .mDescription = "Subcommands app",
-    .mVersion = "1.2.3",
-  };
-  const auto ret
-    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      std::array {"myApp", "--version"}, info);
+  const auto ret = magic_args::
+    parse_subcommands_silent<RootCommandInfo, CommandFooBar, CommandHerp>(
+      std::array {"myApp", "--version"});
   REQUIRE_FALSE(ret.has_value());
   REQUIRE(holds_alternative<magic_args::version_requested>(ret.error()));
 }
 
 TEST_CASE("invalid COMMAND -> invalid_argument_value error on COMMAND") {
-  const auto ret
-    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      std::array {"myApp", "unknown"}, {});
+  const auto ret = magic_args::
+    parse_subcommands_silent<RootCommandInfo, CommandFooBar, CommandHerp>(
+      std::array {"myApp", "unknown"});
   REQUIRE_FALSE(ret.has_value());
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(ret.error()));
   const auto& e = get<magic_args::invalid_argument_value>(ret.error());
@@ -56,14 +57,16 @@ TEST_CASE("invalid COMMAND -> invalid_argument_value error on COMMAND") {
   CHECK(e.mSource.mValue == std::string {"unknown"});
 }
 
+struct RootCommandDescription {
+  static constexpr auto description = "Subcommands app";
+};
+
 TEST_CASE(
   "'--version' as COMMAND -> invalid_argument_value when version omitted") {
-  const magic_args::program_info info {
-    .mDescription = "Subcommands app",
-  };
-  const auto ret
-    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      std::array {"myApp", "--version"}, info);
+  const auto ret = magic_args::parse_subcommands_silent<
+    RootCommandDescription,
+    CommandFooBar,
+    CommandHerp>(std::array {"myApp", "--version"});
   REQUIRE_FALSE(ret.has_value());
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(ret.error()));
 }
@@ -71,7 +74,7 @@ TEST_CASE(
 TEST_CASE("match foo subcommand and parse its arguments (silent)") {
   const auto ret
     = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      std::array {"myApp", "foo", "--bar=BAR", "--baz=BAZ"}, {});
+      std::array {"myApp", "foo", "--bar=BAR", "--baz=BAZ"});
   REQUIRE(ret.has_value());
   const auto& v = ret.value();
   REQUIRE(
@@ -84,7 +87,7 @@ TEST_CASE("match foo subcommand and parse its arguments (silent)") {
 TEST_CASE("match herp subcommand and parse its arguments (silent)") {
   const auto ret
     = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      std::array {"myApp", "herp", "--derp=DERP"}, {});
+      std::array {"myApp", "herp", "--derp=DERP"});
   REQUIRE(ret.has_value());
   const auto& v = ret.value();
   REQUIRE(std::holds_alternative<magic_args::subcommand_match<CommandHerp>>(v));
@@ -129,9 +132,6 @@ TEST_CASE("match second, but pass invalid arguments (silent)") {
 }
 
 TEST_CASE("powershell-style") {
-  const magic_args::program_info info {
-    .mVersion = "TestApp v1.2.3",
-  };
   struct params_t {
     std::vector<const char*> gnuStyle;
     std::vector<const char*> powershellStyle;
@@ -143,21 +143,47 @@ TEST_CASE("powershell-style") {
         {"mytest", "-Help"},
       },
       {
-        {"mytest", "--version"},
-        {"mytest", "-Version"},
-      },
-      {
         {"mytest", "foo", "--bar=TEST_BAR"},
         {"mytest", "foo", "-Bar", "TEST_BAR"},
       },
     }));
 
-  const auto gnu
-    = magic_args::parse_subcommands_silent<CommandFooBar, CommandHerp>(
-      gnuArgv, info);
+  const auto gnu = magic_args::parse_subcommands_silent<
+    magic_args::gnu_style_parsing_traits,
+    CommandFooBar,
+    CommandHerp>(gnuArgv);
   const auto ps = magic_args::parse_subcommands_silent<
     magic_args::powershell_style_parsing_traits,
     CommandFooBar,
-    CommandHerp>(psArgv, info);
+    CommandHerp>(psArgv);
   CHECK(ps == gnu);
+}
+
+template <magic_args::parsing_traits Traits>
+struct WithVersion {
+  using parsing_traits = Traits;
+  static constexpr auto version = "TestApp v1.2.3";
+};
+
+TEST_CASE("root version") {
+  constexpr auto gnuArgv = std::array {"my_args", "--version"};
+  constexpr auto psArgv = std::array {"my_args", "-Version"};
+
+  const auto gnu = magic_args::invoke_subcommands_silent<
+    WithVersion<magic_args::gnu_style_parsing_traits>,
+    CommandFooBar,
+    CommandHerp>(gnuArgv);
+  CHECK_FALSE(gnu);
+  if (!gnu) {
+    CHECK(holds_alternative<magic_args::version_requested>(gnu.error()));
+  }
+
+  const auto ps = magic_args::invoke_subcommands_silent<
+    WithVersion<magic_args::powershell_style_parsing_traits>,
+    CommandFooBar,
+    CommandHerp>(psArgv);
+  CHECK_FALSE(ps);
+  if (!ps) {
+    CHECK(holds_alternative<magic_args::version_requested>(ps.error()));
+  }
 }

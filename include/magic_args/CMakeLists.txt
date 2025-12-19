@@ -8,12 +8,12 @@ set(
   detail/static_assert_not_an_enum.hpp
   detail/concepts.hpp
   detail/reflection.hpp
+  detail/parsing_traits_for_args.hpp
   gnu_style_parsing_traits.hpp
   detail/print.hpp
   argument_definitions.hpp
   detail/get_argument_definition.hpp
   detail/validation.hpp
-  program_info.hpp
   incomplete_parse_reason.hpp
   detail/from_string.hpp
   detail/to_formattable.hpp

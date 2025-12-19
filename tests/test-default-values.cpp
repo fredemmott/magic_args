@@ -31,7 +31,7 @@ struct WithDefaults {
 TEST_CASE("default argument value - no options") {
   Output out, err;
   const auto noOptions
-    = magic_args::parse<WithDefaults>(std::array {"mytest"}, {}, out, err);
+    = magic_args::parse<WithDefaults>(std::array {"mytest"}, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
 
@@ -44,7 +44,7 @@ TEST_CASE("default argument value - no options") {
 TEST_CASE("default argument value - overriden") {
   Output out, err;
   const auto noOptions = magic_args::parse<WithDefaults>(
-    std::array {"mytest", "--my-arg", "foobar"}, {}, out, err);
+    std::array {"mytest", "--my-arg", "foobar"}, out, err);
   CHECK(out.empty());
   CHECK(err.empty());
 
@@ -55,7 +55,7 @@ TEST_CASE("default argument value - overriden") {
 TEST_CASE("default argument value - --help") {
   Output out, err;
   const auto result = magic_args::parse<WithDefaults>(
-    std::vector {"mytest", "--help"}, {}, out, err);
+    std::vector {"mytest", "--help"}, out, err);
   CHECK(err.empty());
   CHECK(out.get() == chomp(R"EOF(
 Usage: mytest [OPTIONS...]

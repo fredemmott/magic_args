@@ -6,41 +6,39 @@
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/detail/parse.hpp>
 #include <magic_args/detail/print.hpp>
-#include <magic_args/program_info.hpp>
 #include "declarations.hpp"
 #endif
 
 namespace magic_args::detail {
 
-template <parsing_traits Traits, subcommand... Ts>
-void show_command_usage(
-  const program_info& info,
-  argv_range auto&& argv,
-  FILE* stream) {
-  using CommonArguments = common_arguments_t<Traits>;
-  if constexpr (detail::skip_args_count<Traits>() == 0) {
+template <root_command_traits Traits, subcommand... Ts>
+void show_command_usage(argv_range auto&& argv, FILE* stream) {
+  using ParsingTraits = root_command_parsing_traits_t<Traits>;
+  using CommonArguments = common_arguments_t<ParsingTraits>;
+  if constexpr (detail::skip_args_count<ParsingTraits>() == 0) {
     detail::println(stream, "Usage: COMMAND [OPTIONS...]");
   } else {
     detail::println(
       stream,
       "Usage: {} COMMAND [OPTIONS...]",
-      get_prefix_for_user_messages<Traits>(argv));
+      get_prefix_for_user_messages<ParsingTraits>(argv));
   }
-  if (!info.mDescription.empty()) {
-    detail::println(stream, "{}", info.mDescription);
+
+  if constexpr (has_description<Traits>) {
+    detail::println(stream, "{}", Traits::description);
   }
 
   detail::println(stream, "\nCommands:\n");
 
   (
-    [stream]<class T>(std::type_identity<T>) {
-      if constexpr (subcommand_with_info<T>) {
-        detail::println(
-          stream, "      {:24} {}", T::name, T::subcommand_info().mDescription);
+    [&]<class T> {
+      using TArgs = typename T::arguments_type;
+      if constexpr (has_description<TArgs>) {
+        detail::println(stream, "      {:24} {}", T::name, TArgs::description);
       } else {
         detail::println(stream, "      {}", T::name);
       }
-    }(std::type_identity<Ts> {}),
+    }.template operator()<Ts>(),
     ...);
 
   detail::println(
@@ -49,12 +47,12 @@ void show_command_usage(
     *CommonArguments::short_help,
     *CommonArguments::long_help);
 
-  if (!info.mVersion.empty()) {
+  if constexpr (has_version<Traits>) {
     detail::println(
       stream, "      {:24} print program version", *CommonArguments::version);
   }
 
-  if constexpr (detail::skip_args_count<Traits>() == 0) {
+  if constexpr (detail::skip_args_count<ParsingTraits>() == 0) {
     detail::println(
       stream,
       "\nFor more information, run:\n\n  COMMAND {}",
@@ -63,55 +61,59 @@ void show_command_usage(
     detail::println(
       stream,
       "\nFor more information, run:\n\n  {} COMMAND {}",
-      get_prefix_for_user_messages<Traits>(argv),
+      get_prefix_for_user_messages<ParsingTraits>(argv),
       *CommonArguments::long_help);
   }
 }
 
-template <parsing_traits Traits, subcommand... Ts>
+template <root_command_traits Traits, subcommand... Ts>
 void print_incomplete_command_parse_reason(
   const help_requested&,
-  const program_info& info,
   argv_range auto&& argv,
   FILE* outputStream,
   [[maybe_unused]] FILE*) {
-  show_command_usage<Traits, Ts...>(info, argv, outputStream);
+  show_command_usage<Traits, Ts...>(argv, outputStream);
 }
 
-template <parsing_traits Traits, subcommand... Ts>
+template <root_command_traits Traits, subcommand... Ts>
 void print_incomplete_command_parse_reason(
   const version_requested&,
-  const program_info& info,
   argv_range auto&&,
   FILE* outputStream,
   [[maybe_unused]] FILE*) {
-  detail::println(outputStream, "{}", info.mVersion);
+  if constexpr (has_version<Traits>) {
+    detail::println(outputStream, "{}", Traits::version);
+  } else {
+    throw std::logic_error(
+      "magic_args: somehow got root command version_requested without a "
+      "version");
+  }
 }
 
-template <parsing_traits Traits, subcommand... Ts>
+template <root_command_traits Traits, subcommand... Ts>
 void print_incomplete_command_parse_reason(
   const missing_required_argument&,
-  const program_info&,
   argv_range auto&& argv,
   [[maybe_unused]] FILE* outputStream,
   FILE* errorStream) {
+  using ParsingTraits = root_command_parsing_traits_t<Traits>;
   detail::print(
     errorStream,
     "{}: You must specify a COMMAND",
-    get_prefix_for_user_messages<Traits>(argv));
+    get_prefix_for_user_messages<ParsingTraits>(argv));
 }
 
-template <parsing_traits Traits, subcommand... Ts>
+template <root_command_traits Traits, subcommand... Ts>
 void print_incomplete_command_parse_reason(
   const invalid_argument_value& r,
-  const program_info&,
   argv_range auto&& argv,
   [[maybe_unused]] FILE* outputStream,
   FILE* errorStream) {
+  using ParsingTraits = root_command_parsing_traits_t<Traits>;
   detail::print(
     errorStream,
     "{}: `{}` is not a valid COMMAND",
-    get_prefix_for_user_messages<Traits>(argv),
+    get_prefix_for_user_messages<ParsingTraits>(argv),
     r.mSource.mValue);
 }
 

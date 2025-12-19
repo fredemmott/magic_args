@@ -14,14 +14,11 @@ struct CommandFooBar {
 
 struct CommandHerp {
   static constexpr auto name = "herp";
-  static magic_args::program_info subcommand_info() noexcept {
-    return {
-      .mDescription = "Do the derpy thing",
-      .mVersion = "Herp v1.2.3",
-    };
-  }
 
   struct arguments_type {
+    static constexpr auto description = "Do the derpy thing";
+    static constexpr auto version = "Herp v1.2.3";
+
     std::string mDerp;
   };
 };

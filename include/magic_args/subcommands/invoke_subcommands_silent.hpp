@@ -4,7 +4,6 @@
 #define MAGIC_ARGS_SUBCOMMANDS_INVOKE_SUBCOMMANDS_SILENT_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
-#include <magic_args/program_info.hpp>
 #include "invocable_declarations.hpp"
 #include "parse_subcommands_silent.hpp"
 #endif
@@ -14,17 +13,15 @@
 
 namespace magic_args::inline public_api {
 template <
-  parsing_traits Traits,
+  root_command_traits Traits,
   invocable_subcommand First,
   compatible_invocable_subcommand<First>... Rest,
   class TSuccess = std::
     invoke_result_t<decltype(First::main), typename First::arguments_type&&>,
   class TIncomplete = incomplete_command_parse_reason_t<First, Rest...>,
   class TExpected = std::expected<TSuccess, TIncomplete>>
-TExpected invoke_subcommands_silent(
-  detail::argv_range auto&& argv,
-  const program_info& info = {}) {
-  auto result = parse_subcommands_silent<Traits, First, Rest...>(argv, info);
+TExpected invoke_subcommands_silent(detail::argv_range auto&& argv) {
+  auto result = parse_subcommands_silent<Traits, First, Rest...>(argv);
   if (!result) [[unlikely]] {
     return std::unexpected {std::move(result).error()};
   }
@@ -51,11 +48,9 @@ TExpected invoke_subcommands_silent(
 template <
   invocable_subcommand First,
   compatible_invocable_subcommand<First>... Rest>
-auto invoke_subcommands_silent(
-  detail::argv_range auto&& argv,
-  const program_info& info = {}) {
+auto invoke_subcommands_silent(detail::argv_range auto&& argv) {
   return invoke_subcommands_silent<gnu_style_parsing_traits, First, Rest...>(
-    std::forward<decltype(argv)>(argv), info);
+    std::forward<decltype(argv)>(argv));
 }
 
 }// namespace magic_args::inline public_api
