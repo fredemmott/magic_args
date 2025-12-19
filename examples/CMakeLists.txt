@@ -6,7 +6,7 @@ function(add_example TARGET)
   add_executable("${TARGET}" ${ARGN})
   target_link_libraries("${TARGET}" PRIVATE magic_args)
   if (APPLE)
-    target_link_libraries("${TARGET}" Iconv::Iconv)
+    target_link_libraries("${TARGET}" PRIVATE Iconv::Iconv)
   endif ()
 endfunction()
 
