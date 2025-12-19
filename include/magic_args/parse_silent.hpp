@@ -4,8 +4,10 @@
 #define MAGIC_ARGS_PARSE_SILENT_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
+#include "detail/config.hpp"
 #include "detail/overloaded.hpp"
 #include "detail/parse.hpp"
+#include "detail/static_assert_not_an_enum.hpp"
 #include "detail/validation.hpp"
 #include "detail/visitors.hpp"
 #include "gnu_style_parsing_traits.hpp"
@@ -14,7 +16,6 @@
 
 #include <expected>
 #include <filesystem>
-#include <format>
 #include <ranges>
 
 namespace magic_args::inline public_api {
@@ -25,6 +26,17 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
   const program_info& help = {}) {
   using namespace detail;
   using CommonArguments = common_arguments_t<Traits>;
+
+  T ret {};
+
+#ifdef MAGIC_ARGS_DISABLE_ENUM
+  std::ignore = visit_all_defined_arguments<Traits>(
+    []<class It>(const It&, auto&&) {
+      static_assert_not_an_enum<typename It::value_type>();
+      return false;
+    },
+    ret);
+#endif
 
   const std::vector<std::string_view> args {
     std::ranges::begin(argv), std::ranges::end(argv)};
@@ -43,7 +55,6 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
   }
 
   const auto arg0 = std::filesystem::path {args.front()}.stem().string();
-  T ret {};
 
   std::vector<std::string_view> positionalArgs;
 

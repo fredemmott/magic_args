@@ -6,11 +6,9 @@
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "detail/print.hpp"
 #include "detail/reflection.hpp"
+#include "detail/static_assert_not_an_enum.hpp"
 #include "detail/to_formattable.hpp"
 #endif
-
-#include <ranges>
-#include <vector>
 
 namespace magic_args::inline public_api {
 
@@ -21,6 +19,10 @@ void dump(const T& args, FILE* output = stdout) {
 
   []<std::size_t... I>(
     const auto& args, FILE* output, std::index_sequence<I...>) {
+#ifdef MAGIC_ARGS_DISABLE_ENUM
+    (static_assert_not_an_enum<std::tuple_element_t<I, decltype(tuple)>>(),
+     ...);
+#endif
     (detail::println(
        output, "{:29} `{}`", member_name<T, I>, to_formattable(get<I>(args))),
      ...);

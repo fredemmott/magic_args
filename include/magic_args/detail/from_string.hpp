@@ -4,6 +4,7 @@
 #define MAGIC_ARGS_DETAIL_FROM_STRING_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
+#include <magic_args/incomplete_parse_reason.hpp>
 #include "concepts.hpp"
 #endif
 

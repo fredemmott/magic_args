@@ -5,6 +5,7 @@ set(
   #
   # These are in the order required for the single-header version
   detail/config.hpp
+  detail/static_assert_not_an_enum.hpp
   detail/concepts.hpp
   detail/reflection.hpp
   gnu_style_parsing_traits.hpp

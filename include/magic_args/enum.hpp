@@ -7,10 +7,10 @@
 #include "detail/config.hpp"
 #include "detail/from_string.hpp"
 #include "detail/to_formattable.hpp"
+#include "detail/usage.hpp"
 #endif
 
 #ifndef MAGIC_ARGS_DISABLE_ENUM
-
 #include <type_traits>
 
 // For now, this is built with magic_enum; when we start targetting
