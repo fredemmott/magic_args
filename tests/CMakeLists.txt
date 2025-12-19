@@ -62,6 +62,15 @@ function(add_test_executables NAME)
     add_executable("${SPLIT_HEADERS_NAME}" ${SOURCES})
     target_link_libraries("${SPLIT_HEADERS_NAME}" PRIVATE split-headers-test-deps)
     catch_discover_tests("${SPLIT_HEADERS_NAME}" PROPERTIES LABELS "split-headers" TEST_PREFIX "split-headers:${NAME}:")
+    set_target_properties(
+      "${SPLIT_HEADERS_NAME}"
+      PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY
+      "${CMAKE_CURRENT_BINARY_DIR}/split-headers"
+      OUTPUT_NAME
+      "${NAME}"
+    )
+
     add_dependencies(all-split-header-tests "${SPLIT_HEADERS_NAME}")
   endif ()
 
@@ -72,6 +81,15 @@ function(add_test_executables NAME)
     target_link_libraries("${SINGLE_HEADER_NAME}" PRIVATE single-header-test-deps)
     target_compile_definitions("${SINGLE_HEADER_NAME}" PRIVATE TEST_SINGLE_HEADER)
     catch_discover_tests("${SINGLE_HEADER_NAME}" PROPERTIES LABELS "single-header" TEST_PREFIX "single-header:${NAME}:")
+
+    set_target_properties(
+      "${SINGLE_HEADER_NAME}"
+      PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY
+      "${CMAKE_CURRENT_BINARY_DIR}/single-header"
+      OUTPUT_NAME
+      "${NAME}"
+    )
 
     add_dependencies(all-single-header-tests "${SINGLE_HEADER_NAME}")
   endif ()
