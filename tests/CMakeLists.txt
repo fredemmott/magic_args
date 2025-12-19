@@ -31,17 +31,23 @@ target_link_libraries(common-test-deps INTERFACE test-lib Catch2::Catch2 Catch2:
 target_link_libraries(split-headers-test-deps INTERFACE common-test-deps magic_args)
 target_link_libraries(single-header-test-deps INTERFACE common-test-deps magic_args-single-header)
 
-add_custom_target(all-split-header-tests)
-add_custom_target(all-single-header-tests)
 
+option(ENABLE_SPLIT_HEADER_TESTS "Build and run tests in split-header-mode" ON)
+if (ENABLE_SPLIT_HEADER_TESTS)
+  message(STATUS "Split-header tests will be included in test runs")
+  add_custom_target(all-split-header-tests)
+else ()
+  message(WARNING "Split-header tests are excluded from this build and test run")
+endif ()
 # This is off by default because:
 # - split-headers provide a much better developer experience when debugging the tests, especially
 #   when IDE ctest/catch2 support comes into the picture
 # - similarly, IDE integrations work better when each `TEST_CASE()` is only in a single executable
 #
 # Depend on CI for this.
-option(ENABLE_SINGLE_HEADER_TESTS "Also run tests in single-header mode" OFF)
+option(ENABLE_SINGLE_HEADER_TESTS "Build and run tests in single-header mode" OFF)
 if (ENABLE_SINGLE_HEADER_TESTS)
+  add_custom_target(all-single-header-tests)
   message(STATUS "Single-header tests will be included in test runs")
 else ()
   message(WARNING "Single-header tests are excluded from this build and test run")
@@ -50,25 +56,25 @@ endif ()
 function(add_test_executables NAME)
   set(SOURCES "${ARGN}")
 
-  set(SPLIT_HEADERS_NAME "split-headers-${NAME}")
+  if (ENABLE_SPLIT_HEADER_TESTS)
+    set(SPLIT_HEADERS_NAME "split-headers-${NAME}")
 
-  add_executable("${SPLIT_HEADERS_NAME}" ${SOURCES})
-  target_link_libraries("${SPLIT_HEADERS_NAME}" PRIVATE split-headers-test-deps)
-  catch_discover_tests("${SPLIT_HEADERS_NAME}" PROPERTIES LABELS "split-headers" TEST_PREFIX "split-headers:${NAME}:")
-  add_dependencies(all-split-header-tests "${SPLIT_HEADERS_NAME}")
-
-  if (NOT ENABLE_SINGLE_HEADER_TESTS)
-    return()
+    add_executable("${SPLIT_HEADERS_NAME}" ${SOURCES})
+    target_link_libraries("${SPLIT_HEADERS_NAME}" PRIVATE split-headers-test-deps)
+    catch_discover_tests("${SPLIT_HEADERS_NAME}" PROPERTIES LABELS "split-headers" TEST_PREFIX "split-headers:${NAME}:")
+    add_dependencies(all-split-header-tests "${SPLIT_HEADERS_NAME}")
   endif ()
 
-  set(SINGLE_HEADER_NAME "single-header-${NAME}")
+  if (ENABLE_SINGLE_HEADER_TESTS)
+    set(SINGLE_HEADER_NAME "single-header-${NAME}")
 
-  add_executable("${SINGLE_HEADER_NAME}" ${SOURCES})
-  target_link_libraries("${SINGLE_HEADER_NAME}" PRIVATE single-header-test-deps)
-  target_compile_definitions("${SINGLE_HEADER_NAME}" PRIVATE TEST_SINGLE_HEADER)
-  catch_discover_tests("${SINGLE_HEADER_NAME}" PROPERTIES LABELS "single-header" TEST_PREFIX "single-header:${NAME}:")
+    add_executable("${SINGLE_HEADER_NAME}" ${SOURCES})
+    target_link_libraries("${SINGLE_HEADER_NAME}" PRIVATE single-header-test-deps)
+    target_compile_definitions("${SINGLE_HEADER_NAME}" PRIVATE TEST_SINGLE_HEADER)
+    catch_discover_tests("${SINGLE_HEADER_NAME}" PROPERTIES LABELS "single-header" TEST_PREFIX "single-header:${NAME}:")
 
-  add_dependencies(all-single-header-tests "${SINGLE_HEADER_NAME}")
+    add_dependencies(all-single-header-tests "${SINGLE_HEADER_NAME}")
+  endif ()
 endfunction()
 
 # Core features

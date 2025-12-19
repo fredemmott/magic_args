@@ -8,8 +8,8 @@ set(
   detail/static_assert_not_an_enum.hpp
   detail/concepts.hpp
   detail/reflection.hpp
-  detail/parsing_traits_for_args.hpp
   gnu_style_parsing_traits.hpp
+  detail/parsing_traits_for_args.hpp
   detail/print.hpp
   argument_definitions.hpp
   detail/get_argument_definition.hpp

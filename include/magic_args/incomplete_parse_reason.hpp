@@ -7,7 +7,9 @@
 #include "detail/concepts.hpp"
 #endif
 
+#include <string>
 #include <variant>
+#include <vector>
 
 namespace magic_args::inline public_api {
 inline namespace incomplete_parse_reasons {
