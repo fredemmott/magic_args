@@ -9,14 +9,11 @@
 #define MAGIC_ARGS_HAVE_WINDOWS_EXTENSIONS
 #define MAGIC_ARGS_CAN_CONVERT_TO_UTF8 1
 
-#include <Windows.h>
-#include <shellapi.h>
-
 #include <string>
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "detail/encoding.hpp"
-#include "parse.hpp"
+#include "detail/win32_api.hpp"
 #endif
 
 namespace magic_args::detail::win32 {
@@ -33,14 +30,14 @@ inline std::expected<void, std::error_code> utf8_from_wide(
     buffer.clear();
     return {};
   }
-  const auto convert = [&wide](const LPSTR out, const std::size_t byteCount) {
+  const auto convert = [&wide](char* out, const std::size_t byteCount) {
     return WideCharToMultiByte(
-      CP_UTF8,
-      WC_ERR_INVALID_CHARS,
+      WIN32_CP_UTF8,
+      WIN32_WC_ERR_INVALID_CHARS,
       wide.data(),
-      static_cast<INT>(wide.size()),
+      static_cast<int>(wide.size()),
       out,
-      static_cast<INT>(byteCount),
+      static_cast<int>(byteCount),
       nullptr,
       nullptr);
   };
@@ -59,7 +56,7 @@ inline std::expected<void, std::error_code> utf8_from_wide(
 inline std::expected<void, std::error_code> wide_from_codepage(
   std::wstring& buffer,
   const std::string_view data,
-  const UINT codePage) {
+  const unsigned int codePage) {
   if (data.empty()) {
     buffer.clear();
     return {};
@@ -69,11 +66,11 @@ inline std::expected<void, std::error_code> wide_from_codepage(
     = [&data, codePage](wchar_t* out, const std::size_t wideCount) {
         return MultiByteToWideChar(
           codePage,
-          MB_ERR_INVALID_CHARS,
+          WIN32_MB_ERR_INVALID_CHARS,
           data.data(),
-          static_cast<INT>(data.size()),
+          static_cast<int>(data.size()),
           out,
-          static_cast<INT>(wideCount));
+          static_cast<int>(wideCount));
       };
   const auto wideCount = convert(nullptr, 0);
   if (wideCount == 0) [[unlikely]] {
@@ -90,7 +87,7 @@ inline std::expected<void, std::error_code> wide_from_codepage(
 inline std::expected<void, std::error_code> utf8_from_codepage(
   std::string& utf8,
   const std::string_view data,
-  const UINT codePage) {
+  const unsigned int codePage) {
   if (data.empty()) {
     utf8.clear();
     return {};
@@ -98,7 +95,7 @@ inline std::expected<void, std::error_code> utf8_from_codepage(
   std::wstring wide;
   if (const auto widen = wide_from_codepage(wide, data, codePage); !widen)
     [[unlikely]] {
-    return std::unexpected {get_last_error_code()};
+    return std::unexpected {widen.error()};
   }
   return utf8_from_wide(utf8, wide);
 }
@@ -114,24 +111,24 @@ struct local_free_deleter {
 namespace magic_args::inline public_api::win32 {
 
 inline void attach_to_parent_terminal() {
-  AttachConsole(ATTACH_PARENT_PROCESS);
-  FILE* tmp {nullptr};
+  using namespace detail::win32_definitions;
+  AttachConsole(WIN32_ATTACH_PARENT_PROCESS);
   struct Stream {
-    DWORD mStdHandle;
+    unsigned long mStdHandle;
     FILE* file;
-    std::string name;
-    std::string mode;
+    const char* name;
+    const char* mode;
   };
   const Stream streams[] = {
-    {STD_INPUT_HANDLE, stdin, "CONIN$", "r"},
-    {STD_OUTPUT_HANDLE, stdout, "CONOUT$", "w"},
-    {STD_ERROR_HANDLE, stderr, "CONOUT$", "w"},
+    {WIN32_STD_INPUT_HANDLE, stdin, "CONIN$", "r"},
+    {WIN32_STD_OUTPUT_HANDLE, stdout, "CONOUT$", "w"},
+    {WIN32_STD_ERROR_HANDLE, stderr, "CONOUT$", "w"},
   };
   for (auto&& [stdHandle, file, name, mode]: streams) {
-    const HANDLE handle = GetStdHandle(stdHandle);
-    if (handle != nullptr && handle != INVALID_HANDLE_VALUE) {
-      freopen_s(&tmp, name.c_str(), mode.c_str(), file);
-      tmp = {};
+    const auto handle = GetStdHandle(stdHandle);
+    if (handle != nullptr && handle != WIN32_INVALID_HANDLE_VALUE) {
+      FILE* tmp {nullptr};
+      freopen_s(&tmp, name, mode, file);
     }
   }
 }
@@ -141,11 +138,17 @@ inline void attach_to_parent_terminal() {
 namespace magic_args::inline public_api {
 
 inline std::expected<std::vector<std::string>, make_utf8_argv_error_t>
-make_utf8_argv(const int argc, const char* const* argv, const UINT codePage) {
+make_utf8_argv(
+  const int argc,
+  const char* const* argv,
+  const unsigned int codePage) {
+  using namespace detail::win32_definitions;
   if (argc == 0 || !argv) [[unlikely]] {
     return std::unexpected {invalid_parameter_t {}};
   }
-  if (codePage == CP_UTF8 || (codePage == CP_ACP && GetACP() == CP_UTF8)) {
+  if (
+    codePage == WIN32_CP_UTF8
+    || (codePage == WIN32_CP_ACP && GetACP() == WIN32_CP_UTF8)) {
     // Even though we don't need to convert it, validate it.
     //
     // This is to ensure consistency with `make_utf8_argv("foo bar");`
@@ -159,8 +162,8 @@ make_utf8_argv(const int argc, const char* const* argv, const UINT codePage) {
         continue;
       }
       const auto wideCount = MultiByteToWideChar(
-        CP_UTF8,
-        MB_ERR_INVALID_CHARS,
+        WIN32_CP_UTF8,
+        WIN32_MB_ERR_INVALID_CHARS,
         argView.data(),
         static_cast<int>(argView.size()),
         nullptr,
@@ -182,6 +185,9 @@ make_utf8_argv(const int argc, const char* const* argv, const UINT codePage) {
   buffer.reserve(1024);
 
   for (auto&& arg: std::views::counted(argv, argc)) {
+    if (!arg) [[unlikely]] {
+      return std::unexpected {invalid_parameter_t {}};
+    }
     const auto converted
       = detail::win32::utf8_from_codepage(buffer, arg, codePage);
     if (!converted) [[unlikely]] {
@@ -204,6 +210,9 @@ make_utf8_argv(const int argc, const wchar_t* const* wargv) {
   std::string buffer;
   buffer.reserve(1024);
   for (auto&& arg: std::views::counted(wargv, argc)) {
+    if (!arg) [[unlikely]] {
+      return std::unexpected {invalid_parameter_t {}};
+    }
     if (const auto converted = detail::win32::utf8_from_wide(buffer, arg);
         !converted) [[unlikely]] {
       return std::unexpected {encoding_conversion_failed_t {converted.error()}};
@@ -226,7 +235,7 @@ make_utf8_argv(const wchar_t* commandLine = GetCommandLineW()) {
     return std::unexpected {invalid_parameter_t {}};
   }
   int argc {};
-  const std::unique_ptr<LPWSTR, detail::win32::local_free_deleter> wargv {
+  const std::unique_ptr<wchar_t*, detail::win32::local_free_deleter> wargv {
     CommandLineToArgvW(commandLine, &argc)};
   if (!wargv) [[unlikely]] {
     return std::unexpected {
@@ -246,7 +255,7 @@ make_utf8_argv(const wchar_t* commandLine = GetCommandLineW()) {
 inline std::expected<std::vector<std::string>, make_utf8_argv_error_t>
 make_utf8_argv(
   const std::string_view commandLine,
-  const UINT codePage = CP_ACP) {
+  const unsigned int codePage = magic_args::detail::WIN32_CP_ACP) {
   std::wstring buffer;
   if (const auto widen
       = detail::win32::wide_from_codepage(buffer, commandLine, codePage);
@@ -263,12 +272,13 @@ struct magic_args::detail::encoding_traits<
   static bool process_argv_are_utf8() noexcept {
     const auto acp = GetACP();
     // 7-bit US-ASCII is also valid UTF-8
-    return (acp == CP_UTF8 || acp == 20127);
+    constexpr auto WIN32_CP_US_ASCII = 20127;
+    return (acp == WIN32_CP_UTF8 || acp == WIN32_CP_US_ASCII);
   }
 
   static std::expected<std::vector<std::string>, make_utf8_argv_error_t>
   make_utf8_argv(const int argc, const char* const* argv) {
-    return magic_args::public_api::make_utf8_argv(argc, argv, CP_ACP);
+    return public_api::make_utf8_argv(argc, argv, WIN32_CP_ACP);
   }
 };
 #endif

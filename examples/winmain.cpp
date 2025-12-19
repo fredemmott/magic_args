@@ -11,6 +11,8 @@
 #include <magic_args/windows.hpp>
 #include <thread>
 
+#include <Windows.h>
+
 struct MyArgs {
   bool mFoo {false};
   std::string mBar;

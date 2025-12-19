@@ -27,6 +27,10 @@
 
 #include <string>
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 struct MyArgs {
   std::string mFoo;
   std::string mBar;
@@ -59,11 +63,10 @@ auto make_utf8_argv(const auto& argv, const unsigned int codepage) {
   return make_utf8_argv(static_cast<int>(argv.size()), argv.data(), codepage);
 }
 
-#ifdef MAGIC_ARGS_HAVE_ICONV_EXTENSIONS
-constexpr int InvalidBytes = EILSEQ;
-#endif
-#ifdef MAGIC_ARGS_HAVE_WINDOWS_EXTENSIONS
+#ifdef _WIN32
 constexpr int InvalidBytes = ERROR_NO_UNICODE_TRANSLATION;
+#else
+constexpr int InvalidBytes = EILSEQ;
 #endif
 
 [[nodiscard]]

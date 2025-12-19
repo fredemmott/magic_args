@@ -41,6 +41,7 @@ set(
   ## Other extensions
   powershell_style_parsing_traits.hpp
   verbatim_names.hpp
+  detail/win32_api.hpp
   windows.hpp
   iconv.hpp
   enum.hpp
