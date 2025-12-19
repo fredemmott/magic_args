@@ -14,6 +14,7 @@ add_example(example-minimal-with-encoding minimal-with-encoding.cpp)
 if (APPLE)
   find_package(Iconv REQUIRED)
   target_link_libraries(example-minimal-with-encoding PRIVATE Iconv::Iconv)
+  target_link_libraries(example-minimal PRIVATE Iconv::Iconv)
 endif ()
 
 add_custom_command(
@@ -26,7 +27,6 @@ add_custom_command(
   "$<TARGET_FILE:example-multicall>"
   "$<TARGET_FILE_DIR:example-multicall>/multicall-links/herp.exe"
 )
-
 
 if (WIN32)
   add_example(example-winmain WIN32 winmain.cpp "${CMAKE_SOURCE_DIR}/tests/utf8-process-code-page.manifest")
