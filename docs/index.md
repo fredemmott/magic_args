@@ -20,22 +20,15 @@ struct MyArgs {
   int baz {0};
 };
 
-int main(int argc, char** argv) {
-  // this gets you an `std::expected<MyArgs, magic_args::incomplete_parse_reason_t>`
-  const auto args = magic_args::parse<MyArgs>(std::views::counted(argv, argc));
-  if (args) {
-      // Your code here. In this case, we'll just print the struct
-      magic_args::dump(*args);
-      return EXIT_SUCCESS;
-  }
-    // This could be an actual error, e.g. invalid argument,
-    // or something like `--help` or `--version`, which while not an error,
-    // are an 'unexpected' outcome in the std::expected
-    return magic_args::is_error(args.error()) ? EXIT_FAILURE : EXIT_SUCCESS;
+MAGIC_ARGS_MAIN(const MyArgs& args) {
+  magic_args::dump(args);
+  return 0;
 }
 ```
 
-This gets you:
+The macro is optional but takes care of [encoding issues](features/encoding.md) and error handling.
+
+As well as UTF-8 conversion and argument parsing, this gets you a working `--help`:
 
 ```
 > ./example-minimal.exe --help
@@ -54,9 +47,6 @@ bar                           `someValue`
 baz                           `42`
 ```
 
-{: warning}
-The above is a *minimal* example that assumes that `argv` is UTF-8 - see [encoding](features/encoding.md) for details.
-
 ## Requirements
 
 *magic_args* requires C++23, and is tested with:
@@ -71,7 +61,7 @@ required.
 
 ## Using *magic_args* in your project
 
-See [getting started](getting-started.md).
+See [setup](setup.md).
 
 ## License
 
