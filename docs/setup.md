@@ -57,13 +57,15 @@ file directly into your project, and `#include` it without additional dependenci
 
 ## macOS
 
-To use *magic_args* on macOS, you must choose between three options:
+If you are using vcpkg, the `charset-conversion` feature (enabled by default) enables the recommended path (linking against `iconv`); you don't need to do anything.
+
+Otherwise, to use *magic_args* on macOS, you must choose between three options:
 
 - *recommended*: link against `iconv`: the program will convert encodings as necessary. This option is recommended because it gives you consistent behavior on all major platforms
-- define `MAGIC_ARGS_DISABLE_ICONV`: if the character set is not UTF-8 or a compatible 7-bit encoding (e.g. US-ASCII), an error will be raised. This is slightly simpler, and may be acceptable as non-UTF-8 locales are extremely rare on macOS
-- handle (or ignore) encoding issues yourself, and call the *magic_args* functions directly instead of using the `MAGIC_ARGS_*_MAIN()` macros
+- define `MAGIC_ARGS_DISABLE_ICONV`: if the character set is not UTF-8 or a compatible 7-bit encoding (e.g. US-ASCII), an error will be reported. This is slightly simpler, and may be acceptable as non-UTF-8 locales are extremely rare on macOS
+- handle (or ignore) encoding issues yourself, and call the *magic_args* functions directly instead of using the `MAGIC_ARGS*_MAIN()` macros
 
-If you are using CMake, you can follow the recommended path with the following code:
+If you are using CMake but not using vcpkg, you can follow the recommended path with the following code:
 
 ```cmake
 if (APPLE)

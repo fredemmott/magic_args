@@ -16,25 +16,18 @@ title: Encodings
 
 ## TL;DR
 
+- use the vcpkg package with the `charset-conversion` feature (enabled by default)
 - use the main macros:
   - `MAGIC_ARGS_MAIN(MyArgs&& args) { return 0; }`
   - `MAGIC_ARGS_SUBCOMMANDS_MAIN(CommandFoo, CommandBar, ...);`
   - `MAGIC_ARGS_MULTI_CALL_MAIN(CommandFoo, CommandBar, ...);`
   - or, the lower-level `MAGIC_ARGS_UTF8_MAIN(utf8_argv) { ... }` macro
 - with Visual Studio, pass `/utf-8`
-- on macOS, link against iconv
-  - if you are certain your program will only be used in UTF-8 environments, you can also define the `MAGIC_ARGS_DISABLE_ICONV` macro
-  - this is not needed on Windows because Win32 API functions are used instead
-  - this is usually not needed on Linux, because iconv is normally included in libc
 
-If you use CMake:
+The Visual Studio `/utf-8` flag is not part of the vcpkg `charset-conversion` feature because it has a broader impact on how the compiler interprets your source code.  If you use CMake, you can use:
 
 ```cmake
 target_compile_options(my_target PRIVATE "$<$<CXX_COMPILER_ID:MSVC>/utf-8>")
-if (APPLE)
-  find_package(Iconv REQUIRED)
-  target_link_libraries(my_target PRIVATE Iconv::Iconv)
-endif ()
 ```
 
 ## If you don't want to use the macros
@@ -117,6 +110,16 @@ int wmain(int argc, wchar_t** argv) {
 }
 ```
 
+## macOS
+
+iconv is available on macOS, but unlike Linux, it isn't part of libc; this means you have 3 choices:
+
+- *recommended*: link against `iconv`: the program will convert encodings as necessary. This option is recommended because it gives you consistent behavior on all major platforms
+- define `MAGIC_ARGS_DISABLE_ICONV`: if the character set is not UTF-8 or a compatible 7-bit encoding (e.g. US-ASCII), an error will be reported. This is slightly simpler, and may be acceptable as non-UTF-8 locales are extremely rare on macOS
+- handle (or ignore) encoding issues yourself, and call the *magic_args* functions directly instead of using the `MAGIC_ARGS*_MAIN()` macros
+
+If you are using vcpkg, the `charset-conversion` feature (enabled by default) enables the recommended path (linking against `iconv`); you don't need to do anything.
+
 ## Portable and reliable handling
 
 *magic_args* includes 3 implementations of `make_utf8_argv(argc, argv)`:
@@ -125,15 +128,10 @@ int wmain(int argc, wchar_t** argv) {
 - `<magic_args/windows.hpp>`: this converts encodings using Windows-only functions, via `<Windows.h>`
 - `<magic_args/iconv.hpp>`: this uses libiconv (generally part of libc on Linux) to convert between encodings. If you use this header on macOS, you will need to also link against the iconv library.
 
-Neither `windows.hpp` nor `iconv.hpp` are included automatically, because they add dependencies. To make the most portable code, you need to use both, and `wmain()`:
+To make the most portable code, you need to use the Win32 or iconv versions, and either `main()` or `wmain()` depending on the platform:
 
 ```c++
 #include <magic_args/magic_args.hpp>
-#ifdef _WIN32
-#include <magic_args/windows.hpp>
-#else
-#include <magic_args/iconv.hpp>
-#endif
 
 #include <print>
 
@@ -167,6 +165,8 @@ int main(int argc, char** argv) {
 }
 #endif
 ```
+
+The `MAGIC_ARGS_MAIN(...)` macros implement this boilerplate for you.
 
 While this code could also work with `main()` on Windows, using `wmain()` has advantages:
 
@@ -245,7 +245,7 @@ On Linux and macOS, *magic_args* ignores the *process* locale, and instead looks
 
 If you want different behavior, you can:
 - convert `argv` to UTF-8 yourself, and pass the range to `magic_args::parse()` without calling `magic_args::make_utf8_argv()`
-- include `<magic_args/iconv.hpp>` and use `magic_args::make_utf8_argv(argc, argv, charset)`, where `charset` is a string recognized by iconv, e.g. `"ISO-8859-2"`
+- use `magic_args::make_utf8_argv(argc, argv, charset)`, where `charset` is a string recognized by iconv, e.g. `"ISO-8859-2"`
 
 For a given locale, you can retrieve the encoding with `LANG=xx_YY locale charmap` - while the charset is defined by `LC_CTYPE`, the strings are different. For example:
 
