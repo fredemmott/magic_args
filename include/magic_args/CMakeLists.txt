@@ -89,6 +89,20 @@ target_compile_features(
   cxx_std_23
 )
 
+set(MACOS_UTF8_CONVERSION "manual" CACHE STRING "How to convert charsets on macOS; 'manual' (library consumer must choose), 'iconv', or 'disabled'. Always 'manual' for single-header version")
+set_property(CACHE MACOS_UTF8_CONVERSION PROPERTY STRINGS "manual" "iconv" "disabled")
+
+if (APPLE)
+  if (MACOS_UTF8_CONVERSION STREQUAL "manual")
+    message(WARNING "MACOS_UTF8_CONVERSION is 'manual'; magic_args consumers must link against iconv, or define MAGIC_ARGS_DISABLE_ICONV. Set MACOS_UTF8_CONVERSION to 'iconv' or 'disabled' to choose an option now")
+  elseif (MACOS_UTF8_CONVERSION STREQUAL "iconv")
+    find_package(Iconv REQUIRED)
+    target_link_libraries(magic_args INTERFACE Iconv::Iconv)
+  elseif (MACOS_UTF8_CONVERSION STREQUAL "disabled")
+    target_compile_definitions(magic_args INTERFACE "MAGIC_ARGS_DISABLE_ICONV")
+  endif ()
+endif ()
+
 set(SINGLE_HEADER_SOURCES "${HEADER_FILES}")
 list(PREPEND SINGLE_HEADER_SOURCES detail/single_header_prefix.hpp)
 set(SINGLE_HEADER_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/single-header/magic_args")
