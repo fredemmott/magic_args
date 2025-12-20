@@ -26,7 +26,7 @@ There are 4 main ways to use *magic_args* that you can choose from:
 
 *recommended*
 
-**magic_args** is available in the main [vcpkg](https://vcpkg.io) registry as `magic-args`.
+**magic_args** is available in the main [vcpkg][] registry as `magic-args`.
 
 While the main vcpkg registry is recommended for most users, newer or prerelease versions may
 be available from [my vcpkg registry](https://github.com/fredemmott/vcpkg-registry);
@@ -79,7 +79,36 @@ This does not affect other platforms:
 - on Windows, the Win32 API is used instead of `iconv`
 - on Linux, `iconv` is typically provided by libc and doesn't require explicit linking
 
-## Configuration
+## CMake Configuration
+
+Most users should use [vcpkg][], and not need to change anything here.
+
+If you are using CMake, *magic_args* recognizes the following variables:
+
+- `ENABLE_ICONV=manual|not-windows|OFF|ON`
+  - `not-windows` (*recommended*): uses Win32 APIs for encoding conversion on Windows, and `iconv` on other platforms;
+    - this value is set by the vcpkg `charset-conversion` feature (enabled by default)
+    - on some platforms (e.g. macOS), this will introduce a dependency on libiconv
+    - on Linux, iconv is typically part of libc, so this will not introduce an additional dependency
+  - `manual` (*default*): iconv is used if `<iconv.h>` is available, but it is not automatically linked
+    - this will 'just work' on most Windows environments because `<iconv.h>` is not typically available
+    - this will 'just work' on most Linux environments, as iconv is typically part of libc
+    - on macOS and some rare Linux configurations, users will need to either link against iconv themselves, or
+      define `MAGIC_ARGS_DISABLE_ICONV`
+    - this is the default because on macOS (and some rare Linux environments), `'not-windows'` introduces an additional
+      link dependency
+    - the vcpkg default differs because on-by-default-but-optional dependencies are a commonly used feature of vcpkg,
+      rather than a potential surprise
+  - `ON`: iconv is always added as a dependency, even on Windows
+  - `OFF`: iconv is never added as a dependency, and `MAGIC_ARGS_DISABLE_ICONV` is defined
+- `ENABLE_MAGIC_ENUM=auto|OFF|ON`
+  - `auto` (*default*): [*magic_enum*][magic_enum] is used if CMake `find_package()` is able to find `magic_enum`
+  - `ON`: `magic_enum` will be used; CMake will fail if `find_package()` fails
+  - `OFF`: CMake will not look for `magic_enum`, and `MAGIC_ARGS_DISABLE_ENUM` will be set
+
+## Preprocessor Configuration
+
+Most users should use [vcpkg][vcpkg], and not need to change anything here.
 
 *magic_args* recognizes the following preprocessor definitions:
 
@@ -108,7 +137,7 @@ For example, `my_project/include/magic_args.tweaks.hpp` might contain:
 #endif
 ```
 
-This specific configuration is [not recommended](#macos), but is realistic for some users.
+This specific configuration is [not recommended](features/encoding.md#macos), but is realistic for some users.
 
 ## `using namespace`
 
@@ -116,3 +145,6 @@ If you want to use `using namespace`, use `using namespace magic_args::public_ap
 avoids pulling in the `magic_args::detail` namespace.
 
 `magic_args` is designed to work easily regardless of whether you choose to use `using namespace` or not.
+
+[vcpkg]: https://vcpkg.io/
+[magic_enum]: https://github.com/Neargye/magic_enum

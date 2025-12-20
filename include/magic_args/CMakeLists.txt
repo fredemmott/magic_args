@@ -59,17 +59,6 @@ foreach (HPP_FILE ${ALL_HPP_FILES})
 endforeach ()
 
 
-# Perhaps we'll also support C++26 reflection in the future
-define_property(TARGET PROPERTY MAGIC_ARGS_HAVE_ENUM_SUPPORT)
-find_package(magic_enum CONFIG)
-set_property(TARGET magic_args PROPERTY MAGIC_ARGS_HAVE_ENUM_SUPPORT "${magic_enum_FOUND}")
-if (magic_enum_FOUND)
-  message(STATUS "Found magic_enum, adding enum support")
-  target_link_libraries(magic_args INTERFACE magic_enum::magic_enum)
-else () # magic_enum_FOUND
-  message(STATUS "Did not find magic_enum library, skipping enum support")
-endif ()
-
 target_sources(
   magic_args
   INTERFACE
@@ -89,18 +78,60 @@ target_compile_features(
   cxx_std_23
 )
 
-set(MACOS_UTF8_CONVERSION "manual" CACHE STRING "How to convert charsets on macOS; 'manual' (library consumer must choose), 'iconv', or 'disabled'. Always 'manual' for single-header version")
-set_property(CACHE MACOS_UTF8_CONVERSION PROPERTY STRINGS "manual" "iconv" "disabled")
+set(ENABLE_ICONV "manual" CACHE STRING "Where to use iconv: manual|not-windows|OFF|ON; 'manual' means that iconv is available, but macOS users must either set MAGIC_ARGS_DISABLE_ICONV or manually link against iconv; 'not-windows' will use Win32 APIs for encoding conversion on Windows, and iconv on all other platforms")
+set_property(CACHE ENABLE_ICONV PROPERTY STRINGS "manual" "not-windows" "OFF" "ON")
 
-if (APPLE)
-  if (MACOS_UTF8_CONVERSION STREQUAL "manual")
-    message(WARNING "MACOS_UTF8_CONVERSION is 'manual'; magic_args consumers must link against iconv, or define MAGIC_ARGS_DISABLE_ICONV. Set MACOS_UTF8_CONVERSION to 'iconv' or 'disabled' to choose an option now")
-  elseif (MACOS_UTF8_CONVERSION STREQUAL "iconv")
+include(CheckCXXSourceCompiles)
+
+if (ENABLE_ICONV STREQUAL "manual")
+  if (NOT WIN32)
+    check_cxx_source_compiles("
+#include <iconv.h>
+int main() {
+  iconv_close(iconv_open(\"UTF-8\", \"UTF-8\"));
+  return 0;
+}" CAN_USE_ICONV_WITHOUT_LINKER_FLAGS)
+    if (NOT CAN_USE_ICONV_WITHOUT_LINKER_FLAGS)
+      message(WARNING "ENABLE_ICONV is 'manual', and iconv is not part of libc on the current platform; magic_args consumers must either link against iconv, or define MAGIC_ARGS_DISABLE_ICONV. Set ENABLE_ICONV to 'ON', 'OFF' or 'not-windows' to choose an option now")
+    endif ()
+  endif ()
+elseif (ENABLE_ICONV STREQUAL "ON")
+  find_package(Iconv REQUIRED)
+  target_link_libraries(magic_args INTERFACE Iconv::Iconv)
+elseif (ENABLE_ICONV STREQUAL "OFF")
+  target_compile_definitions(magic_args INTERFACE "MAGIC_ARGS_DISABLE_ICONV")
+elseif (ENABLE_ICONV STREQUAL "not-windows")
+  if (NOT WIN32)
     find_package(Iconv REQUIRED)
     target_link_libraries(magic_args INTERFACE Iconv::Iconv)
-  elseif (MACOS_UTF8_CONVERSION STREQUAL "disabled")
-    target_compile_definitions(magic_args INTERFACE "MAGIC_ARGS_DISABLE_ICONV")
   endif ()
+else ()
+  message(FATAL_ERROR "ENABLE_ICONV is set to '${ENABLE_ICONV}'; valid values are 'manual', 'ON', 'OFF', and 'not-windows'")
+endif ()
+
+# Perhaps we'll also support C++26 reflection in the future
+define_property(TARGET PROPERTY MAGIC_ARGS_HAVE_ENUM_SUPPORT)
+set_property(TARGET magic_args PROPERTY MAGIC_ARGS_HAVE_ENUM_SUPPORT FALSE)
+
+set(ENABLE_MAGIC_ENUM "auto" CACHE STRING "auto|ON|OFF")
+set_property(CACHE ENABLE_MAGIC_ENUM PROPERTY STRINGS "auto" "OFF" "ON")
+if (ENABLE_MAGIC_ENUM STREQUAL "auto")
+  find_package(magic_enum CONFIG)
+  if (magic_enum_FOUND)
+    message(STATUS "Found magic_enum, adding enum support")
+    set_property(TARGET magic_args PROPERTY MAGIC_ARGS_HAVE_ENUM_SUPPORT TRUE)
+    target_link_libraries(magic_args INTERFACE magic_enum::magic_enum)
+  else ()
+    message(STATUS "Did not find magic_enum, skipping enum support")
+  endif ()
+elseif (ENABLE_MAGIC_ENUM STREQUAL "ON")
+  find_package(magic_enum CONFIG REQUIRED)
+  set_property(TARGET magic_args PROPERTY MAGIC_ARGS_HAVE_ENUM_SUPPORT TRUE)
+  target_link_libraries(magic_args INTERFACE magic_enum::magic_enum)
+elseif (ENABLE_MAGIC_ENUM STREQUAL "OFF")
+  target_compile_definitions(magic_args INTERFACE MAGIC_ARGS_DISABLE_ENUM)
+else ()
+  message(FATAL_ERROR "ENABLE_MAGIC_ENUM is set to '${ENABLE_MAGIC_ENUM}'; valid values are 'auto', 'ON', and 'OFF'")
 endif ()
 
 set(SINGLE_HEADER_SOURCES "${HEADER_FILES}")
