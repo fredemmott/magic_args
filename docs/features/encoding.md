@@ -14,14 +14,34 @@ title: Encodings
 - TOC
 {:toc}
 
-## Quick guide
+## TL;DR
+
+- use the main macros:
+  - `MAGIC_ARGS_MAIN(MyArgs&& args) { return 0; }`
+  - `MAGIC_ARGS_SUBCOMMANDS_MAIN(CommandFoo, CommandBar, ...);`
+  - `MAGIC_ARGS_MULTI_CALL_MAIN(CommandFoo, CommandBar, ...);`
+  - or, the lower-level `MAGIC_ARGS_UTF8_MAIN(utf8_argv) { ... }` macro
+- with Visual Studio, pass `/utf-8`
+- on macOS, link against iconv
+  - if you are certain your program will only be used in UTF-8 environments, you can also define the `MAGIC_ARGS_DISABLE_ICONV` macro
+  - this is not needed on Windows because Win32 API functions are used instead
+  - this is usually not needed on Linux, because iconv is normally included in libc
+
+If you use CMake:
+
+```cmake
+target_compile_options(my_target PRIVATE "$<$<CXX_COMPILER_ID:MSVC>/utf-8>")
+if (APPLE)
+  find_package(Iconv REQUIRED)
+  target_link_libraries(my_target PRIVATE Iconv::Iconv)
+endif ()
+```
+
+## If you don't want to use the macros
 
 - **Modern macOS and Linux environments only?** ➡️ Use `main()` with `utf8 = std::span(argv, argc)`
 - **Windows CLI only?** ➡️ Use `wmain()` with `utf8 = make_utf8_argv(argc, argv)` from `<magic_args/windows.hpp>`
 - **Maximum portability?** ➡️ Use `wmain()` on Windows, `main()` on other platforms; for both, use `utf8 = make_utf8_argv(argc, argv)`
-  - include `<magic_args/windows.hpp>` on Windows
-  - include `<magic_args/iconv.hpp>` on other platforms
-  - link against libiconv on macOS (this isn't usually needed on Linux, because iconv is usually part of libc)
 
 For other cases, see the details below.
 
@@ -50,7 +70,7 @@ The main entrypoints (e.g. `parse()`) take a UTF-8 range as input. This must be 
 
 If you are happy to assume UTF-8, you can use a standard C++ range, e.g.:
 
-- `magic_args::parse<MyArgs>(std::views::counted(argv, argc)`
+- `magic_args::parse<MyArgs>(std::views::counted(argv, argc))`
 - `magic_args::parse<MyArgs>(std::span(argv, argc))`
 
 ## If you're happy to assume UTF-8 on Linux and macOS but want to handle Windows
