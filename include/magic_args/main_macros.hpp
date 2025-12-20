@@ -18,7 +18,46 @@ using utf8_argv_t = decltype(public_api::make_utf8_argv(
 template <auto TImpl, class TChar>
 int utf8_main(int argc, const TChar* const* argv) {
   auto utf8 = public_api::make_utf8_argv(argc, argv);
-  // TODO: error handling
+  if (!utf8) {
+    const auto handler = overloaded {
+      [](const invalid_parameter_t&) {
+        std::println(
+          stderr,
+          "Unable to convert argv to UTF-8 because an invalid argc/argv were "
+          "passed to the program by the operating system");
+      },
+      [](const only_utf8_supported_t& e) {
+        std::println(
+          stderr,
+          "This program requires input in UTF-8, however the input is in "
+          "`{}`",
+          e.mDetectedEncoding);
+      },
+      [](const encoding_not_supported_t& e) {
+        std::println(
+          stderr,
+          "argv is in `{0}`, but this program does not support converting "
+          "from `{0}` to UTF-8",
+          e.mDetectedEncoding);
+      },
+      [](const encoding_conversion_failed_t& e) {
+        std::println(
+          stderr,
+          "Converting from `{}` to UTF-8 failed ({})",
+          e.mDetectedEncoding,
+          e.mPlatformErrorCode.message());
+      },
+      [](const range_construction_failed_t& e) {
+        std::println(
+          stderr,
+          "Unable to create argv from command line: {}",
+          e.mPlatformErrorCode.message());
+      },
+    };
+    auto& error = utf8.error();
+    std::visit(handler, error);
+    return EXIT_FAILURE;
+  }
   return TImpl(*std::move(utf8));
 }
 

@@ -28,6 +28,14 @@ namespace magic_args::detail::inline win32_definitions {
 
 using WIN32_BOOL = int;
 using WIN32_HANDLE = void*;
+struct WIN32_CPINFOEXW {
+  unsigned int MaxCharSize;
+  unsigned char DefaultChar[2];
+  unsigned char LeadByte[12];
+  wchar_t UnicodeDefaultChar;
+  unsigned int CodePage;
+  wchar_t CodePageName[260];
+};
 
 inline constexpr unsigned int WIN32_CP_UTF8 = 65001u;
 inline constexpr unsigned int WIN32_CP_ACP = 0u;
@@ -74,5 +82,8 @@ AttachConsole(unsigned long dwProcessId);
 extern "C" __declspec(dllimport) magic_args::detail::WIN32_HANDLE __stdcall
 GetStdHandle(unsigned long nStdHandle);
 extern "C" __declspec(dllimport) unsigned int __stdcall GetACP();
+struct _cpinfoexW;
+extern "C" __declspec(dllimport) magic_args::detail::WIN32_BOOL __stdcall
+GetCPInfoExW(unsigned int CodePage, unsigned long dwFlags, _cpinfoexW*);
 #endif
 #endif

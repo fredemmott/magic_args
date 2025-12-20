@@ -81,6 +81,7 @@ inline std::expected<std::vector<std::string>, make_utf8_argv_error_t>
 make_utf8_argv(
   const int argc,
   const char* const* argv,
+  const std::string_view fromCharset,
   const iconv_t converter) {
   std::vector<std::string> ret;
   ret.reserve(static_cast<size_t>(argc));
@@ -90,8 +91,9 @@ make_utf8_argv(
   for (int i = 0; i < argc; ++i) {
     const std::string_view arg {argv[i] ? argv[i] : ""};
     if (const auto ok = detail::convert_with_iconv(converted, arg, converter);
-        !ok) {
-      return std::unexpected {encoding_conversion_failed_t {ok.error()}};
+        !ok) [[unlikely]] {
+      return std::unexpected {
+        encoding_conversion_failed_t {std::string {fromCharset}, ok.error()}};
     }
     ret.emplace_back(converted);
   }
@@ -111,6 +113,10 @@ make_utf8_argv(
     return std::unexpected {invalid_parameter_t {}};
   }
 
+  if (charset.empty()) {
+    return std::unexpected {invalid_parameter_t {}};
+  }
+
   using TEncoding = detail::encoding_traits<detail::unix_like_platform_t>;
   if (TEncoding::is_utf8(charset)) {
     // Match Windows behavior: require valid UTF-8
@@ -120,20 +126,16 @@ make_utf8_argv(
       // ... iconv is busted, might as well let the program work
       return std::vector<std::string> {argv, argv + argc};
     }
-    return detail::make_utf8_argv(argc, argv, validator.get());
-  }
-
-  if (charset.empty()) {
-    return std::unexpected {encoding_not_supported_t {}};
+    return detail::make_utf8_argv(argc, argv, "UTF-8", validator.get());
   }
 
   const detail::unique_iconv_t converter {iconv_open("UTF-8", charset.c_str())};
   if (!converter) {
-    return std::unexpected {encoding_conversion_failed_t {
-      std::error_code {errno, std::system_category()}}};
+    return std::unexpected {encoding_not_supported_t {
+      charset, std::error_code {errno, std::system_category()}}};
   }
 
-  return detail::make_utf8_argv(argc, argv, converter.get());
+  return detail::make_utf8_argv(argc, argv, charset, converter.get());
 }
 }// namespace magic_args::inline public_api
 

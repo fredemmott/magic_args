@@ -25,25 +25,36 @@ inline std::expected<void, std::error_code> utf8_from_wide(
     buffer.clear();
     return {};
   }
-  const auto convert = [&wide](char* out, const std::size_t byteCount) {
-    return WideCharToMultiByte(
-      WIN32_CP_UTF8,
-      WIN32_WC_ERR_INVALID_CHARS,
-      wide.data(),
-      static_cast<int>(wide.size()),
-      out,
-      static_cast<int>(byteCount),
-      nullptr,
-      nullptr);
+  unsigned long win32Error;
+  const auto unexpectedWin32Error = [&win32Error] {
+    return std::unexpected {
+      std::error_code {static_cast<int>(win32Error), std::system_category()}};
   };
+
+  const auto convert
+    = [&wide, &win32Error](char* out, const std::size_t byteCount) {
+        const auto count = WideCharToMultiByte(
+          WIN32_CP_UTF8,
+          WIN32_WC_ERR_INVALID_CHARS,
+          wide.data(),
+          static_cast<int>(wide.size()),
+          out,
+          static_cast<int>(byteCount),
+          nullptr,
+          nullptr);
+      if (count <= 0) [[unlikely]] {
+        win32Error = GetLastError();
+      }
+      return count;
+      };
   const auto byteCount = convert(nullptr, 0);
   if (byteCount <= 0) [[unlikely]] {
-    return std::unexpected {get_last_error_code()};
+    return unexpectedWin32Error();
   }
 
   buffer.resize_and_overwrite(byteCount, convert);
   if (buffer.empty()) [[unlikely]] {
-    return std::unexpected {get_last_error_code()};
+    return unexpectedWin32Error();
   }
   return {};
 }
@@ -57,23 +68,33 @@ inline std::expected<void, std::error_code> wide_from_codepage(
     return {};
   }
 
-  const auto convert
-    = [&data, codePage](wchar_t* out, const std::size_t wideCount) {
-        return MultiByteToWideChar(
-          codePage,
-          WIN32_MB_ERR_INVALID_CHARS,
-          data.data(),
-          static_cast<int>(data.size()),
-          out,
-          static_cast<int>(wideCount));
-      };
+  unsigned long win32Error;
+  const auto unexpectedWin32Error = [&win32Error] {
+    return std::unexpected {
+      std::error_code {static_cast<int>(win32Error), std::system_category()}};
+  };
+
+  const auto convert = [&data, codePage, &win32Error](
+                         wchar_t* out, const std::size_t wideCount) {
+    const auto count = MultiByteToWideChar(
+      codePage,
+      WIN32_MB_ERR_INVALID_CHARS,
+      data.data(),
+      static_cast<int>(data.size()),
+      out,
+      static_cast<int>(wideCount));
+    if (count <= 0) [[unlikely]] {
+      win32Error = GetLastError();
+    }
+    return count;
+  };
   const auto wideCount = convert(nullptr, 0);
   if (wideCount == 0) [[unlikely]] {
-    return std::unexpected {get_last_error_code()};
+    return unexpectedWin32Error();
   }
   buffer.resize_and_overwrite(wideCount, convert);
   if (buffer.empty()) [[unlikely]] {
-    return std::unexpected {get_last_error_code()};
+    return unexpectedWin32Error();
   }
 
   return {};
@@ -100,6 +121,22 @@ struct local_free_deleter {
     LocalFree(ptr);
   }
 };
+
+inline std::string get_codepage_name(unsigned int codePage = GetACP()) {
+  // Using a custom type and reinterpret_cast'ing so that:
+  // - we don't *need* to pull in <Windows.h>
+  // - *if* the user pulls in <Windows.h> we don't have a duplicate or
+  //   incompatible declaration
+  WIN32_CPINFOEXW info {};
+  if (!GetCPInfoExW(codePage, 0, reinterpret_cast<_cpinfoexW*>(&info))) {
+    return std::format("CP{}", codePage);
+  }
+  std::string buffer;
+  if (!utf8_from_wide(buffer, info.CodePageName)) {
+    return std::format("CP{}", codePage);
+  }
+  return buffer;
+}
 
 }// namespace magic_args::detail::win32
 
@@ -164,8 +201,9 @@ make_utf8_argv(
         nullptr,
         0);
       if (wideCount == 0) [[unlikely]] {
-        return std::unexpected {
-          encoding_conversion_failed_t {detail::win32::get_last_error_code()}};
+        const auto ec = detail::win32::get_last_error_code();
+        return std::unexpected {encoding_conversion_failed_t {
+          detail::win32::get_codepage_name(codePage), ec}};
       }
     }
     return std::views::counted(argv, argc)
@@ -186,7 +224,8 @@ make_utf8_argv(
     const auto converted
       = detail::win32::utf8_from_codepage(buffer, arg, codePage);
     if (!converted) [[unlikely]] {
-      return std::unexpected {encoding_conversion_failed_t {converted.error()}};
+      return std::unexpected {encoding_conversion_failed_t {
+        detail::win32::get_codepage_name(codePage), converted.error()}};
     }
     ret.push_back(buffer);
   }
@@ -210,7 +249,10 @@ make_utf8_argv(const int argc, const wchar_t* const* wargv) {
     }
     if (const auto converted = detail::win32::utf8_from_wide(buffer, arg);
         !converted) [[unlikely]] {
-      return std::unexpected {encoding_conversion_failed_t {converted.error()}};
+      return std::unexpected {encoding_conversion_failed_t {
+        detail::win32::get_codepage_name(),
+        converted.error(),
+      }};
     }
     argv.push_back(buffer);
   }
@@ -234,7 +276,7 @@ make_utf8_argv(const wchar_t* commandLine = GetCommandLineW()) {
     CommandLineToArgvW(commandLine, &argc)};
   if (!wargv) [[unlikely]] {
     return std::unexpected {
-      encoding_conversion_failed_t {detail::win32::get_last_error_code()}};
+      range_construction_failed_t {detail::win32::get_last_error_code()}};
   }
 
   return make_utf8_argv(argc, wargv.get());
@@ -255,7 +297,10 @@ make_utf8_argv(
   if (const auto widen
       = detail::win32::wide_from_codepage(buffer, commandLine, codePage);
       !widen) {
-    return std::unexpected {encoding_conversion_failed_t {widen.error()}};
+    return std::unexpected {encoding_conversion_failed_t {
+      detail::win32::get_codepage_name(codePage),
+      widen.error(),
+    }};
   }
   return make_utf8_argv(buffer.c_str());
 }

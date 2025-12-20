@@ -44,20 +44,33 @@ struct invalid_parameter_t {
   constexpr bool operator==(const invalid_parameter_t&) const noexcept
     = default;
 };
-struct encoding_not_supported_t {
-  constexpr bool operator==(const encoding_not_supported_t&) const noexcept
-    = default;
+struct only_utf8_supported_t {
+  std::string mDetectedEncoding;
+  bool operator==(const only_utf8_supported_t&) const noexcept = default;
 };
-struct encoding_conversion_failed_t {
+struct encoding_not_supported_t {
+  std::string mDetectedEncoding;
   std::error_code mPlatformErrorCode;
-  constexpr bool operator==(const encoding_conversion_failed_t&) const noexcept
-    = default;
+  bool operator==(const encoding_not_supported_t&) const noexcept = default;
+};
+
+struct encoding_conversion_failed_t {
+  std::string mDetectedEncoding;
+  std::error_code mPlatformErrorCode;
+  bool operator==(const encoding_conversion_failed_t&) const noexcept = default;
+};
+// e.g. CommandLineToArgvW()
+struct range_construction_failed_t {
+  std::error_code mPlatformErrorCode;
+  bool operator==(const range_construction_failed_t&) const noexcept = default;
 };
 
 using make_utf8_argv_error_t = std::variant<
   invalid_parameter_t,
+  only_utf8_supported_t,
   encoding_not_supported_t,
-  encoding_conversion_failed_t>;
+  encoding_conversion_failed_t,
+  range_construction_failed_t>;
 static_assert(std::equality_comparable<make_utf8_argv_error_t>);
 }// namespace magic_args::inline public_api
 
@@ -122,10 +135,11 @@ struct encoding_traits {
     -> std::expected<
       decltype(std::views::counted(argv, argc)),
       make_utf8_argv_error_t> {
-    if (!process_argv_are_utf8()) {
-      return std::unexpected {encoding_not_supported_t {}};
+    const auto charset = environment_charset();
+    if (is_utf8(charset)) [[likely]] {
+      return std::views::counted(argv, argc);
     }
-    return std::views::counted(argv, argc);
+    return std::unexpected {only_utf8_supported_t {charset}};
   }
 };
 #else
