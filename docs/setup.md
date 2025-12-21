@@ -105,6 +105,9 @@ If you are using CMake, *magic_args* recognizes the following variables:
   - `auto` (*default*): [*magic_enum*][magic_enum] is used if CMake `find_package()` is able to find `magic_enum`
   - `ON`: `magic_enum` will be used; CMake will fail if `find_package()` fails
   - `OFF`: CMake will not look for `magic_enum`, and `MAGIC_ARGS_DISABLE_ENUM` will be set
+- `ENABLE_SINGLE_HEADER=OFF|ON`
+  - `OFF` (*default*): keep *magic_args* as a multi-file header-only library
+  - `ON`: build *magic_args* as a single-file header-only library. This option is usually only needed by *magic_args* contributors
 
 ## Preprocessor Configuration
 
