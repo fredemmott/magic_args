@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <ranges>
+#include <utility>
 
 namespace magic_args::detail::constexpr_strings {
 
