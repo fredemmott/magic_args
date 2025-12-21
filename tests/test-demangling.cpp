@@ -12,12 +12,15 @@ struct foo {
 struct demangled_and_mangled_name {
   const std::string_view demangled {};
 
+  const std::string_view mangled_apple_clang {};
   const std::string_view mangled_clang {};
   const std::string_view mangled_gcc {};
   const std::string_view mangled_msvc {};
 
   constexpr std::string_view mangled() const noexcept {
-#if defined(__clang__)
+#if defined(__apple_build_version__)
+    return mangled_apple_clang;
+#elif defined(__clang__)
     return mangled_clang;
 #elif defined(_MSC_VER)
     return mangled_msvc;
@@ -46,6 +49,7 @@ consteval auto demangle_with() {
 // If the mangled names change, that's fine, just update this
 static constexpr auto TestData = demangled_and_mangled_name {
   .demangled = "bar",
+  .mangled_apple_clang = R"(auto magic_args::detail::mangled_name_c_str() [T = apple_workaround_t<string>{&external.bar}])",
   .mangled_clang
   = R"(auto __cdecl magic_args::detail::mangled_name_c_str(void) [T = apple_workaround_t<basic_string<char>>{&external.bar}])",
   .mangled_gcc
@@ -70,6 +74,10 @@ TEST_CASE("current demangler") {
 
 TEST_CASE("all demanglers") {
   using namespace magic_args::detail;
+  CHECK(
+    std::string_view {
+      demangle_with<clang_demangler_t, [] { return TestData.mangled_apple_clang; }>()}
+    == TestData.demangled);
   CHECK(
     std::string_view {
       demangle_with<clang_demangler_t, [] { return TestData.mangled_clang; }>()}
