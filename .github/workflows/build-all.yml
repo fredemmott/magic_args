@@ -9,11 +9,12 @@ on:
 jobs:
   call-build-single:
     uses: ./.github/workflows/build-single.yml
-    name: ${{matrix.name}}
+    name: ${{matrix.target.name}}
     strategy:
       fail-fast: false
       matrix:
-        include:
+        single-header: [true, false]
+        target:
           - name: Windows - MSVC
             runs-on: windows-2022
           - name: Windows - Conformant MSVC
@@ -28,7 +29,8 @@ jobs:
           - name: MacOS - Apple Clang
             runs-on: macos-15
     with:
-      name: ${{matrix.name}}
-      runs-on: ${{matrix.runs-on}}
-      cmake-args: ${{matrix.cmake-args}}
-      cmake-preset: ${{matrix.cmake-preset || 'Debug - default'}}
+      name: ${{matrix.target.name}}
+      single-header: ${{matrix.single-header}}
+      runs-on: ${{matrix.target.runs-on}}
+      cmake-args: ${{matrix.target.cmake-args}}
+      cmake-preset: ${{matrix.target.cmake-preset || 'Debug - default'}}

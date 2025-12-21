@@ -49,6 +49,11 @@ elseif (CONFORMANT_MSVC)
 endif ()
 
 option(ENABLE_SINGLE_HEADER OFF "Build magic-args as a single header file")
+if (ENABLE_SINGLE_HEADER)
+  message(STATUS "Building single-header version of magic_args")
+else ()
+  message(STATUS "Building split-header version of magic_args")
+endif ()
 
 add_subdirectory(include/magic_args)
 

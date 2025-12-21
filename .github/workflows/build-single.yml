@@ -4,6 +4,9 @@ on:
       name:
         required: true
         type: string
+      single-header:
+        required: true
+        type: boolean
       runs-on:
         required: true
         type: string
@@ -16,7 +19,7 @@ on:
         type: string
 jobs:
   build-and-test:
-    name: Build and test - ${{inputs.name}}
+    name: ${{inputs.single-header && 'Single header' || 'Standard'}}
     runs-on: ${{inputs.runs-on}}
     env:
       VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
@@ -48,7 +51,7 @@ jobs:
           cd build
           cmake ../source `
             --preset "${{inputs.cmake-preset}}" `
-            -DENABLE_SINGLE_HEADER_TESTS=ON `
+            -DENABLE_SINGLE_HEADER=${{inputs.single-header && 'ON' || 'OFF'}} `
             ${{inputs.cmake-args}}
       - name: Build
         working-directory: build
@@ -66,10 +69,10 @@ jobs:
         if: ${{ always() }}
         shell: pwsh
         run: |
-          Write-Host "::notice title=🧪 Test summary - ${{inputs.name}}::$(Get-Content -Encoding UTF8 ${{runner.temp}}/ctest.log | Select-String -Pattern 'tests passed')"
+          Write-Host "::notice title=🧪 Test summary - ${{inputs.name}} (${{inputs.single-header && 'Single header' || 'Standard'}})::$(Get-Content -Encoding UTF8 ${{runner.temp}}/ctest.log | Select-String -Pattern 'tests passed')"
       - name: Publish test log
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: ctest-logs-${{inputs.name}}
+          name: ctest-logs-${{inputs.name}}-${{inputs.single-header && 'single-header' || 'standard'}}
           path: "${{runner.temp}}/ctest.log"
