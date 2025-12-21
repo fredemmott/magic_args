@@ -205,11 +205,6 @@ consteval auto demangle() {
 #endif
 }
 
-template <auto T>
-consteval auto demangled_name() {
-  return demangle<mangled_name<T>()>();
-}
-
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wundefined-var-template"
@@ -228,8 +223,11 @@ struct apple_workaround_t {
 };
 
 template <class T, std::size_t N>
-constexpr auto member_name = demangled_name<apple_workaround_t {
-  &std::get<N>(tie_struct(external<T>))}>();
+constexpr auto mangled_name_by_index
+  = mangled_name<apple_workaround_t {&std::get<N>(tie_struct(external<T>))}>();
+
+template <class T, std::size_t N>
+constexpr auto member_name_by_index = demangle<mangled_name_by_index<T, N>>();
 
 #ifdef __clang__
 #pragma clang diagnostic pop

@@ -22,7 +22,7 @@ auto infer_argument_definition() {
     } else {
       return Traits::template normalize_option_name<Name>();
     }
-  }.template operator()<detail::member_name<T, N>>();
+  }.template operator()<detail::member_name_by_index<T, N>>();
 
   if constexpr (std::same_as<TValue, bool>) {
     return flag {
