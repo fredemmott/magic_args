@@ -3,6 +3,7 @@
 #ifndef MAGIC_ARGS_DETAIL_REFLECTION_HPP
 #define MAGIC_ARGS_DETAIL_REFLECTION_HPP
 
+#include <algorithm>
 #include <source_location>
 #include <string>
 #include <tuple>
@@ -92,81 +93,121 @@ constexpr decltype(auto) tie_struct(T&& v) {
   }
 }
 
-template <class T>
-consteval auto mangled_name() {
-  return std::source_location::current().function_name();
-}
 template <auto T>
-consteval auto mangled_name() {
+constexpr auto mangled_name_c_str() {
   return std::source_location::current().function_name();
 }
 
-consteval auto demangled_name_msvc(std::string_view name) {
-  // Mangled: const char *__cdecl mangled_name<&external<struct Bar>->abc>(void)
-  //
-  // Or with apple_workaround_t:
-  //
-  // const char *--cdecl magic-args::detail::-reflection::mangled-name<struct
-  // magic-args::detail::-reflection::apple-workaround-t<bool>{bool*:&magic-args::detail::-reflection::external<struct
-  // -flags-only>->m-foo}>(void)
-  auto begin = name.rfind("->") + 2;
-  auto end = name.rfind("}");
-  if (end > begin) {
-    return name.substr(begin, end - begin);
-  }
-  return name;
+template <auto T>
+constexpr auto mangled_name() {
+  // Don't inline the call to function_name(); if you do, VS2022 will truncate
+  // the name
+  constexpr auto data = mangled_name_c_str<T>();
+  constexpr auto n = std::char_traits<char>::length(data);
+  std::array<char, n> ret {};
+  std::ranges::copy_n(data, n, ret.begin());
+  return ret;
 }
 
-consteval auto demangled_name_clang(std::string_view name) {
-  // Mangled: auto mangled_name() [T = &external.abc]
-  //
-  // ... or with apple_workaround_t {}:
-  //
-  // magic-args::detail::-reflection::mangled-name() [-t =
-  // apple-workaround-t<bool>{&external.m-foo}]
-  auto begin = name.rfind(".") + 1;
-  auto end = name.rfind("}");
-  if (end > begin) {
-    return name.substr(begin, end - begin);
+template <auto TName>
+struct msvc_demangler_t {
+  static constexpr auto view() {
+    static_assert(!std::string_view {TName}.empty());
+    // Mangled: const char *__cdecl mangled_name<&external<struct
+    // Bar>->abc>(void)
+    //
+    // Or with apple_workaround_t:
+    //
+    // const char *--cdecl magic-args::detail::-reflection::mangled-name<struct
+    // magic-args::detail::-reflection::apple-workaround-t<bool>{bool*:&magic-args::detail::-reflection::external<struct
+    // -flags-only>->m-foo}>(void)
+    constexpr std::string_view name {TName};
+    constexpr auto begin = name.rfind("->") + 2;
+    constexpr auto end = name.rfind('}');
+    if constexpr (end != std::string_view::npos && end > begin) {
+      return name.substr(begin, end - begin);
+    } else {
+      return name;
+    }
   }
-  return name;
-}
 
-consteval auto demangled_name_gcc(std::string_view name) {
-  // auto magic-args::detail::-reflection::mangled-name() [with auto -t = (&
-  // external<-flags-only>.-flags-only::m-foo)]
-  //
-  // ... or with apple_workaround_t {}:
-  //
-  // consteval auto magic-args::detail::-reflection::mangled-name() [with auto
-  // -t = apple-workaround-t<bool>{(&
-  // external<-flags-only>.-flags-only::m-foo)}]
-  auto begin = name.rfind("::") + 2;
-  auto end = name.rfind(")");
-  if (end > begin) {
-    return name.substr(begin, end - begin);
+  static constexpr auto value = [] {
+    std::array<char, view().size()> ret {};
+    std::ranges::copy(view(), ret.begin());
+    return ret;
+  }();
+};
+
+template <auto TName>
+struct clang_demangler_t {
+  static constexpr auto view() {
+    // Mangled: auto mangled_name() [T = &external.abc]
+    //
+    // ... or with apple_workaround_t {}:
+    //
+    // magic-args::detail::-reflection::mangled-name() [-t =
+    // apple-workaround-t<bool>{&external.m-foo}]
+    constexpr std::string_view name {TName};
+    constexpr auto begin = name.rfind('.') + 1;
+    constexpr auto end = name.rfind('}');
+    if constexpr (end != std::string_view::npos && end > begin) {
+      return name.substr(begin, end - begin);
+    } else {
+      return name;
+    }
   }
-  return name;
-}
 
-consteval auto demangled_name(std::string_view name) {
+  static constexpr auto value = [] {
+    std::array<char, view().size()> ret {};
+    std::ranges::copy(view(), ret.begin());
+    return ret;
+  }();
+};
+
+template <auto TName>
+struct gcc_demangler_t {
+  static constexpr auto view() {
+    constexpr std::string_view name {TName};
+    // auto magic-args::detail::-reflection::mangled-name() [with auto -t = (&
+    // external<-flags-only>.-flags-only::m-foo)]
+    //
+    // ... or with apple_workaround_t {}:
+    //
+    // consteval auto magic-args::detail::-reflection::mangled-name() [with auto
+    // -t = apple-workaround-t<bool>{(&
+    // external<-flags-only>.-flags-only::m-foo)}]
+    constexpr auto begin = name.rfind("::") + 2;
+    constexpr auto end = name.rfind(')');
+    if constexpr (end != std::string_view::npos && end > begin) {
+      return name.substr(begin, end - begin);
+    }
+    return name;
+  }
+
+  static constexpr auto value = [] {
+    std::array<char, view().size()> ret {};
+    std::ranges::copy(view(), ret.begin());
+    return ret;
+  }();
+};
+
+template <auto Name>
+consteval auto demangle() {
 #if defined(__clang__)
-  return demangled_name_clang(name);
+  return clang_demangler_t<Name>::value;
 #elif defined(_MSC_VER)
-  return demangled_name_msvc(name);
+  return msvc_demangler_t<Name>::value;
 #elif defined(__GNUC__)
-  return demangled_name_gcc(name);
+  return gcc_demangler_t<Name>::value;
+#else
+#warning "Unsupported compiler detected"
+  return Name;
 #endif
-  return name;
 }
 
-template <class T>
-consteval auto demangled_name() {
-  return demangled_name(mangled_name<T>());
-}
 template <auto T>
 consteval auto demangled_name() {
-  return demangled_name(mangled_name<T>());
+  return demangle<mangled_name<T>()>();
 }
 
 #ifdef __clang__

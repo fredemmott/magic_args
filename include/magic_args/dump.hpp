@@ -24,7 +24,10 @@ void dump(const T& args, FILE* output = stdout) {
      ...);
 #endif
     (detail::println(
-       output, "{:29} `{}`", member_name<T, I>, to_formattable(get<I>(args))),
+       output,
+       "{:29} `{}`",
+       std::string_view(member_name<T, I>),
+       to_formattable(get<I>(args))),
      ...);
   }(tuple,
     output,

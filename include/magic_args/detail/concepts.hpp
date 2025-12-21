@@ -3,6 +3,7 @@
 #ifndef MAGIC_ARGS_DETAIL_CONCEPTS_HPP
 #define MAGIC_ARGS_DETAIL_CONCEPTS_HPP
 
+#include <array>
 #include <concepts>
 #include <optional>
 #include <string>
@@ -12,16 +13,16 @@ namespace magic_args::inline public_api {
 template <class T>
 concept basic_argument = requires(T v) {
   typename std::decay_t<T>::value_type;
-  { v.mName } -> std::convertible_to<std::string>;
-  { v.mHelp } -> std::convertible_to<std::string>;
+  { v.mName } -> std::convertible_to<std::string_view>;
+  { v.mHelp } -> std::convertible_to<std::string_view>;
 };
 
 template <class T>
 concept basic_option = requires(T v) {
   typename std::decay_t<T>::value_type;
-  { v.mName } -> std::convertible_to<std::string>;
-  { v.mHelp } -> std::convertible_to<std::string>;
-  { v.mShortName } -> std::convertible_to<std::string>;
+  { v.mName } -> std::convertible_to<std::string_view>;
+  { v.mHelp } -> std::convertible_to<std::string_view>;
+  { v.mShortName } -> std::convertible_to<std::string_view>;
 };
 }// namespace magic_args::inline public_api
 
@@ -80,6 +81,9 @@ struct is_string_literal_t<char const (&)[N]> : std::true_type {};
 
 template <class T>
 concept string_literal = is_string_literal_t<T>::value;
+
+template <class T, class U>
+concept explicitly_convertible_to = std::constructible_from<U, T>;
 }// namespace magic_args::detail
 
 namespace magic_args::inline public_api {
@@ -94,8 +98,23 @@ concept parsing_traits = requires(std::string arg) {
   { T::version_arg } -> detail::string_literal;
   { T::single_char_short_args } -> detail::same_as_ignoring_cvref<bool>;
 
-  { T::normalize_option_name(arg) } -> std::same_as<void>;
-  { T::normalize_positional_argument_name(arg) } -> std::same_as<void>;
+  {
+    T::template normalize_option_name<std::array {'f', 'o', 'o'}>()
+  } -> detail::explicitly_convertible_to<std::string_view>;
+  {
+    T::template normalize_positional_argument_name<std::array {'f', 'o', 'o'}>()
+  } -> detail::explicitly_convertible_to<std::string_view>;
+
+  requires requires {
+    // Check that the functions are constexpr
+    typename std::bool_constant<(
+      (void)T::template normalize_option_name<std::array {'f', 'o', 'o'}>(),
+      true)>;
+    typename std::bool_constant<(
+      (void)T::template normalize_positional_argument_name<std::array {
+        'f', 'o', 'o'}>(),
+      true)>;
+  };
 };
 
 template <class T>

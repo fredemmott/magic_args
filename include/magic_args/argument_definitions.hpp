@@ -18,8 +18,8 @@ struct optional_positional_argument {
   static constexpr bool is_required = false;
   static constexpr bool is_std_optional = detail::std_optional<T>;
   T mValue {};
-  std::string mName;
-  std::string mHelp;
+  std::string_view mName;
+  std::string_view mHelp;
 
   [[nodiscard]] constexpr decltype(auto) value(this auto&& self) noexcept(
     !is_std_optional) {
@@ -75,8 +75,8 @@ struct mandatory_positional_argument {
   static_assert(!detail::std_optional<T>);
 
   T mValue {};
-  std::string mName;
-  std::string mHelp;
+  std::string_view mName;
+  std::string_view mHelp;
 
   [[nodiscard]] constexpr decltype(auto) value(this auto&& self) noexcept(
     !is_std_optional) {
@@ -112,9 +112,9 @@ struct option final {
   using value_type = T;
   static constexpr bool is_std_optional = detail::std_optional<T>;
   T mValue {};
-  std::string mName;
-  std::string mHelp;
-  std::string mShortName;
+  std::string_view mName;
+  std::string_view mHelp;
+  std::string_view mShortName;
 
   [[nodiscard]] constexpr decltype(auto) value(this auto&& self) noexcept(
     !is_std_optional) {
@@ -164,9 +164,9 @@ struct option final {
 
 struct flag final {
   using value_type = bool;
-  std::string mName;
-  std::string mHelp;
-  std::string mShortName;
+  std::string_view mName;
+  std::string_view mHelp;
+  std::string_view mShortName;
   bool mValue {false};
 
   flag& operator=(bool value) {
@@ -183,9 +183,9 @@ struct flag final {
 // e.g. for `-vvv` -> triple-verbose
 struct counted_flag final {
   using value_type = bool;
-  std::string mName;
-  std::string mHelp;
-  std::string mShortName;
+  std::string_view mName;
+  std::string_view mHelp;
+  std::string_view mShortName;
 
   std::size_t mCount {};
 

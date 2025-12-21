@@ -7,6 +7,7 @@
 #include <magic_args/argument_definitions.hpp>
 #include <magic_args/incomplete_parse_reason.hpp>
 
+#include "constexpr_strings.hpp"
 #include "from_string.hpp"
 #endif
 
@@ -69,42 +70,13 @@ std::string get_prefix_for_user_messages(argv_range auto&& argv) {
 
 template <parsing_traits T>
 struct common_arguments_t {
- private:
-  template <std::size_t N, std::size_t M>
-  struct concat_t {
-    static constexpr std::size_t TotalSize = N + M - 2;
-    concat_t() = delete;
-    consteval concat_t(const char (&lhs)[N], const char (&rhs)[M]) {
-      std::ranges::copy(lhs, lhs + N - 1, mBuf);
-      std::ranges::copy(rhs, rhs + M - 1, mBuf + N - 1);
-    }
-
-    constexpr bool operator==(const std::string_view& other) const noexcept {
-      return other == std::string_view {mBuf, TotalSize};
-    }
-
-    constexpr operator std::string_view() const noexcept {
-      return std::string_view {mBuf, TotalSize};
-    }
-
-    constexpr std::string_view operator*() const noexcept {
-      return *this;
-    }
-
-   private:
-    char mBuf[TotalSize] {};
-  };
-  template <std::size_t N, std::size_t M>
-  static consteval auto concat(const char (&lhs)[N], const char (&rhs)[M]) {
-    return concat_t<N, M> {lhs, rhs};
-  }
-
  public:
   static constexpr auto long_help
-    = concat(T::long_arg_prefix, T::long_help_arg);
+    = constexpr_strings::concat(T::long_arg_prefix, T::long_help_arg);
   static constexpr auto short_help
-    = concat(T::short_arg_prefix, T::short_help_arg);
-  static constexpr auto version = concat(T::long_arg_prefix, T::version_arg);
+    = constexpr_strings::concat(T::short_arg_prefix, T::short_help_arg);
+  static constexpr auto version
+    = constexpr_strings::concat(T::long_arg_prefix, T::version_arg);
 };
 
 template <parsing_traits Traits, basic_argument T>
@@ -112,7 +84,7 @@ std::string provided_argument_name(
   const T& argDef,
   const std::string_view arg) {
   if constexpr (!basic_option<T>) {
-    return argDef.mName;
+    return std::string {argDef.mName};
   } else {
     const auto index = arg.find(Traits::value_separator);
     if (index == std::string_view::npos) {
@@ -379,7 +351,7 @@ arg_parse_result<V> parse_positional_argument(
 
   if (args.empty()) {
     if constexpr (T::is_required) {
-      return std::unexpected {missing_required_argument {argDef.mName}};
+      return std::unexpected {missing_required_argument {std::string { argDef.mName }}};
     } else {
       return std::nullopt;
     }

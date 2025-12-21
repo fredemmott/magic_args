@@ -61,7 +61,7 @@ template <basic_argument TArg>
 struct get_argument_help_t<TArg> {
   static std::string operator()(const TArg& argDef) {
     if (!argDef.mHelp.empty()) {
-      return argDef.mHelp;
+      return std::string { argDef.mHelp };
     }
 
     const auto entries

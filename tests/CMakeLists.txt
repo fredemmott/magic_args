@@ -102,6 +102,7 @@ add_test_executables(test-default-values test-default-values.cpp)
 add_test_executables(test-help test-help.cpp)
 add_test_executables(test-std-optional test-std-optional.cpp)
 add_test_executables(test-styles test-styles.cpp)
+add_test_executables(test-constexpr_strings test-constexpr_strings.cpp)
 
 # Extra features building on top of the core
 add_test_executables(test-dump test-dump.cpp)

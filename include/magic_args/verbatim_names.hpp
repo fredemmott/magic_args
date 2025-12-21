@@ -12,8 +12,14 @@ namespace magic_args::inline public_api {
 
 template <parsing_traits T = gnu_style_parsing_traits>
 struct verbatim_names : T {
-  static void normalize_option_name(std::string&) {};
-  static void normalize_positional_argument_name(std::string&) {};
+  template <auto Name>
+  static consteval auto normalize_option_name() {
+    return Name;
+  }
+  template <auto Name>
+  static consteval auto normalize_positional_argument_name() {
+    return Name;
+  }
 };
 
 }// namespace magic_args::inline public_api

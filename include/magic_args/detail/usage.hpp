@@ -179,11 +179,8 @@ void show_usage(FILE* output, argv_range auto&& argv) {
           const auto arg = get_argument_definition<T, I, Traits>();
           using TArg = std::decay_t<decltype(arg)>;
           if constexpr (!(basic_option<TArg> || std::same_as<TArg, flag>)) {
-            auto name = arg.mName;
-            for (auto&& c: name) {
-              c = static_cast<char>(std::toupper(c));
-            }
-            if (name.back() == 'S') {
+            auto name = std::string {arg.mName};
+            if (toupper(name.back()) == 'S') {
               // Real de-pluralization requires a lookup database; we can't do
               // that, so this seems to be the only practical approach. If
               // it's not good enough for you, specify a

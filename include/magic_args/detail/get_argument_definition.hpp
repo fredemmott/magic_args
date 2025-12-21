@@ -15,22 +15,22 @@ namespace magic_args::detail {
 
 template <class T, std::size_t N, parsing_traits Traits>
 auto infer_argument_definition() {
-  // TODO: put the member name -> thing into the traits
-  std::string name {detail::member_name<T, N>};
   using TValue = std::decay_t<decltype(get<N>(detail::tie_struct(T {})))>;
-  if constexpr (basic_argument<TValue> && !basic_option<TValue>) {
-    Traits::normalize_positional_argument_name(name);
-  } else {
-    Traits::normalize_option_name(name);
-  }
+  static constexpr auto name = []<auto Name> {
+    if constexpr (basic_argument<TValue> && !basic_option<TValue>) {
+      return Traits::template normalize_positional_argument_name<Name>();
+    } else {
+      return Traits::template normalize_option_name<Name>();
+    }
+  }.template operator()<detail::member_name<T, N>>();
 
   if constexpr (std::same_as<TValue, bool>) {
     return flag {
-      .mName = name,
+      .mName = std::string_view {name},
     };
   } else {
     return option<TValue> {
-      .mName = name,
+      .mName = std::string_view {name},
     };
   }
 }
