@@ -49,6 +49,7 @@ struct BasicNormalization {
   std::string lowerCamel;
   std::string m_em_snake_case;
   std::string snake_case;
+  std::string member_starts_with_m_but_is_not_m_prefix;
 };
 using Normalization = BasicNormalization<magic_args::gnu_style_parsing_traits>;
 using NormalizationPS

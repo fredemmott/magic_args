@@ -136,6 +136,7 @@ Options:
       -LowerCamel=VALUE
       -EmSnakeCase=VALUE
       -SnakeCase=VALUE
+      -MemberStartsWithMButIsNotMPrefix=VALUE
 
   -?, -Help                    show this message
 )EOF"));
@@ -162,6 +163,7 @@ Options:
       --lower-camel=VALUE
       --em-snake-case=VALUE
       --snake-case=VALUE
+      --member-starts-with-m-but-is-not-m-prefix=VALUE
 
   -?, --help                   show this message
 )EOF"));
@@ -190,6 +192,7 @@ Options:
       --lowerCamel=VALUE
       --m_em_snake_case=VALUE
       --snake_case=VALUE
+      --member_starts_with_m_but_is_not_m_prefix=VALUE
 
   -?, --help                   show this message
 )EOF"));
@@ -216,6 +219,7 @@ Options:
       -lowerCamel=VALUE
       -m_em_snake_case=VALUE
       -snake_case=VALUE
+      -member_starts_with_m_but_is_not_m_prefix=VALUE
 
   -?, -Help                    show this message
 )EOF"));
