@@ -7,6 +7,16 @@ endif ()
 
 project(magic_args VERSION 0.2.1 LANGUAGES CXX)
 
+option(ENABLE_KNOWN_INCOMPATIBLE_COMPILER "Enable support for compilers that are known not to work" OFF)
+if (NOT ENABLE_KNOWN_INCOMPATIBLE_COMPILER)
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    string(REGEX MATCH "^([0-9])+" GCC_MAJOR_VERSION "${CMAKE_CXX_COMPILER_VERSION}")
+    if (GCC_MAJOR_VERSION LESS 14)
+      message(FATAL_ERROR "g++ ${GCC_MAJOR_VERSION} detected; g++ < 14 are known to be incompatible. Set ENABLE_KNOWN_INCOMPATIBLE_COMPILER=ON to bypass this check.")
+    endif ()
+  endif ()
+endif ()
+
 option(CONFORMANT_MSVC "Under MSVC, enable various /Zc flags" OFF)
 
 if (MSVC)
