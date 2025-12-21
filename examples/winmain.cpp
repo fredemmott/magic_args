@@ -8,7 +8,9 @@
  * This is off by default as it depends on <Windows.h>
  */
 #include <magic_args/magic_args.hpp>
+#if __has_include(<magic_args/windows.hpp>)
 #include <magic_args/windows.hpp>
+#endif
 #include <thread>
 
 #include <Windows.h>

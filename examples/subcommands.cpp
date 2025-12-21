@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: MIT
 
 #include <magic_args/magic_args.hpp>
+// Support single-header version
+#if __has_include(<magic_args/subcommands.hpp>)
 #include <magic_args/subcommands.hpp>
+#endif
 
 struct CommandFooBar {
   static constexpr auto name = "foo";

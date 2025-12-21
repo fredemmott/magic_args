@@ -48,6 +48,8 @@ elseif (CONFORMANT_MSVC)
   message(FATAL_ERROR "CONFORMANT_MSVC specified, but not using MSVC")
 endif ()
 
+option(ENABLE_SINGLE_HEADER OFF "Build magic-args as a single header file")
+
 add_subdirectory(include/magic_args)
 
 option(BUILD_TESTING "Build tests" "${PROJECT_IS_TOP_LEVEL}")

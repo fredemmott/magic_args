@@ -2,11 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 #include <magic_args/magic_args.hpp>
-#ifdef _WIN32
-#include <magic_args/windows.hpp>
-#else
-#include <magic_args/iconv.hpp>
-#endif
 
 struct MyArgs {
   bool foo {false};

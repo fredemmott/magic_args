@@ -67,12 +67,6 @@ target_sources(
   TYPE HEADERS
   FILES ${HEADER_FILES}
 )
-target_include_directories(
-  magic_args
-  INTERFACE
-  "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
-  "$<INSTALL_INTERFACE:include>"
-)
 target_compile_features(
   magic_args
   INTERFACE
@@ -135,39 +129,44 @@ else ()
   message(FATAL_ERROR "ENABLE_MAGIC_ENUM is set to '${ENABLE_MAGIC_ENUM}'; valid values are 'auto', 'ON', and 'OFF'")
 endif ()
 
-set(SINGLE_HEADER_SOURCES "${HEADER_FILES}")
-list(PREPEND SINGLE_HEADER_SOURCES detail/single_header_prefix.hpp)
-set(SINGLE_HEADER_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/single-header/magic_args")
-set(SINGLE_HEADER_OUTPUT_FILE "${SINGLE_HEADER_OUTPUT_DIRECTORY}/magic_args.hpp")
+if (ENABLE_SINGLE_HEADER)
+  set(SINGLE_HEADER_SOURCES "${HEADER_FILES}")
+  list(PREPEND SINGLE_HEADER_SOURCES detail/single_header_prefix.hpp)
+  set(SINGLE_HEADER_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/single-header/magic_args")
+  set(SINGLE_HEADER_OUTPUT_FILE "${SINGLE_HEADER_OUTPUT_DIRECTORY}/magic_args.hpp")
 
-add_custom_command(
-  OUTPUT "${SINGLE_HEADER_OUTPUT_FILE}"
-  COMMAND
-  "${CMAKE_COMMAND}" -E make_directory "${SINGLE_HEADER_OUTPUT_DIRECTORY}"
-  COMMAND
-  "${CMAKE_COMMAND}" -E cat "${SINGLE_HEADER_SOURCES}" > "${SINGLE_HEADER_OUTPUT_FILE}"
-  DEPENDS
-  "${SINGLE_HEADER_SOURCES}"
-  "${CMAKE_CURRENT_LIST_FILE}"
-  WORKING_DIRECTORY
-  "${CMAKE_CURRENT_SOURCE_DIR}"
-  VERBATIM
-  COMMAND_EXPAND_LISTS
-)
-add_library(
-  magic_args-single-header
-  INTERFACE
-  "${SINGLE_HEADER_OUTPUT_FILE}"
-)
+  add_custom_command(
+    OUTPUT "${SINGLE_HEADER_OUTPUT_FILE}"
+    COMMAND
+    "${CMAKE_COMMAND}" -E make_directory "${SINGLE_HEADER_OUTPUT_DIRECTORY}"
+    COMMAND
+    "${CMAKE_COMMAND}" -E cat "${SINGLE_HEADER_SOURCES}" > "${SINGLE_HEADER_OUTPUT_FILE}"
+    DEPENDS
+    "${SINGLE_HEADER_SOURCES}"
+    "${CMAKE_CURRENT_LIST_FILE}"
+    WORKING_DIRECTORY
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    VERBATIM
+    COMMAND_EXPAND_LISTS
+  )
+  add_custom_target(generate_single_header DEPENDS "${SINGLE_HEADER_OUTPUT_FILE}")
+  add_dependencies(magic_args generate_single_header)
+  set(SINGLE_HEADER_INCLUDE_PATH "${SINGLE_HEADER_OUTPUT_DIRECTORY}/..")
+  cmake_path(ABSOLUTE_PATH SINGLE_HEADER_INCLUDE_PATH NORMALIZE)
+  target_include_directories(
+    magic_args
+    INTERFACE
+    "${SINGLE_HEADER_INCLUDE_PATH}"
+  )
+  return()
+endif ()
+
+
 target_include_directories(
-  magic_args-single-header
+  magic_args
   INTERFACE
-  "${SINGLE_HEADER_OUTPUT_DIRECTORY}/.."
-)
-target_compile_features(
-  magic_args-single-header
-  INTERFACE
-  cxx_std_23
+  "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>"
 )
 
 install(
@@ -187,13 +186,6 @@ install(
   FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/magic_args-config.cmake"
   DESTINATION lib/cmake/magic_args
-)
-
-install(
-  FILES "${SINGLE_HEADER_OUTPUT_FILE}"
-  DESTINATION "include/magic_args"
-  COMPONENT SingleHeader
-  EXCLUDE_FROM_ALL
 )
 
 # For projects using add_subdirectory()
