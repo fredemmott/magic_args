@@ -5,6 +5,7 @@
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "main_macros.hpp"
+#include "subcommands/inspection.hpp"
 #include "subcommands/invoke_subcommands.hpp"
 #include "subcommands/invoke_subcommands_silent.hpp"
 #include "subcommands/is_error.hpp"
@@ -40,6 +41,7 @@ struct multicall_traits : T {
 }// namespace magic_args::inline public_api
 
 #define MAGIC_ARGS_SUBCOMMANDS_MAIN(...) \
+  MAGIC_ARGS_MAKE_SUBCOMMANDS_INSPECTABLE(__VA_ARGS__) \
   MAGIC_ARGS_UTF8_MAIN(argv) { \
     const auto ok = magic_args::invoke_subcommands<__VA_ARGS__>(argv); \
     if (ok) [[likely]] { \
@@ -91,6 +93,7 @@ struct invoke_multicall_t<First, Rest...> {
 }// namespace magic_args::detail
 
 #define MAGIC_ARGS_MULTI_CALL_MAIN(...) \
+  MAGIC_ARGS_MAKE_SUBCOMMANDS_INSPECTABLE(__VA_ARGS__) \
   MAGIC_ARGS_UTF8_MAIN(argv) { \
     const auto ok = magic_args::detail::invoke_multicall_t<__VA_ARGS__> {}( \
       std::forward<decltype(argv)>(argv)); \

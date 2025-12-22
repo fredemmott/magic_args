@@ -20,6 +20,7 @@ set(
   detail/to_formattable.hpp
   detail/visitors.hpp
   detail/overloaded.hpp
+  detail/unique_any.hpp
   detail/encoding.hpp
   detail/parse.hpp
   dump.hpp
@@ -39,6 +40,7 @@ set(
   subcommands/invoke_subcommands_silent.hpp
   subcommands/invoke_subcommands.hpp
   subcommands/is_error.hpp
+  subcommands/inspection.hpp
   subcommands.hpp
   ## Other extensions
   powershell_style_parsing_traits.hpp
@@ -174,18 +176,6 @@ install(
   EXPORT exports
   FILE_SET HEADERS
   DESTINATION include/magic_args
-)
-install(
-  EXPORT
-  exports
-  NAMESPACE magic_args::
-  FILE magic_args-targets.cmake
-  DESTINATION lib/cmake/magic_args
-)
-install(
-  FILES
-  "${CMAKE_CURRENT_SOURCE_DIR}/magic_args-config.cmake"
-  DESTINATION lib/cmake/magic_args
 )
 
 # For projects using add_subdirectory()

@@ -22,6 +22,19 @@ consteval auto operator""_array() {
 
 using namespace magic_args::detail::constexpr_strings;
 
+TEST_CASE("concat strings") {
+  STATIC_CHECK(concat("foo", "bar") == "foobar");
+  STATIC_CHECK(concat("", "bar") == "bar");
+  STATIC_CHECK(concat("foo", "") == "foo");
+}
+
+TEST_CASE("concat byte arrays") {
+  using T = concat_byte_array_traits;
+  STATIC_CHECK(concat<T>("foo", "bar") == "foo\0bar\0"_array);
+  STATIC_CHECK(concat<T>("", "bar") == "\0bar\0"_array);
+  STATIC_CHECK(concat<T>("foo", "") == "foo\0\0"_array);
+}
+
 TEST_CASE("hyphenate_t") {
   STATIC_CHECK(hyphenate_t<"f"_array> {} == "f");
   STATIC_CHECK(hyphenate_t<"F"_array> {} == "f");

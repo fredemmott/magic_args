@@ -207,34 +207,112 @@ struct upper_camel_t : normalizer_t {
   }();
 };
 
-template <std::size_t N, std::size_t M>
+// "foo" + "bar" should be length 6, not length 8
+// Input has null after foo, null after bar, we're dropping both
+struct concat_c_string_traits {
+  using element_type = char;
+  template <std::size_t N>
+  static constexpr auto buffer_size = N + 1;// trailing null
+
+  static constexpr auto lhs_subrange(const auto& lhs) {
+    return std::views::take(lhs, std::ranges::size(lhs) - 1);
+  }
+
+  static constexpr auto rhs_subrange(const auto& rhs) {
+    return lhs_subrange(rhs);
+  }
+
+  template <std::size_t N>
+  static constexpr auto dereference(const std::array<char, N>& buf) {
+    static_assert(N > 0, "Must at least have a trailing null");
+    return std::string_view {buf.data(), N - 1};
+  }
+};
+
+struct concat_byte_array_traits {
+  using element_type = char;
+  template <std::size_t N>
+  static constexpr auto buffer_size = N;
+
+  static constexpr auto lhs_subrange(const auto& lhs) {
+    return lhs;
+  }
+
+  static constexpr auto rhs_subrange(const auto& rhs) {
+    return rhs;
+  }
+
+  static constexpr auto dereference(const auto& buf) {
+    return buf;
+  }
+};
+
+template <std::size_t N, std::size_t M, class Traits = concat_c_string_traits>
 struct concat_t {
-  static constexpr std::size_t TotalSize = N + M - 2;
+  using element_type = Traits::element_type;
+  template <std::size_t C>
+  using array_type = std::array<element_type, C>;
+  template <std::size_t C>
+  using c_array_type = const char[C];
+
+  static constexpr std::size_t size
+    = Traits::lhs_subrange(array_type<N> {}).size()
+    + Traits::rhs_subrange(array_type<M> {}).size();
+
+  using buffer_type = array_type<Traits::template buffer_size<size>>;
+
   concat_t() = delete;
-  consteval concat_t(const char (&lhs)[N], const char (&rhs)[M]) {
-    std::ranges::copy(lhs, lhs + N - 1, mBuf);
-    std::ranges::copy(rhs, rhs + M - 1, mBuf + N - 1);
+  consteval concat_t(const array_type<N>& lhs, const array_type<M>& rhs) {
+    const auto lhsSlice = Traits::lhs_subrange(lhs);
+    const auto rhsSlice = Traits::rhs_subrange(rhs);
+    const auto afterLhs = std::ranges::copy(lhsSlice, mBuf.begin()).out;
+    std::ranges::copy(rhsSlice, afterLhs);
   }
 
-  constexpr bool operator==(const std::string_view& other) const noexcept {
-    return other == std::string_view {mBuf, TotalSize};
+  consteval concat_t(const c_array_type<N>& lhs, const c_array_type<M>& rhs)
+    : concat_t(std::to_array(lhs), std::to_array(rhs)) {
   }
 
-  constexpr operator std::string_view() const noexcept {
-    return std::string_view {mBuf, TotalSize};
+  constexpr auto get() const noexcept {
+    return Traits::dereference(mBuf);
   }
 
-  constexpr std::string_view operator*() const noexcept {
-    return *this;
+  template <class T>
+    requires requires(concat_t v, T other) { v.get() == other; }
+  constexpr bool operator==(const T& other) const noexcept {
+    return get() == other;
+  }
+
+  constexpr auto operator*() const noexcept {
+    return get();
+  }
+
+  constexpr auto get_buffer() const noexcept {
+    return mBuf;
   }
 
  private:
-  char mBuf[TotalSize] {};
+  buffer_type mBuf {};
 };
 
-template <std::size_t N, std::size_t M>
-consteval auto concat(const char (&lhs)[N], const char (&rhs)[M]) {
-  return concat_t<N, M> {lhs, rhs};
+template <
+  class Traits = concat_c_string_traits,
+  std::size_t N,
+  std::size_t M,
+  class T = Traits::element_type>
+consteval auto concat(const T (&lhs)[N], const T (&rhs)[M]) {
+  return concat_t<N, M, Traits> {lhs, rhs};
+}
+
+template <
+  class Traits = concat_c_string_traits,
+  std::size_t N,
+  std::size_t M,
+  class T = Traits::element_type>
+consteval auto concat(
+  const std::array<T, N>& lhs,
+  const std::array<T, M>& rhs) {
+  return concat_t<N, M, Traits> {lhs, rhs};
 }
 
 }// namespace magic_args::detail::constexpr_strings

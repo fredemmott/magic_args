@@ -77,3 +77,22 @@ option(BUILD_EXAMPLES "Build examples" "${PROJECT_IS_TOP_LEVEL}")
 if (BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif ()
+
+option(BUILD_UTILITIES "Build utilities" ${PROJECT_IS_TOP_LEVEL})
+if (BUILD_UTILITIES)
+  add_subdirectory(utilities)
+endif ()
+
+install(
+  EXPORT
+  exports
+  NAMESPACE magic_args::
+  FILE magic_args-targets.cmake
+  DESTINATION lib/cmake/magic_args
+)
+
+install(
+  FILES
+  "${CMAKE_CURRENT_SOURCE_DIR}/magic_args-config.cmake"
+  DESTINATION lib/cmake/magic_args
+)

@@ -160,3 +160,16 @@ As it's an `std::variant`, you can also use other approaches like `std::holds_al
 
 {: .note }
 If parsing is incomplete (either due to an error, or being passed `--help` or `--version`), `parse_subcommands()` will print the relevant messages to `stdout`/`stderr`; use `parse_subcommands_silent()` instead if you do not want this behavior.
+
+
+### Listing subcommands
+
+End users can get a list of subcommands by invoking with `--help`, or by providing an invalid subcommand name.
+
+Especially with [multi-call binaries](multi-call.md), it can be useful to get them in a more-machine-readable way; to achieve this, executables using the `MAGIC_ARGS_SUBCOMMANDS_MAIN(...)`, `MAGIC_ARGS_MULTI_CALL_MAIN(...)`, or `MAGIC_ARGS_MAKE_SUBCOMMANDS_INSPECTABLE(...)` macros export a `magic_args_subcommands_list` constant.
+
+This constant contains a list of C strings, terminated with the empty string (i.e. two nulls in a row). For example, if you define the subcommands `foo` and `bar`, it will contain `"foo\0bar\0\0"`.
+
+A `magic_args-list-subcommands` executable is included to retrieve this information, and it is made available to CMake users via the `magic_args::list-subcommands` target.
+
+This is especially useful when adding multi-call binaries: build systems can use this data to automatically create the required links.

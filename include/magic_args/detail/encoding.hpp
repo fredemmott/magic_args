@@ -17,7 +17,9 @@
 #endif
 #endif
 
-#include <functional>
+#ifndef MAGIC_ARGS_SINGLE_FILE
+#include "unique_any.hpp"
+#endif
 
 namespace magic_args::detail {
 
@@ -76,41 +78,6 @@ static_assert(std::equality_comparable<make_utf8_argv_error_t>);
 
 namespace magic_args::detail {
 #if __has_include(<langinfo.h>)
-// Not using `unique_ptr` because:
-// - `locale_t` is not guaranteed to be a pointer
-// - even when it is, it can be `void*` (e.g. on macos)
-template <
-  class T,
-  std::invocable<T> auto TDeleter,
-  std::predicate<T> TPredicate = std::identity>
-struct unique_any {
-  unique_any() = delete;
-  unique_any(const unique_any&) = delete;
-  unique_any(unique_any&&) = delete;
-  unique_any& operator=(const unique_any&) = delete;
-  unique_any& operator=(unique_any&&) = delete;
-
-  unique_any(T value) : mValue(value) {
-  }
-
-  ~unique_any() {
-    if (*this) {
-      std::invoke(TDeleter, mValue);
-    }
-  }
-
-  auto get() const noexcept {
-    return mValue;
-  }
-
-  operator bool() const noexcept {
-    return TPredicate {}(mValue);
-  }
-
- private:
-  T mValue {};
-};
-
 template <class TPlatform>
 struct encoding_traits {
   static std::string environment_charset() {

@@ -70,12 +70,11 @@ inline std::expected<void, std::error_code> convert_with_iconv(
   return {};
 }
 
-struct iconv_t_is_valid_t {
-  static bool operator()(iconv_t p) noexcept {
-    return p && p != reinterpret_cast<iconv_t>(-1);
-  }
+constexpr bool iconv_t_is_valid(const iconv_t p) noexcept {
+  return p && p != reinterpret_cast<iconv_t>(-1);
 };
-using unique_iconv_t = unique_any<iconv_t, &iconv_close, iconv_t_is_valid_t>;
+
+using unique_iconv_t = unique_any<iconv_t, &iconv_close, &iconv_t_is_valid>;
 
 inline std::expected<std::vector<std::string>, make_utf8_argv_error_t>
 make_utf8_argv(

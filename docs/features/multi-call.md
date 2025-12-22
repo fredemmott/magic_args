@@ -110,3 +110,9 @@ int main(int argc, char** argv) {
 If you have a root info struct, you can use `magic_args::multicall_traits<RootInfo>`.
 
 `invoke_subcommands_silent()`, `parse_subcommands()`, and `parse_subcommands_silent()` work just like [for normal subcommands](subcommands.md), as long as `multicall_traits<>` is used.
+
+## Listing subcommands
+
+End users can get a list of subcommands by invoking with an unrecognized command name (`argv[0]`).
+
+An API and inspection tool are [also available](subcommands.md#listing-subcommands); this is especially useful for multi-call binaries, as you can use it in your build system to automatically create the required links (i.e. one link for each subcommand).
