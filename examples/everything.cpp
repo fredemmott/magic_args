@@ -66,16 +66,7 @@ struct MyArgs {
 #endif
 };
 
-template <class... Ts>
-struct overload : Ts... {
-  using Ts::operator()...;
-};
-
-int main(int argc, char** argv) {
-  const auto args = magic_args::parse<MyArgs>(std::views::counted(argv, argc));
-  if (args) [[likely]] {
-    magic_args::dump(*args);
-    return EXIT_SUCCESS;
-  }
-  return magic_args::is_error(args.error()) ? EXIT_FAILURE : EXIT_SUCCESS;
+MAGIC_ARGS_MAIN(MyArgs&& args) {
+  magic_args::dump(args);
+  return EXIT_SUCCESS;
 }
