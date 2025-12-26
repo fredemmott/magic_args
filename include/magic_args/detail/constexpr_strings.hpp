@@ -234,12 +234,12 @@ struct concat_byte_array_traits {
   template <std::size_t N>
   static constexpr auto buffer_size = N;
 
-  static constexpr auto lhs_subrange(const auto& lhs) {
-    return lhs;
+  static constexpr auto lhs_subrange(auto&& lhs) {
+    return std::views::all(std::forward<decltype(lhs)>(lhs));
   }
 
-  static constexpr auto rhs_subrange(const auto& rhs) {
-    return rhs;
+  static constexpr auto rhs_subrange(auto&& rhs) {
+    return std::views::all(std::forward<decltype(rhs)>(rhs));
   }
 
   static constexpr auto dereference(const auto& buf) {
@@ -250,27 +250,24 @@ struct concat_byte_array_traits {
 template <std::size_t N, std::size_t M, class Traits = concat_c_string_traits>
 struct concat_t {
   using element_type = Traits::element_type;
-  template <std::size_t C>
-  using array_type = std::array<element_type, C>;
-  template <std::size_t C>
-  using c_array_type = const char[C];
 
   static constexpr std::size_t size
-    = Traits::lhs_subrange(array_type<N> {}).size()
-    + Traits::rhs_subrange(array_type<M> {}).size();
+    = Traits::lhs_subrange(std::array<element_type, N> {}).size()
+    + Traits::rhs_subrange(std::array<element_type, M> {}).size();
 
-  using buffer_type = array_type<Traits::template buffer_size<size>>;
+  using buffer_type
+    = std::array<element_type, Traits::template buffer_size<size>>;
 
   concat_t() = delete;
-  consteval concat_t(const array_type<N>& lhs, const array_type<M>& rhs) {
-    const auto lhsSlice = Traits::lhs_subrange(lhs);
-    const auto rhsSlice = Traits::rhs_subrange(rhs);
+
+  template <class LHS, class RHS>
+  consteval concat_t(LHS&& lhs, RHS&& rhs, std::type_identity<Traits> = {}) {
+    const auto lhsSlice
+      = Traits::lhs_subrange(std::views::all(std::forward<LHS>(lhs)));
+    const auto rhsSlice
+      = Traits::rhs_subrange(std::views::all(std::forward<RHS>(rhs)));
     const auto afterLhs = std::ranges::copy(lhsSlice, mBuf.begin()).out;
     std::ranges::copy(rhsSlice, afterLhs);
-  }
-
-  consteval concat_t(const c_array_type<N>& lhs, const c_array_type<M>& rhs)
-    : concat_t(std::to_array(lhs), std::to_array(rhs)) {
   }
 
   constexpr auto get() const noexcept {
@@ -295,24 +292,46 @@ struct concat_t {
   buffer_type mBuf {};
 };
 
-template <
-  class Traits = concat_c_string_traits,
-  std::size_t N,
-  std::size_t M,
-  class T = Traits::element_type>
-consteval auto concat(const T (&lhs)[N], const T (&rhs)[M]) {
-  return concat_t<N, M, Traits> {lhs, rhs};
-}
+template <class T>
+struct c_or_cpp_array_extent_t;
+
+template <class E, std::size_t N>
+struct c_or_cpp_array_extent_t<std::array<E, N>>
+  : std::integral_constant<std::size_t, N> {};
+
+template <class E, std::size_t N>
+struct c_or_cpp_array_extent_t<E[N]> : std::integral_constant<std::size_t, N> {
+};
+
+template <class T>
+constexpr auto c_or_cpp_array_extent_v
+  = c_or_cpp_array_extent_t<std::remove_cvref_t<T>>::value;
+
+template <class T, class U>
+concat_t(T&&, U&&)
+  -> concat_t<c_or_cpp_array_extent_v<T>, c_or_cpp_array_extent_v<U>>;
+template <class T, class U, class V>
+concat_t(T&&, U&&, V&&) -> concat_t<
+  c_or_cpp_array_extent_v<T>,
+  c_or_cpp_array_extent_v<U>,
+  typename std::remove_cvref_t<V>::type>;
 
 template <
   class Traits = concat_c_string_traits,
-  std::size_t N,
-  std::size_t M,
-  class T = Traits::element_type>
-consteval auto concat(
-  const std::array<T, N>& lhs,
-  const std::array<T, M>& rhs) {
-  return concat_t<N, M, Traits> {lhs, rhs};
+  class First,
+  class Second,
+  class... Rest>
+consteval auto concat(First&& first, Second&& second, Rest&&... rest) {
+  const auto lhs = concat_t {
+    std::forward<First>(first),
+    std::forward<Second>(second),
+    std::type_identity<Traits> {},
+  };
+  if constexpr (sizeof...(Rest) == 0) {
+    return lhs;
+  } else {
+    return concat<Traits>(lhs.get_buffer(), std::forward<Rest>(rest)...);
+  }
 }
 
 }// namespace magic_args::detail::constexpr_strings
