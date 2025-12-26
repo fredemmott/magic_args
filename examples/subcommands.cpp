@@ -8,7 +8,6 @@
 #endif
 
 struct CommandFooBar {
-  static constexpr auto name = "foo";
   struct arguments_type {
     std::string mBar;
     std::string mBaz;
@@ -21,8 +20,6 @@ struct CommandFooBar {
 };
 
 struct CommandHerp {
-  static constexpr auto name = "herp";
-
   struct arguments_type {
     static constexpr auto description = "Do the derpy thing";
     static constexpr auto version = "Herp v1.2.3";

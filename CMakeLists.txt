@@ -67,12 +67,6 @@ endif ()
 
 add_subdirectory(include/magic_args)
 
-option(BUILD_TESTING "Build tests" "${PROJECT_IS_TOP_LEVEL}")
-if (BUILD_TESTING)
-  include(CTest)
-  add_subdirectory(tests)
-endif ()
-
 option(BUILD_EXAMPLES "Build examples" "${PROJECT_IS_TOP_LEVEL}")
 if (BUILD_EXAMPLES)
   add_subdirectory(examples)
@@ -81,6 +75,12 @@ endif ()
 option(BUILD_UTILITIES "Build utilities" ${PROJECT_IS_TOP_LEVEL})
 if (BUILD_UTILITIES)
   add_subdirectory(utilities)
+endif ()
+
+option(BUILD_TESTING "Build tests" "${PROJECT_IS_TOP_LEVEL}")
+if (BUILD_TESTING)
+  include(CTest)
+  add_subdirectory(tests)
 endif ()
 
 install(

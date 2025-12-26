@@ -9,6 +9,12 @@ struct foo {
   std::string bar;
 };
 
+namespace MyNS {
+struct bar {};
+template <class T>
+struct baz {};
+}// namespace MyNS
+
 struct demangled_and_mangled_name {
   const std::string_view demangled {};
 
@@ -43,13 +49,37 @@ consteval auto demangle_with() {
   return TDemangler<mangled>::value;
 }
 
+template <class T>
+consteval auto mangled_type_name() {
+  return magic_args::detail::mangled_name<T>();
+}
+
+TEST_CASE("WIP") {
+  using namespace magic_args::detail;
+  static constexpr auto name1 = mangled_name<foo>();
+  static constexpr auto name2 = mangled_name<MyNS::bar>();
+  static constexpr auto name3 = mangled_name<MyNS::baz<std::string>>();
+  static constexpr std::string_view sv1 {name1};
+  static constexpr std::string_view sv2 {name2};
+  static constexpr std::string_view sv3 {name3};
+  std::ignore = std::tuple {sv1, sv2, sv3};
+  static constexpr auto dm1 = demangle_type<name1>();
+  static constexpr auto dm2 = demangle_type<name2>();
+  static constexpr auto dm3 = demangle_type<name3>();
+  static constexpr std::string_view dmsv1 {dm1};
+  static constexpr std::string_view dmsv2 {dm2};
+  static constexpr std::string_view dmsv3 {dm3};
+  std::ignore = std::tuple {dmsv1, dmsv2, dmsv3};
+}
+
 // This test mostly exists so we can test basic changes to the demanglers
 // without needing to switch environments constantly.
 //
 // If the mangled names change, that's fine, just update this
 static constexpr auto TestData = demangled_and_mangled_name {
   .demangled = "bar",
-  .mangled_apple_clang = R"(auto magic_args::detail::mangled_name_c_str() [T = apple_workaround_t<string>{&external.bar}])",
+  .mangled_apple_clang
+  = R"(auto magic_args::detail::mangled_name_c_str() [T = apple_workaround_t<string>{&external.bar}])",
   .mangled_clang
   = R"(auto __cdecl magic_args::detail::mangled_name_c_str(void) [T = apple_workaround_t<basic_string<char>>{&external.bar}])",
   .mangled_gcc

@@ -27,21 +27,18 @@ struct subcommands_list_t {
   static constexpr first_must_be_subcommand_or_root_traits value {};
 };
 
-template <subcommand First, subcommand... Rest>
-struct subcommands_list_t<First, Rest...> {
+template <root_command_traits Traits, subcommand First, subcommand... Rest>
+struct subcommands_list_t<Traits, First, Rest...> {
   static constexpr auto make() {
-    constexpr auto first = [] {
-      constexpr auto view = std::string_view {First::name};
-      std::array<char, view.size() + 1> arr {};
-      std::ranges::copy(view, arr.begin());
-      return arr;
-    }();
-
+    using namespace constexpr_strings;
+    constexpr auto first
+      = concat<concat_byte_array_traits>(
+          subcommand_name<Traits, First>(), std::array {'\0'})
+          .get_buffer();
     if constexpr (sizeof...(Rest) == 0) {
       return first;
     } else {
-      using namespace constexpr_strings;
-      constexpr auto rest = subcommands_list_t<Rest...>::make();
+      constexpr auto rest = subcommands_list_t<Traits, Rest...>::make();
       return concat<concat_byte_array_traits>(first, rest).get_buffer();
     }
   }
@@ -49,9 +46,9 @@ struct subcommands_list_t<First, Rest...> {
   static constexpr auto value = make();
 };
 
-template <root_command_traits Traits, subcommand First, subcommand... Rest>
-struct subcommands_list_t<Traits, First, Rest...>
-  : subcommands_list_t<First, Rest...> {};
+template <subcommand First, subcommand... Rest>
+struct subcommands_list_t<First, Rest...>
+  : subcommands_list_t<gnu_style_parsing_traits, First, Rest...> {};
 
 template <class... Args>
 struct introspectable_subcommands_list_t {

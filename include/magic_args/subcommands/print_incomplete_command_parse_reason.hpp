@@ -11,9 +11,9 @@
 
 namespace magic_args::detail {
 
-template <root_command_traits Traits, subcommand... Ts>
+template <root_command_traits RootTraits, subcommand... Ts>
 void show_command_usage(argv_range auto&& argv, FILE* stream) {
-  using ParsingTraits = root_command_parsing_traits_t<Traits>;
+  using ParsingTraits = root_command_parsing_traits_t<RootTraits>;
   using CommonArguments = common_arguments_t<ParsingTraits>;
   if constexpr (detail::skip_args_count<ParsingTraits>() == 0) {
     detail::println(stream, "Usage: COMMAND [OPTIONS...]");
@@ -24,19 +24,22 @@ void show_command_usage(argv_range auto&& argv, FILE* stream) {
       get_prefix_for_user_messages<ParsingTraits>(argv));
   }
 
-  if constexpr (has_description<Traits>) {
-    detail::println(stream, "{}", Traits::description);
+  if constexpr (has_description<RootTraits>) {
+    detail::println(stream, "{}", RootTraits::description);
   }
 
   detail::println(stream, "\nCommands:\n");
 
   (
     [&]<class T> {
+      static constexpr auto nameBuffer = subcommand_name<RootTraits, T>();
+      constexpr std::string_view name {nameBuffer};
+
       using TArgs = typename T::arguments_type;
       if constexpr (has_description<TArgs>) {
-        detail::println(stream, "      {:24} {}", T::name, TArgs::description);
+        detail::println(stream, "      {:24} {}", name, TArgs::description);
       } else {
-        detail::println(stream, "      {}", T::name);
+        detail::println(stream, "      {}", name);
       }
     }.template operator()<Ts>(),
     ...);
@@ -47,7 +50,7 @@ void show_command_usage(argv_range auto&& argv, FILE* stream) {
     *CommonArguments::short_help,
     *CommonArguments::long_help);
 
-  if constexpr (has_version<Traits>) {
+  if constexpr (has_version<RootTraits>) {
     detail::println(
       stream, "      {:24} print program version", *CommonArguments::version);
   }

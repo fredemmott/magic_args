@@ -28,30 +28,3 @@ install(
   EXPORT exports
   RUNTIME DESTINATION bin
 )
-
-if (BUILD_TESTING AND NOT BUILD_EXAMPLES)
-  message(WARNING "Not testing utilities - examples must be built too")
-endif ()
-if (NOT (BUILD_TESTING AND BUILD_EXAMPLES))
-  return()
-endif ()
-
-message(STATUS "Enabling utility tests")
-
-add_test(NAME test-inspect-subcommands
-  COMMAND list-subcommands $<TARGET_FILE:example-multicall>
-)
-set_tests_properties(test-inspect-subcommands PROPERTIES
-  PASS_REGULAR_EXPRESSION "foo\nherp\n"
-)
-
-add_test(NAME test-inspect-no-subcommands
-  COMMAND list-subcommands $<TARGET_FILE:example-minimal>
-)
-set_tests_properties(
-  test-inspect-no-subcommands
-  PROPERTIES
-  PASS_REGULAR_EXPRESSION "^[[:space:]]*$"
-  # Non-zero exit code is expected
-  WILL_FAIL true
-)

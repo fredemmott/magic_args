@@ -57,20 +57,19 @@ std::string_view command_from_argument(const std::string_view arg) {
 
 template <parsing_traits TRootTraits, class T>
 struct subcommand_parsing_traits_t : TRootTraits {
-  static_assert(!subcommand<T>, "Pass T::arguments_type, not T");
   static constexpr auto skip_args_count
     = detail::skip_args_count<TRootTraits>() + 1;
 };
 
 template <parsing_traits TRootTraits, has_parsing_traits T>
 struct subcommand_parsing_traits_t<TRootTraits, T> : T::parsing_traits {
-  static_assert(!subcommand<T>, "Pass T::arguments_type, not T");
   static constexpr auto skip_args_count
     = detail::skip_args_count<TRootTraits>() + 1;
 };
 
 template <
-  parsing_traits Traits,
+  root_command_traits RootTraits,
+  parsing_traits ParsingTraits,
   subcommand First,
   subcommand... Rest,
   class TExpected>
@@ -78,16 +77,18 @@ void parse_subcommands_silent_impl(
   std::optional<TExpected>& result,
   std::string_view command,
   argv_range auto&& argv) {
-  if (std::string_view {First::name} != command) {
+  if (std::string_view {subcommand_name<RootTraits, First>()} != command) {
     if constexpr (sizeof...(Rest) > 0) {
-      parse_subcommands_silent_impl<Traits, Rest...>(result, command, argv);
+      parse_subcommands_silent_impl<RootTraits, ParsingTraits, Rest...>(
+        result, command, argv);
     }
     return;
   }
 
   // Skip argv[0] and argv[1], instead of just argv[0]
   using SubcommandArgs = typename First::arguments_type;
-  using SubcommandTraits = subcommand_parsing_traits_t<Traits, SubcommandArgs>;
+  using SubcommandTraits
+    = subcommand_parsing_traits_t<ParsingTraits, SubcommandArgs>;
 
   auto subcommandResult = parse_silent<SubcommandTraits, SubcommandArgs>(argv);
   if (subcommandResult) [[likely]] {
@@ -106,7 +107,7 @@ void parse_subcommands_silent_impl(
 namespace magic_args::inline public_api {
 
 template <
-  root_command_traits Traits,
+  root_command_traits RootTraits,
   subcommand First,
   subcommand... Rest,
   class TSuccess
@@ -114,7 +115,7 @@ template <
   class TIncomplete = incomplete_command_parse_reason_t<First, Rest...>,
   class TExpected = std::expected<TSuccess, TIncomplete>>
 TExpected parse_subcommands_silent(detail::argv_range auto&& argv) {
-  using ParsingTraits = detail::root_command_parsing_traits<Traits>::type;
+  using ParsingTraits = detail::root_command_parsing_traits<RootTraits>::type;
   const auto commandIndex = detail::skip_args_count<ParsingTraits>();
   if (argv.size() <= commandIndex) {
     return std::unexpected {missing_required_argument {
@@ -134,15 +135,16 @@ TExpected parse_subcommands_silent(detail::argv_range auto&& argv) {
     return std::unexpected {help_requested {}};
   }
 
-  if constexpr (detail::has_version<Traits>) {
+  if constexpr (detail::has_version<RootTraits>) {
     if (command == CommonArguments::version) {
       return std::unexpected {version_requested {}};
     }
   }
 
   std::optional<TExpected> result;
-  detail::parse_subcommands_silent_impl<ParsingTraits, First, Rest...>(
-    result, command, argv);
+  detail::
+    parse_subcommands_silent_impl<RootTraits, ParsingTraits, First, Rest...>(
+      result, command, argv);
   if (result) [[likely]] {
     return std::move(result).value();
   }
