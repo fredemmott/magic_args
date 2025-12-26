@@ -49,6 +49,83 @@ constexpr char to_upper(const char c) {
   return c;
 }
 
+template <auto TData, auto TPrefix>
+struct remove_prefix_t {
+  static constexpr std::string_view input {TData};
+  static constexpr std::string_view prefix {TPrefix};
+  static constexpr bool matches = input.starts_with(prefix);
+  static constexpr auto size
+    = matches ? (input.size() - prefix.size()) : input.size();
+
+  static constexpr auto value = [] {
+    auto output = input;
+    if constexpr (matches) {
+      output.remove_prefix(prefix.size());
+    }
+    std::array<char, size> ret {};
+    std::ranges::copy(output, ret.begin());
+    return ret;
+  }();
+};
+
+template <auto TData, auto TSuffix>
+struct remove_suffix_t {
+  static constexpr std::string_view input {TData};
+  static constexpr std::string_view suffix {TSuffix};
+  static constexpr bool matches = input.ends_with(suffix);
+  static constexpr auto size
+    = matches ? (input.size() - suffix.size()) : input.size();
+
+  static constexpr auto value = [] {
+    auto output = input;
+    if constexpr (matches) {
+      output.remove_suffix(suffix.size());
+    }
+    std::array<char, size> ret {};
+    std::ranges::copy(output, ret.begin());
+    return ret;
+  }();
+};
+
+template <template <auto, auto> class T, auto TData, auto TFirst, auto... TRest>
+struct fold_left_t {
+  static constexpr auto value = [] {
+    if constexpr (sizeof...(TRest) == 0) {
+      return T<TData, TFirst>::value;
+    } else {
+      return fold_left_t<T, T<TData, TFirst>::value, TRest...>::value;
+    }
+  }();
+};
+
+template <auto TData, auto TFirst, auto... TRest>
+using remove_prefixes_t = fold_left_t<remove_prefix_t, TData, TFirst, TRest...>;
+template <auto TData, auto TFirst, auto... TRest>
+using remove_suffixes_t = fold_left_t<remove_suffix_t, TData, TFirst, TRest...>;
+template <auto TData, auto TFirst, auto... TRest>
+using remove_prefixes_or_suffixes_t = remove_prefixes_t<
+  remove_suffixes_t<TData, TFirst, TRest...>::value,
+  TFirst,
+  TRest...>;
+
+template <auto T>
+struct remove_template_args_t {
+  static constexpr auto input = std::string_view {T};
+  static constexpr auto size = [] {
+    constexpr auto pos = input.find('<');
+    if (pos == std::string_view::npos) {
+      return input.size();
+    }
+    return pos;
+  }();
+
+  static constexpr auto value = [] {
+    std::array<char, size> ret;
+    std::ranges::copy(input.substr(0, size), ret.begin());
+    return ret;
+  }();
+};
+
 struct normalizer_t {
   template <class Self>
     requires requires { Self::buffer; }

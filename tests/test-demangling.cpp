@@ -75,19 +75,22 @@ TEST_CASE("current demangler") {
 TEST_CASE("all demanglers") {
   using namespace magic_args::detail;
   CHECK(
-    std::string_view {
-      demangle_with<clang_demangler_t, [] { return TestData.mangled_apple_clang; }>()}
+    std::string_view {demangle_with<
+      clang_member_demangler_t,
+      [] { return TestData.mangled_apple_clang; }>()}
     == TestData.demangled);
   CHECK(
-    std::string_view {
-      demangle_with<clang_demangler_t, [] { return TestData.mangled_clang; }>()}
+    std::string_view {demangle_with<
+      clang_member_demangler_t,
+      [] { return TestData.mangled_clang; }>()}
     == TestData.demangled);
   CHECK(
     std::string_view {
       demangle_with<gcc_demangler_t, [] { return TestData.mangled_gcc; }>()}
     == TestData.demangled);
   CHECK(
-    std::string_view {
-      demangle_with<msvc_demangler_t, [] { return TestData.mangled_msvc; }>()}
+    std::string_view {demangle_with<
+      msvc_member_demangler_t,
+      [] { return TestData.mangled_msvc; }>()}
     == TestData.demangled);
 }

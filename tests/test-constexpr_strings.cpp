@@ -71,12 +71,49 @@ TEST_CASE("remove_suffix_t") {
 }
 
 TEST_CASE("upper_camel_t") {
-  STATIC_CHECK(upper_camel_t<"foo"_array> {} == "Foo");
-  STATIC_CHECK(upper_camel_t<"fooBar"_array> {} == "FooBar");
-  STATIC_CHECK(upper_camel_t<"foo_bar"_array> {} == "FooBar");
-  STATIC_CHECK(upper_camel_t<"foo_Bar"_array> {} == "FooBar");
   STATIC_CHECK(upper_camel_t<"foo"_constexpr> {} == "Foo");
   STATIC_CHECK(upper_camel_t<"fooBar"_constexpr> {} == "FooBar");
   STATIC_CHECK(upper_camel_t<"foo_bar"_constexpr> {} == "FooBar");
   STATIC_CHECK(upper_camel_t<"foo_Bar"_constexpr> {} == "FooBar");
+}
+template <auto TData>
+using RemoveFooBarPrefixes
+  = remove_prefixes_t<TData, "Foo"_constexpr, "Bar"_constexpr>;
+
+TEST_CASE("remove_prefixes_t") {
+  STATIC_CHECK(RemoveFooBarPrefixes<"foo"_constexpr> {} == "foo");
+  STATIC_CHECK(RemoveFooBarPrefixes<""_constexpr> {} == "");
+  STATIC_CHECK(RemoveFooBarPrefixes<"Foo"_constexpr> {} == "");
+  STATIC_CHECK(RemoveFooBarPrefixes<"Bar"_constexpr> {} == "");
+  STATIC_CHECK(RemoveFooBarPrefixes<"FooBar"_constexpr> {} == "");
+  STATIC_CHECK(RemoveFooBarPrefixes<"FooBarBaz"_constexpr> {} == "Baz");
+  // Test ordering: doesn't start with 'Foo' until after we've applied 'Bar'
+  STATIC_CHECK(RemoveFooBarPrefixes<"BarFoo"_constexpr> {} == "Foo");
+  // Suffix, not prefix
+  STATIC_CHECK(RemoveFooBarPrefixes<"HerpFoo"_constexpr> {} == "HerpFoo");
+}
+
+template <auto TData>
+using RemoveFooBarSuffixes
+  = remove_suffixes_t<TData, "Foo"_constexpr, "Bar"_constexpr>;
+
+TEST_CASE("remove_suffixes_t") {
+  STATIC_CHECK(RemoveFooBarSuffixes<"foo"_constexpr> {} == "foo");
+  STATIC_CHECK(RemoveFooBarSuffixes<""_constexpr> {} == "");
+  STATIC_CHECK(RemoveFooBarSuffixes<"Foo"_constexpr> {} == "");
+  STATIC_CHECK(RemoveFooBarSuffixes<"Bar"_constexpr> {} == "");
+  STATIC_CHECK(RemoveFooBarSuffixes<"BarFoo"_constexpr> {} == "");
+  STATIC_CHECK(RemoveFooBarSuffixes<"BazBarFoo"_constexpr> {} == "Baz");
+  // Test ordering: doesn't end with 'Foo' until after we've applied 'Bar'
+  STATIC_CHECK(RemoveFooBarSuffixes<"FooBar"_constexpr> {} == "Foo");
+  // Prefix, not suffix
+  STATIC_CHECK(RemoveFooBarSuffixes<"FooHerp"_constexpr> {} == "FooHerp");
+}
+
+template <auto TData>
+using RemovePrefixesOrSuffixes
+  = remove_prefixes_or_suffixes_t<TData, "Foo"_constexpr, "Bar"_constexpr>;
+
+TEST_CASE("remove_prefixes_or_suffixes_t") {
+  STATIC_CHECK(RemovePrefixesOrSuffixes<"FooHerpBar"_constexpr> {} == "Herp");
 }
