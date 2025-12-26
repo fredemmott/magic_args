@@ -168,21 +168,29 @@ struct msvc_member_demangler_t {
   }();
 };
 
+consteval auto remove_type_keyword(std::string_view type) {
+  const auto& strlen = std::char_traits<char>::length;
+  if (type.starts_with("struct ")) {
+    type.remove_prefix(strlen("struct "));
+  } else if (type.starts_with("class ")) {
+    type.remove_prefix(strlen("class "));
+  }
+  return type;
+}
+
 template <auto TName>
 struct msvc_type_demangler_t {
   static constexpr auto view = [] {
     using namespace constexpr_strings;
-    constexpr std::string_view name {
-      remove_prefixes_t<TName, "class "_constexpr, "struct "_constexpr>::value,
-    };
+    constexpr std::string_view name {TName};
 
     static_assert(!name.empty());
     constexpr auto begin = name.find('<') + 1;
     constexpr auto end = name.rfind('>');
     if constexpr (end != std::string_view::npos && end > begin) {
-      return name.substr(begin, end - begin);
+      return remove_type_keyword(name.substr(begin, end - begin));
     } else {
-      return name;
+      return remove_type_keyword(name);
     }
   }();
 
@@ -201,9 +209,9 @@ struct clang_type_demangler_t {
     constexpr auto begin = find_after(name, "[T = ");
     constexpr auto end = name.rfind(']');
     if constexpr (end != std::string_view::npos && end > begin) {
-      return name.substr(begin, end - begin);
+      return remove_type_keyword(name.substr(begin, end - begin));
     } else {
-      return name;
+      return remove_type_keyword(name);
     }
   }();
 
