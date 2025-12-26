@@ -67,7 +67,7 @@ constexpr auto type_test_data(std::type_identity<foo>) {
   return demangled_and_mangled_name {
     .demangled = "foo",
     .mangled_apple_clang
-    = R"(auto magic_args::detail::mangled_name_c_str(void) [T = foo])",
+    = R"(auto magic_args::detail::mangled_name_c_str() [T = foo])",
     .mangled_clang
     = R"(auto __cdecl magic_args::detail::mangled_name_c_str(void) [T = foo])",
     .mangled_gcc
@@ -81,7 +81,7 @@ constexpr auto type_test_data(std::type_identity<MyNS::bar>) {
   return demangled_and_mangled_name {
     .demangled = "MyNS::bar",
     .mangled_apple_clang
-    = R"(auto magic_args::detail::mangled_name_c_str(void) [T = MyNS::bar])",
+    = R"(auto magic_args::detail::mangled_name_c_str() [T = MyNS::bar])",
     .mangled_clang
     = R"(auto __cdecl magic_args::detail::mangled_name_c_str(void) [T = MyNS::bar])",
     .mangled_gcc
