@@ -31,5 +31,5 @@ struct CommandHerp {
   }
 };
 
-// Invoke as `foo` or `herp`, *not* `example-multicall foo`
+// Invoke as `foo-bar` or `herp`, *not* `example-multicall foo`
 MAGIC_ARGS_MULTI_CALL_MAIN(CommandFooBar, CommandHerp);
