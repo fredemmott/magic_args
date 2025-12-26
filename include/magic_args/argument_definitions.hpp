@@ -116,12 +116,13 @@ struct option final {
   std::string_view mHelp;
   std::string_view mShortName;
 
-  [[nodiscard]] constexpr decltype(auto) value(this auto&& self) noexcept(
+  template <class Self>
+  [[nodiscard]] constexpr decltype(auto) value(this Self&& self) noexcept(
     !is_std_optional) {
     if constexpr (is_std_optional) {
-      return self.mValue.value();
+      return std::forward<Self>(self).mValue.value();
     } else {
-      return self.mValue;
+      return std::forward<Self>(self).mValue;
     }
   }
   [[nodiscard]] constexpr bool has_value() const noexcept
@@ -149,16 +150,19 @@ struct option final {
     return mValue.has_value();
   }
 
-  decltype(auto) operator*() const
-    requires is_std_optional
-  {
-    return *mValue;
+  template <class Self>
+  [[nodiscard]]
+  decltype(auto) operator*(this Self&& self) noexcept(!is_std_optional) {
+    return std::forward<Self>(self).value();
   }
 
-  decltype(auto) operator*()
-    requires is_std_optional
-  {
-    return *mValue;
+  template <class Self>
+  decltype(auto) operator->(this Self&& self) {
+    if constexpr (is_std_optional) {
+      return std::forward<Self>(self).mValue;
+    } else {
+      return &std::forward<Self>(self).mValue;
+    }
   }
 };
 
