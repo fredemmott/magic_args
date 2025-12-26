@@ -14,8 +14,6 @@ add_example(example-minimal minimal.cpp)
 add_example(example-minimal-powershell-style minimal-powershell-style.cpp)
 add_example(example-everything everything.cpp)
 add_example(example-subcommands subcommands.cpp)
-add_example(example-invocable-subcommands invocable-subcommands.cpp)
-add_example(example-minimal-with-encoding minimal-with-encoding.cpp)
 add_example(example-multicall multicall.cpp)
 add_example(example-multicall-powershell-style multicall-powershell-style.cpp)
 
