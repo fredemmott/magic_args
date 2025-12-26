@@ -26,13 +26,13 @@ struct gnu_style_parsing_traits {
   template <auto Name>
   static consteval auto normalize_option_name() {
     using namespace detail::constexpr_strings;
-    return hyphenate_t<remove_prefix_t<Name> {}> {};
+    return hyphenate_t<remove_field_prefix_t<Name> {}> {};
   }
 
   template <auto Name>
   static consteval auto normalize_positional_argument_name() {
     using namespace detail::constexpr_strings;
-    return to_upper_t<underscore_t<remove_prefix_t<Name> {}> {}> {};
+    return to_upper_t<underscore_t<remove_field_prefix_t<Name> {}> {}> {};
   }
 };
 static_assert(parsing_traits<gnu_style_parsing_traits>);

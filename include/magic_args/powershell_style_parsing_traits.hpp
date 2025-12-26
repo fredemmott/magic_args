@@ -25,7 +25,7 @@ struct powershell_style_parsing_traits {
   template <auto Name>
   static consteval auto normalize_option_name() {
     using namespace detail::constexpr_strings;
-    return upper_camel_t<remove_prefix_t<Name> {}> {};
+    return upper_camel_t<remove_field_prefix_t<Name> {}> {};
   }
 
   template <auto Name>

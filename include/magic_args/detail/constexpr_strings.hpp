@@ -9,6 +9,21 @@
 
 namespace magic_args::detail::constexpr_strings {
 
+template <std::size_t N>
+struct constexpr_string {
+  static constexpr std::size_t size = N - 1;
+  std::array<char, size> value;
+
+  consteval constexpr_string(const char (&str)[N]) {
+    std::ranges::copy_n(str, size, value.begin());
+  }
+};
+
+template <constexpr_string T>
+consteval auto operator""_constexpr() {
+  return T.value;
+}
+
 // These should all be consteval, but under VS 2022 we hit lifetime bugs :(
 
 [[nodiscard]]
@@ -141,7 +156,7 @@ struct underscore_t : normalizer_t {
 };
 
 template <auto Name>
-struct remove_prefix_t : normalizer_t {
+struct remove_field_prefix_t : normalizer_t {
   static consteval std::size_t prefix_size() {
     constexpr std::string_view sv {Name};
     if (sv.starts_with('_')) {
