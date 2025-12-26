@@ -23,9 +23,7 @@ concept subcommand = requires {
 };
 
 template <class T>
-concept root_command_traits = (!subcommand<T>)
-  && (detail::has_version<T> || detail::has_description<T>
-      || detail::has_examples<T> || has_parsing_traits<T> || parsing_traits<T>);
+concept root_command_traits = (!subcommand<T>);
 
 template <class Traits, class Command>
 concept subcommand_naming_traits = root_command_traits<Traits> && requires {
@@ -45,20 +43,35 @@ concept subcommand_naming_traits = root_command_traits<Traits> && requires {
 };
 
 template <class T>
-concept explicitly_named = requires
-{
+concept explicitly_named = requires {
   T::name;
   std::string_view {T::name};
 
   // Check it's constexpr
   requires requires {
-    typename std::bool_constant<(std::string_view{T::name}, true)>;
+    typename std::bool_constant<(std::string_view {T::name}, true)>;
   };
 };
 
 }// namespace magic_args::inline public_api
 
 namespace magic_args::detail {
+
+template <auto Name>
+struct remove_namespace_t {
+  static constexpr auto value = [] {
+    constexpr std::string_view view {Name};
+    constexpr auto idx = view.rfind("::");
+    if constexpr (idx == std::string_view::npos) {
+      return Name;
+    } else {
+      constexpr auto begin = idx + 2;
+      std::array<char, view.size() - begin> ret {};
+      std::ranges::copy(view.substr(begin), ret.begin());
+      return ret;
+    }
+  }();
+};
 
 template <class Traits, class T>
 constexpr auto subcommand_name() {
@@ -77,7 +90,7 @@ constexpr auto subcommand_name() {
       return Traits::template normalize_subcommand_name<T, rawName>();
     } else {
       return hyphenate_t<remove_prefixes_or_suffixes_t<
-        rawName,
+        remove_namespace_t<rawName>::value,
         "Command"_constexpr,
         "command"_constexpr,
         "_"_constexpr>::value>::buffer;

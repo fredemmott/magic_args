@@ -32,7 +32,7 @@ function(add_test_executables TARGET)
   set(SOURCES "${ARGN}")
 
   add_executable("${TARGET}" ${SOURCES})
-  target_link_libraries("${TARGET}" PRIVATE test-lib Catch2::Catch2 Catch2::Catch2WithMain magic_args)
+  target_link_libraries("${TARGET}" PRIVATE test-lib Catch2::Catch2WithMain magic_args)
   catch_discover_tests("${TARGET}" PROPERTIES TEST_PREFIX "${TARGET}:")
 endfunction()
 
@@ -53,6 +53,7 @@ add_test_executables(test-parse_subcommands_silent test-parse_subcommands_silent
 add_test_executables(test-parse_subcommands test-parse_subcommands.cpp)
 add_test_executables(test-invoke_subcommands_silent test-invoke_subcommands_silent.cpp)
 add_test_executables(test-invoke_subcommands test-invoke_subcommands.cpp)
+add_test_executables(test-subcommand_names test-subcommand_names.cpp)
 add_test_executables(test-multicall test-multicall.cpp)
 
 if (APPLE)
