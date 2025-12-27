@@ -22,6 +22,40 @@ struct PlainEnumArgs {
   ScopedEnum mScopedEnum {};
 };
 
+enum class CustomizedEnum {
+  Foo,
+  Bar,
+};
+struct CustomizedEnumArgs {
+  CustomizedEnum mValue {};
+};
+
+std::expected<void, magic_args::invalid_argument_value> from_string_argument(
+  CustomizedEnum& v,
+  const std::string_view s) {
+  using enum CustomizedEnum;
+  if (s == "herp") {
+    v = Foo;
+    return {};
+  }
+  if (s == "derp") {
+    v = Bar;
+    return {};
+  }
+  return std::unexpected {magic_args::invalid_argument_value {}};
+}
+
+auto formattable_argument_value(const CustomizedEnum e) {
+  using enum CustomizedEnum;
+  switch (e) {
+    case Foo:
+      return "herp";
+    case Bar:
+      return "derp";
+  }
+  std::unreachable();
+}
+
 TEST_CASE("defaults") {
   Output out, err;
   const auto args
@@ -98,4 +132,35 @@ Options:
 
   -?, --help                   show this message
 )EOF"));
+}
+
+TEST_CASE("enum with customized serde - help") {
+  Output out, err;
+  const auto args = magic_args::parse<CustomizedEnumArgs>(
+    std::array {"myApp", "--help"}, out, err);
+  CHECK_FALSE(args);
+  if (!args) {
+    CHECK(holds_alternative<magic_args::help_requested>(args.error()));
+  }
+  CHECK(err.empty());
+  CHECK(out.get() == chomp(R"EOF(
+Usage: myApp [OPTIONS...]
+
+Options:
+
+      --value=VALUE            `herp` or `derp`
+                               (default: herp)
+
+  -?, --help                   show this message
+)EOF"));
+  // Checking for string 'herp' above, value Foo here
+  CHECK(
+    CustomizedEnumArgs {}.mValue == decltype(CustomizedEnumArgs::mValue)::Foo);
+}
+
+TEST_CASE("enum with customized serde - parsing") {
+  const auto args = magic_args::parse_silent<CustomizedEnumArgs>(
+    std::array {"myapp", "--value=derp"});
+  REQUIRE(args.has_value());
+  CHECK(args->mValue == decltype(CustomizedEnumArgs::mValue)::Bar);
 }
