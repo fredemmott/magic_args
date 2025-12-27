@@ -28,6 +28,15 @@ if (BUILD_UTILITIES)
     example-multicall-powershell-style
     HARDLINKS_DIR "${CMAKE_CURRENT_BINARY_DIR}/multicall-powershell-style-links"
   )
+  option(INSTALL_MULTICALL_EXAMPLE "Install the multi-call example and symlinks" OFF)
+  if (INSTALL_MULTICALL_EXAMPLE)
+    install(TARGETS example-multicall)
+    magic_args_install_multicall_links(
+      example-multicall
+      RELATIVE_SYMLINKS
+      SYMLINKS_DESTINATION "bin"
+    )
+  endif ()
 endif ()
 
 if (WIN32)
