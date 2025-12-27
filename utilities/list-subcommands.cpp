@@ -16,6 +16,15 @@
 #include "list-subcommands_dlfcn.hpp"
 #endif
 
+#ifdef _MSC_VER
+#define MSVC_PUSH_DISABLE_WARNING(N) \
+  __pragma(warning(push)) __pragma(warning(disable : N))
+#define MSVC_POP_WARNINGS() __pragma(warning(pop))
+#else
+#define MSVC_PUSH_DISABLE_WARNING(N)
+#define MSVC_POP_WARNINGS()
+#endif
+
 namespace fs = std::filesystem;
 
 struct arguments {
@@ -118,14 +127,18 @@ MAGIC_ARGS_MAIN(const arguments& args) {
     return EXIT_FAILURE;
   }
 
-  std::unique_ptr<std::FILE, decltype(&std::fclose)> textFile(
-    nullptr, &std::fclose);
+  // GCC has non-standard attributes on fclose, and gets upset if they're
+  // lost by using `decltype(fclose)`
+  constexpr auto fileDeleter = [](FILE* f) { return fclose(f); };
+  std::unique_ptr<std::FILE, decltype(fileDeleter)> textFile(
+    nullptr, fileDeleter);
 
   if (!args.mTextFile->empty()) {
-    const auto error
-      = fopen_s(std::out_ptr(textFile), args.mTextFile->c_str(), "wb");
-    if (error) {
-      std::println(stderr, "Failed to open `{}`: {}", *args.mTextFile, error);
+    MSVC_PUSH_DISABLE_WARNING(4996)
+    textFile.reset(std::fopen(args.mTextFile->c_str(), "wb"));
+    MSVC_POP_WARNINGS()
+    if (!textFile) {
+      std::println(stderr, "Failed to open `{}`: {}", *args.mTextFile, errno);
       return EXIT_FAILURE;
     }
   }
