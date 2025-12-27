@@ -45,6 +45,11 @@ else ()
   target_link_libraries(list-subcommands PRIVATE magic_args)
 endif ()
 
+if (APPLE)
+  find_library(ICONV_LIBRARY iconv REQUIRED)
+  target_link_libraries(list-subcommands PRIVATE "${ICONV_LIBRARY}")
+endif ()
+
 install(
   TARGETS
   list-subcommands
