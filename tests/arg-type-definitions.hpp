@@ -70,6 +70,7 @@ struct FlagsOnly {
   bool mFoo {false};
   bool mBar {false};
   magic_args::flag mBaz {
+    false,
     "baz",
     "do the bazzy thing",
     "b",

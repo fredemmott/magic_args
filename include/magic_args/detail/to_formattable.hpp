@@ -71,7 +71,7 @@ struct to_formattable_t<const flag&> {
 template <>
 struct to_formattable_t<const counted_flag&> {
   static constexpr auto operator()(const counted_flag& v) {
-    return v.mCount;
+    return v.mValue;
   }
 };
 

@@ -7,6 +7,7 @@ set(
   detail/config.hpp
   detail/static_assert_not_an_enum.hpp
   detail/concepts.hpp
+  detail/definition_tags.hpp
   detail/constexpr_strings.hpp
   detail/reflection.hpp
   gnu_style_parsing_traits.hpp

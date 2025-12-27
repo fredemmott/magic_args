@@ -28,41 +28,39 @@ constexpr bool only_last_positional_argument_may_have_multiple_values() {
   }
 }
 
-template <class T, std::size_t I = 0>
+template <
+  class T,
+  std::ptrdiff_t I = static_cast<std::ptrdiff_t>(count_members<T>()) - 1>
 constexpr std::ptrdiff_t last_mandatory_positional_argument() {
-  using Traits = gnu_style_parsing_traits;
-
-  constexpr auto N = count_members<T>();
-  if constexpr (I == N) {
+  if constexpr (I == -1) {
     return -1;
   } else {
-    const auto recurse = last_mandatory_positional_argument<T, I + 1>();
+    using Traits = gnu_style_parsing_traits;
     using TArg
       = std::decay_t<decltype(get_argument_definition<T, I, Traits>())>;
-    if constexpr (requires { TArg::is_required; }) {
-      if constexpr (recurse == -1 && TArg::is_required) {
-        return I;
-      }
+
+    if constexpr (TArg::is_required && TArg::is_positional_argument) {
+      return I;
+    } else {
+      return last_mandatory_positional_argument<T, I - 1>();
     }
-    return recurse;
   }
 };
 
-template <class T, std::size_t I = 0>
+template <class T, std::size_t I = 0, std::size_t N = count_members<T>()>
 constexpr std::ptrdiff_t first_optional_positional_argument() {
-  using Traits = gnu_style_parsing_traits;
-  constexpr auto N = count_members<T>();
   if constexpr (I == N) {
     return -1;
   } else {
+    using Traits = gnu_style_parsing_traits;
     using TArg
       = std::decay_t<decltype(get_argument_definition<T, I, Traits>())>;
-    if constexpr (requires { TArg::is_required; }) {
-      if (!TArg::is_required) {
-        return I;
-      }
+
+    if constexpr (TArg::is_positional_argument && !TArg::is_required) {
+      return I;
+    } else {
+      return first_optional_positional_argument<T, I + 1, N>();
     }
-    return first_optional_positional_argument<T, I + 1>();
   }
 };
 

@@ -18,7 +18,7 @@ TEST_CASE("empty") {
   const auto args = magic_args::parse_silent<MyArgs>(std::array {"myapp"});
   REQUIRE(args.has_value());
   CHECK_FALSE(args->mVerbose);
-  CHECK(args->mVerbose.mCount == 0);
+  CHECK(args->mVerbose.mValue == 0);
 }
 
 TEST_CASE("single") {
@@ -26,7 +26,7 @@ TEST_CASE("single") {
     = magic_args::parse_silent<MyArgs>(std::array {"myapp", "-v"});
   REQUIRE(args.has_value());
   CHECK(args->mVerbose);
-  CHECK(args->mVerbose.mCount == 1);
+  CHECK(args->mVerbose.mValue == 1);
 }
 
 TEST_CASE("multiple") {
@@ -34,7 +34,7 @@ TEST_CASE("multiple") {
     = magic_args::parse_silent<MyArgs>(std::array {"myapp", "-v", "-v"});
   REQUIRE(args.has_value());
   CHECK(args->mVerbose);
-  CHECK(args->mVerbose.mCount == 2);
+  CHECK(args->mVerbose.mValue == 2);
 }
 
 TEST_CASE("multiple in single argument") {
@@ -42,7 +42,7 @@ TEST_CASE("multiple in single argument") {
     = magic_args::parse_silent<MyArgs>(std::array {"myapp", "-vvv"});
   REQUIRE(args.has_value());
   CHECK(args->mVerbose);
-  CHECK(args->mVerbose.mCount == 3);
+  CHECK(args->mVerbose.mValue == 3);
 }
 
 TEST_CASE("explicit value") {
@@ -50,7 +50,7 @@ TEST_CASE("explicit value") {
     = magic_args::parse_silent<MyArgs>(std::array {"myapp", "--verbose=42"});
   REQUIRE(args.has_value());
   CHECK(args->mVerbose);
-  CHECK(args->mVerbose.mCount == 42);
+  CHECK(args->mVerbose.mValue == 42);
 }
 
 TEST_CASE("mixed setters") {
@@ -61,7 +61,7 @@ TEST_CASE("mixed setters") {
   // Check that we got the `-vv` after the `--verbose` (even number), but not
   // the
   // `-v` before it (odd number)
-  CHECK(args->mVerbose.mCount == 44);
+  CHECK(args->mVerbose.mValue == 44);
 }
 
 TEST_CASE("help") {

@@ -331,10 +331,10 @@ inline void assign_value(counted_flag& arg, const counted_flag_value_t& value) {
   using enum counted_flag_value_t::kind;
   switch (value.mKind) {
     case Increase:
-      arg.mCount += value.mCount;
+      arg.mValue += value.mCount;
       break;
     case Assign:
-      arg.mCount = value.mCount;
+      arg.mValue = value.mCount;
       break;
   }
 }

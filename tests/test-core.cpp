@@ -14,6 +14,41 @@ using namespace Catch::Matchers;
 
 constexpr char testName[] = "C:/Foo/Bar/my_test.exe";
 
+TEST_CASE("basic_argument concept") {
+  using namespace magic_args::public_api;
+
+  // Options are `basic_argument`'s but not positional arguments
+  STATIC_CHECK(basic_argument<flag>);
+  STATIC_CHECK(basic_argument<counted_flag>);
+  STATIC_CHECK(basic_argument<option<std::string>>);
+
+  STATIC_CHECK(basic_argument<optional_positional_argument<std::string>>);
+  STATIC_CHECK(basic_argument<mandatory_positional_argument<std::string>>);
+}
+
+TEST_CASE("basic_option concept") {
+  using namespace magic_args::public_api;
+
+  STATIC_CHECK(basic_option<flag>);
+  STATIC_CHECK(basic_option<counted_flag>);
+  STATIC_CHECK(basic_option<option<std::string>>);
+
+  STATIC_CHECK_FALSE(basic_option<optional_positional_argument<std::string>>);
+  STATIC_CHECK_FALSE(basic_option<mandatory_positional_argument<std::string>>);
+}
+
+TEST_CASE("basic_positional_argument concept") {
+  using namespace magic_args::public_api;
+  STATIC_CHECK_FALSE(basic_positional_argument<flag>);
+  STATIC_CHECK_FALSE(basic_positional_argument<counted_flag>);
+  STATIC_CHECK_FALSE(basic_positional_argument<option<std::string>>);
+
+  STATIC_CHECK(
+    basic_positional_argument<optional_positional_argument<std::string>>);
+  STATIC_CHECK(
+    basic_positional_argument<mandatory_positional_argument<std::string>>);
+}
+
 TEST_CASE("header build mode") {
 #if __has_include(<magic_args/parse.hpp>)
   constexpr bool haveParseHpp = true;

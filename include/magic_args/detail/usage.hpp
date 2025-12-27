@@ -228,15 +228,19 @@ void show_usage(FILE* output, argv_range auto&& argv) {
   if constexpr (requires { Traits::short_help_arg; }) {
     show_option_usage<Traits>(
       output,
-      flag {Traits::long_help_arg, "show this message", Traits::short_help_arg},
+      flag {
+        false,
+        Traits::long_help_arg,
+        "show this message",
+        Traits::short_help_arg},
       {});
   } else {
     show_option_usage<Traits>(
-      output, flag {Traits::long_help_arg, "show this message"}, {});
+      output, flag {false, Traits::long_help_arg, "show this message"}, {});
   }
   if constexpr (has_version<T>) {
     show_option_usage<Traits>(
-      output, flag {Traits::version_arg, "print program version"}, {});
+      output, flag {false, Traits::version_arg, "print program version"}, {});
   }
 
   if (hasPositionalArguments) {

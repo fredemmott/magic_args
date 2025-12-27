@@ -24,6 +24,9 @@ concept basic_option = requires(T v) {
   { v.mHelp } -> std::convertible_to<std::string_view>;
   { v.mShortName } -> std::convertible_to<std::string_view>;
 };
+
+template <class T>
+concept basic_positional_argument = basic_argument<T> && !basic_option<T>;
 }// namespace magic_args::inline public_api
 
 namespace magic_args::detail {
@@ -84,6 +87,9 @@ concept string_literal = is_string_literal_t<T>::value;
 
 template <class T, class U>
 concept explicitly_convertible_to = std::constructible_from<U, T>;
+
+template <class T, class... Us>
+concept same_as_any_of = (std::same_as<T, Us> || ...);
 }// namespace magic_args::detail
 
 namespace magic_args::inline public_api {
