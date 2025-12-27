@@ -17,27 +17,18 @@ add_example(example-subcommands subcommands.cpp)
 add_example(example-multicall multicall.cpp)
 add_example(example-multicall-powershell-style multicall-powershell-style.cpp)
 
-add_custom_command(
-  TARGET example-multicall POST_BUILD
-  COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:example-multicall>/multicall-links"
-  COMMAND "${CMAKE_COMMAND}" -E create_hardlink
-  "$<TARGET_FILE:example-multicall>"
-  "$<TARGET_FILE_DIR:example-multicall>/multicall-links/foo.exe"
-  COMMAND "${CMAKE_COMMAND}" -E create_hardlink
-  "$<TARGET_FILE:example-multicall>"
-  "$<TARGET_FILE_DIR:example-multicall>/multicall-links/herp.exe"
-)
-
-add_custom_command(
-  TARGET example-multicall-powershell-style POST_BUILD
-  COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:example-multicall-powershell-style>/multicall-links-powershell-style"
-  COMMAND "${CMAKE_COMMAND}" -E create_hardlink
-  "$<TARGET_FILE:example-multicall-powershell-style>"
-  "$<TARGET_FILE_DIR:example-multicall>/multicall-links-powershell-style/foo.exe"
-  COMMAND "${CMAKE_COMMAND}" -E create_hardlink
-  "$<TARGET_FILE:example-multicall-powershell-style>"
-  "$<TARGET_FILE_DIR:example-multicall>/multicall-links-powershell-style/herp.exe"
-)
+# The cmake command needs the 'list-subcommands' utility
+if (BUILD_UTILITIES)
+  include(MagicArgs)
+  magic_args_enumerate_subcommands(
+    example-multicall
+    HARDLINKS_DIR "${CMAKE_CURRENT_BINARY_DIR}/multicall-links"
+  )
+  magic_args_enumerate_subcommands(
+    example-multicall-powershell-style
+    HARDLINKS_DIR "${CMAKE_CURRENT_BINARY_DIR}/multicall-powershell-style-links"
+  )
+endif ()
 
 if (WIN32)
   add_example(example-winmain WIN32 winmain.cpp "${CMAKE_SOURCE_DIR}/tests/utf8-process-code-page.manifest")

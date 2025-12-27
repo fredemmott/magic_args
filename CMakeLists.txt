@@ -6,6 +6,7 @@ if (CMAKE_TOOLCHAIN_FILE)
 endif ()
 
 project(magic_args VERSION 0.2.1 LANGUAGES CXX)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 option(ENABLE_KNOWN_INCOMPATIBLE_COMPILER "Enable support for compilers that are known not to work" OFF)
 if (NOT ENABLE_KNOWN_INCOMPATIBLE_COMPILER)
@@ -67,17 +68,16 @@ endif ()
 
 add_subdirectory(include/magic_args)
 
+option(BUILD_UTILITIES "Build utilities" ON)
 option(BUILD_EXAMPLES "Build examples" "${PROJECT_IS_TOP_LEVEL}")
-if (BUILD_EXAMPLES)
-  add_subdirectory(examples)
-endif ()
+option(BUILD_TESTING "Build tests" "${PROJECT_IS_TOP_LEVEL}")
 
-option(BUILD_UTILITIES "Build utilities" ${PROJECT_IS_TOP_LEVEL})
 if (BUILD_UTILITIES)
   add_subdirectory(utilities)
 endif ()
-
-option(BUILD_TESTING "Build tests" "${PROJECT_IS_TOP_LEVEL}")
+if (BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif ()
 if (BUILD_TESTING)
   include(CTest)
   add_subdirectory(tests)
@@ -93,6 +93,7 @@ install(
 
 install(
   FILES
-  "${CMAKE_CURRENT_SOURCE_DIR}/magic_args-config.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/magic_args-config.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/MagicArgs.cmake"
   DESTINATION lib/cmake/magic_args
 )
