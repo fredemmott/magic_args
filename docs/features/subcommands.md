@@ -102,43 +102,6 @@ A `magic_args-enumerate-subcommands` executable is included to retrieve this inf
 
 This is especially useful when adding multi-call binaries: build systems can use this data to automatically create the required links.
 
-## Automatically creating links
-
-[`magic_args-enumerate-subcommands`](#listing-subcommands) has several options to help you create the required links:
-
-- `--hardlinks DIRECTORY` - *recommended*: creates the directory if needed, then creates a hard link for each subcommand
-- `--symlinks DIRECTORY`: creates the directory if needed, then creates a symbolic link for each subcommand
-
-Hard links are recommended if everything is on the same filesystem, especially on Windows. Windows requires developer mode or special privileges for symlink support.
-
-There are additional options that can help with build system integration:
-
-- `--text-file PATH`: subcommands are written to the specified text file, one-per-line
-- `--stamp-file PATH`: this file is created or updated every time `enumerate-subcommands` completes without error; the other output files *may* be updated if an error occurs after partial success
-- `--output-style list|quiet|cmake-install`: what to print on stdout; default is to `list` subcommands. `cmake-install` emulates cmake-install output format
-- `--force`: overwrite files if they already exist
-
-The usual pattern is to use `--hardlinks`, `--quiet`, and `--stamp-file` in your build system, and `--text-file` to feed to a post-build installer.
-
-### CMake integration
-
-To automatically create links when building with CMake, use `magic_args_enumerate_subcommands()`:
-
-```cmake
-find_package(magic_args CONFIG REQUIRED)
-include(MagicArgs)
-magic_args_enumerate_subcommands(
-  my_executable
-  HARDLINKS "${CMAKE_CURRENT_BINARY_DIR}/my_executable-hardlinks/"
-)
-```
-
-The following options are supported:
-- `HARDLINKS path`: equivalent to `--hardlinks`
-- `SYMLINKS path`: equivalent to `--symlinks`
-- `TEXT_FILE path`: equivalent to `--text-file`
-- `STAMP_FILE`: equivalent to `--stamp-file`
-
 ## Alternatives to the macro
 
 If you need more control (for example, if you want to use the return value of the subcommand's `main` in your own logic), you can use `invoke_subcommands` or `parse_subcommands`.

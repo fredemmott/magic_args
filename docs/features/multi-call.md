@@ -82,6 +82,64 @@ struct MyRootInfo {
 MAGIC_ARGS_MULTI_CALL_MAIN(MyRootInfo, CommandFoo, CommandBar);
 ```
 
+## Automatically creating links
+
+[`magic_args-enumerate-subcommands`](#listing-subcommands) has several options to help you create the required links:
+
+- `--hardlinks DIRECTORY` - *recommended*: creates the directory if needed, then creates a hard link for each subcommand
+- `--symlinks DIRECTORY`: creates the directory if needed, then creates a symbolic link for each subcommand
+
+Hard links are recommended if everything is on the same filesystem, especially on Windows. Windows requires developer mode or special privileges for symlink support.
+
+There are additional options that can help with build system integration:
+
+- `--force`: overwrite files if they already exist
+- `--text-file PATH`: subcommands are written to the specified text file, one-per-line
+- `--stamp-file PATH`: this file is created or updated every time `enumerate-subcommands` completes without error; the other output files *may* be updated if an error occurs after partial success
+- `--output-style list|quiet|cmake-install`: what to print on stdout; default is to `list` subcommands. `cmake-install` emulates cmake-install output format
+
+The usual pattern is to use `--hardlinks`, `--stamp-file` in your build system, and `--text-file` to feed to a post-build installer.
+
+### CMake integration
+
+To automatically create links when building with CMake, use `magic_args_enumerate_subcommands()`:
+
+```cmake
+find_package(magic_args CONFIG REQUIRED)
+include(MagicArgs)
+magic_args_enumerate_subcommands(
+  my_executable
+  HARDLINKS "${CMAKE_CURRENT_BINARY_DIR}/my_executable-hardlinks/"
+)
+```
+
+The following options are supported:
+
+- `HARDLINKS path`: equivalent to `--hardlinks`
+- `SYMLINKS path`: equivalent to `--symlinks`
+- `TEXT_FILE path`: equivalent to `--text-file`
+- `STAMP_FILE`: equivalent to `--stamp-file`
+
+If you also use CMake `install()`:
+
+```cmake
+install(TARGETS my_executable) # The executable MUST also be installed
+magic_args_install_multicall_links(
+  my_executable
+  RELATIVE_SYMLINKS
+  SYMLINKS_DESTINATION "bin"
+)
+```
+
+The following options are supported:
+
+- `DESTINATION PATH`: same as `install(... DESTINATION PATH)`; should match your executable
+- `COMPONENT NAME`: should match your executable's install `COMPONENT`, if it has one
+- `SYMLINKS_DESTINATION PATH`: create symbolic links; path is relative to the installation root
+- `HARDLINKS_DESTINATION PATH`: create hard links; path is relative to the installation root
+- `RELATIVE_SYMLINKS`: if `SYMLINKS_DESTINATION` is specified, symlinks will be relative instead of absolute
+- `STAMP_FILE`: equivalent to `--stamp-file`
+
 ## Manual Invocation
 
 If you need more control, you can use `invoke_subcommands` or `parse_subcommands` with `magic_args::multicall_traits<Traits>`.
