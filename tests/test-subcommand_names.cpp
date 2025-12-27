@@ -54,11 +54,7 @@ struct AppendTraits {
   template <class Command, auto Name>
   static constexpr auto normalize_subcommand_name() {
     using namespace magic_args::detail::constexpr_strings;
-    constexpr auto withTrailingNull
-      = concat<concat_byte_array_traits>(Name, "Append").get_buffer();
-    std::array<char, withTrailingNull.size() - 1> ret {};
-    std::ranges::copy_n(withTrailingNull.begin(), ret.size(), ret.begin());
-    return ret;
+    return concat<concat_byte_array_traits>(Name, "Append"_constexpr).get();
   }
 };
 

@@ -376,10 +376,6 @@ struct concat_t {
     return get();
   }
 
-  constexpr auto get_buffer() const noexcept {
-    return mBuf;
-  }
-
  private:
   buffer_type mBuf {};
 };
@@ -422,7 +418,7 @@ consteval auto concat(First&& first, Second&& second, Rest&&... rest) {
   if constexpr (sizeof...(Rest) == 0) {
     return lhs;
   } else {
-    return concat<Traits>(lhs.get_buffer(), std::forward<Rest>(rest)...);
+    return concat<Traits>(lhs.get(), std::forward<Rest>(rest)...);
   }
 }
 

@@ -34,12 +34,12 @@ struct subcommands_list_t<Traits, First, Rest...> {
     constexpr auto first
       = concat<concat_byte_array_traits>(
           subcommand_name<Traits, First>(), std::array {'\0'})
-          .get_buffer();
+          .get();
     if constexpr (sizeof...(Rest) == 0) {
       return first;
     } else {
       constexpr auto rest = subcommands_list_t<Traits, Rest...>::make();
-      return concat<concat_byte_array_traits>(first, rest).get_buffer();
+      return concat<concat_byte_array_traits>(first, rest).get();
     }
   }
 
@@ -56,7 +56,7 @@ struct introspectable_subcommands_list_t {
     using namespace constexpr_strings;
     return concat<concat_byte_array_traits>(
              subcommands_list_t<Args...>::value, std::array {'\0'})
-      .get_buffer();
+      .get();
   }();
 
   static constexpr auto size = buffer.size();
