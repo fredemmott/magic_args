@@ -58,7 +58,7 @@ Usage: test_app [OPTIONS...]
 
 Options:
 
-      -String=VALUE
+      -String:VALUE
       -Flag
   -d, -DocumentedFlag          This flag is documented
 
@@ -99,8 +99,8 @@ Usage: my_test [OPTIONS...] [--] [POSITIONAL]
 
 Options:
 
-      -Raw=VALUE
-      -Option=VALUE            std::optional
+      -Raw:VALUE
+      -Option:VALUE            std::optional
 
   -?, -Help                    show this message
 
@@ -128,15 +128,15 @@ Usage: my_test [OPTIONS...]
 
 Options:
 
-      -EmUpperCamel=VALUE
-      -EmUnderscoreUpperCamel=VALUE
-      -UnderscoreUpperCamel=VALUE
-      -UnderscoreLowerCamel=VALUE
-      -UpperCamel=VALUE
-      -LowerCamel=VALUE
-      -EmSnakeCase=VALUE
-      -SnakeCase=VALUE
-      -MemberStartsWithMButIsNotMPrefix=VALUE
+      -EmUpperCamel:VALUE
+      -EmUnderscoreUpperCamel:VALUE
+      -UnderscoreUpperCamel:VALUE
+      -UnderscoreLowerCamel:VALUE
+      -UpperCamel:VALUE
+      -LowerCamel:VALUE
+      -EmSnakeCase:VALUE
+      -SnakeCase:VALUE
+      -MemberStartsWithMButIsNotMPrefix:VALUE
 
   -?, -Help                    show this message
 )EOF"));
@@ -211,16 +211,40 @@ Usage: my_test [OPTIONS...]
 
 Options:
 
-      -mEmUpperCamel=VALUE
-      -m_EmUnderscoreUpperCamel=VALUE
-      -_UnderscoreUpperCamel=VALUE
-      -_underscoreLowerCamel=VALUE
-      -UpperCamel=VALUE
-      -lowerCamel=VALUE
-      -m_em_snake_case=VALUE
-      -snake_case=VALUE
-      -member_starts_with_m_but_is_not_m_prefix=VALUE
+      -mEmUpperCamel:VALUE
+      -m_EmUnderscoreUpperCamel:VALUE
+      -_UnderscoreUpperCamel:VALUE
+      -_underscoreLowerCamel:VALUE
+      -UpperCamel:VALUE
+      -lowerCamel:VALUE
+      -m_em_snake_case:VALUE
+      -snake_case:VALUE
+      -member_starts_with_m_but_is_not_m_prefix:VALUE
 
   -?, -Help                    show this message
 )EOF"));
+}
+
+TEST_CASE("Value separators: =") {
+  const auto gnuArgs = magic_args::parse_silent<GNUArgs>(
+    std::array {"test_app", "--string=foo"});
+  CHECK(gnuArgs);
+  CHECK(gnuArgs->mString == "foo");
+
+  const auto psArgs
+    = magic_args::parse_silent<PSArgs>(std::array {"test_app", "-String=foo"});
+  REQUIRE_FALSE(psArgs);
+  CHECK(holds_alternative<magic_args::invalid_argument>(psArgs.error()));
+}
+
+TEST_CASE("Value separators: :") {
+  const auto psArgs
+    = magic_args::parse_silent<PSArgs>(std::array {"test_app", "-String:foo"});
+  CHECK(psArgs);
+  CHECK(psArgs->mString == "foo");
+
+  const auto gnuArgs = magic_args::parse_silent<GNUArgs>(
+    std::array {"test_app", "--string:foo"});
+  REQUIRE_FALSE(gnuArgs);
+  CHECK(holds_alternative<magic_args::invalid_argument>(gnuArgs.error()));
 }

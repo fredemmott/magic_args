@@ -14,7 +14,7 @@ namespace magic_args::inline public_api {
 struct powershell_style_parsing_traits {
   static constexpr char long_arg_prefix[] = "-";
   static constexpr char short_arg_prefix[] = "-";
-  static constexpr char value_separator[] = "=";
+  static constexpr char value_separator[] = ":";
 
   static constexpr char long_help_arg[] = "Help";
   static constexpr char short_help_arg[] = "?";

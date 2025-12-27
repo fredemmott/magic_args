@@ -267,6 +267,6 @@ TEST_CASE("powershell-style subcommand help") {
   CHECK(ret == silent);
 
   CHECK(err.empty());
-  CHECK_THAT(out.get(), Catch::Matchers::ContainsSubstring(" -Bar="));
+  CHECK_THAT(out.get(), Catch::Matchers::ContainsSubstring(" -Bar:"));
   CHECK_THAT(out.get(), !Catch::Matchers::ContainsSubstring(" --bar"));
 }

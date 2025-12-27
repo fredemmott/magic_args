@@ -100,9 +100,17 @@ void show_option_usage(
     if constexpr (same_as_ignoring_cvref<flag, TArg>) {
       return std::format("{}{}", Traits::long_arg_prefix, argDef.mName);
     } else if constexpr (same_as_ignoring_cvref<counted_flag, TArg>) {
-      return std::format("{}{}[=VALUE]", Traits::long_arg_prefix, argDef.mName);
+      return std::format(
+        "{}{}[{}VALUE]",
+        Traits::long_arg_prefix,
+        argDef.mName,
+        Traits::value_separator);
     } else {
-      return std::format("{}{}=VALUE", Traits::long_arg_prefix, argDef.mName);
+      return std::format(
+        "{}{}{}VALUE",
+        Traits::long_arg_prefix,
+        argDef.mName,
+        Traits::value_separator);
     }
   }();
 
