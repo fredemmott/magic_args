@@ -15,7 +15,7 @@ function(magic_args_enumerate_subcommands TARGET)
     "--symlinks=${ARG_SYMLINKS_DIR}"
     "--hardlinks=${ARG_HARDLINKS_DIR}"
     "--stamp-file=${ARG_STAMP_FILE}"
-    "--quiet"
+    "--output-style=quiet"
     "$<TARGET_FILE:${TARGET}>"
     VERBATIM
   )
@@ -44,7 +44,6 @@ function(magic_args_install_multicall_links TARGET)
   endif ()
 
   install(CODE "
-message(STATUS \"Installing multicall-links for ${TARGET}\")
 set(ROOT \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}\")
 set(HARDLINKS \"${ARG_HARDLINKS_DESTINATION}\")
 set(SYMLINKS \"${ARG_SYMLINKS_DESTINATION}\")
@@ -71,7 +70,7 @@ execute_process(
   \"--hardlinks=\${HARDLINKS}\"
   \"--symlinks=\${SYMLINKS}\"
   \"--stamp-file=\${STAMP_FILE}\"
-  --quiet
+  --output-style=cmake-install
   ${RELATIVE_SYMLINKS}
   \"\${TARGET_EXECUTABLE}\"
   COMMAND_ERROR_IS_FATAL ANY

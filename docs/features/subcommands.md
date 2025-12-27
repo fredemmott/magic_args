@@ -115,7 +115,7 @@ There are additional options that can help with build system integration:
 
 - `--text-file PATH`: subcommands are written to the specified text file, one-per-line
 - `--stamp-file PATH`: this file is created or updated every time `enumerate-subcommands` completes without error; the other output files *may* be updated if an error occurs after partial success
-- `--quiet`: suppresses `stdout` output
+- `--output-style list|quiet|cmake-install`: what to print on stdout; default is to `list` subcommands. `cmake-install` emulates cmake-install output format
 
 The usual pattern is to use `--hardlinks`, `--quiet`, and `--stamp-file` in your build system, and `--text-file` to feed to a post-build installer.
 
