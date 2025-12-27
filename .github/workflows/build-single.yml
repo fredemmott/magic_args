@@ -51,6 +51,7 @@ jobs:
           cd build
           cmake ../source `
             --preset "${{inputs.cmake-preset}}" `
+            -DINSTALL_MULTICALL_EXAMPLE=ON `
             -DENABLE_SINGLE_HEADER=${{inputs.single-header && 'ON' || 'OFF'}} `
             ${{inputs.cmake-args}}
       - name: Build
