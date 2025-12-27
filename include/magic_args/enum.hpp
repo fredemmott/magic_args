@@ -22,6 +22,7 @@ template <class T>
 concept cpp_enum = std::is_enum_v<std::decay_t<T>>;
 
 template <cpp_enum T>
+  requires(!has_adl_formattable_argument_value<T>)
 struct to_formattable_t<T> {
   static constexpr auto operator()(T&& v) {
     return magic_enum::enum_name(std::forward<T>(v));
@@ -29,6 +30,7 @@ struct to_formattable_t<T> {
 };
 
 template <cpp_enum T>
+  requires(!has_adl_from_string_argument<T>)
 struct from_string_t<T> {
   static constexpr std::expected<void, invalid_argument_value> operator()(
     T& out,
@@ -61,22 +63,24 @@ template <basic_argument TArg>
 struct get_argument_help_t<TArg> {
   static std::string operator()(const TArg& argDef) {
     if (!argDef.mHelp.empty()) {
-      return std::string { argDef.mHelp };
+      return std::string {argDef.mHelp};
     }
 
-    const auto entries
-      = magic_enum::enum_entries<typename std::decay_t<TArg>::value_type>();
-    if (entries.empty()) {
+    const auto values
+      = magic_enum::enum_values<typename std::decay_t<TArg>::value_type>();
+    if (values.empty()) {
       return {};
     }
 
-    if (entries.size() == 2) {
-      return std::format("`{}` or `{}`", entries[0].second, entries[1].second);
+    if (values.size() == 2) {
+      return std::format(
+        "`{}` or `{}`", to_formattable(values[0]), to_formattable(values[1]));
     }
 
-    const auto last = entries[entries.size() - 1].first;
+    const auto last = values[values.size() - 1];
     std::string ret;
-    for (auto&& [value, name]: entries) {
+    for (auto&& value: values) {
+      const auto name = to_formattable(value);
       if (ret.empty()) {
         ret = std::format("`{}`", name);
         continue;

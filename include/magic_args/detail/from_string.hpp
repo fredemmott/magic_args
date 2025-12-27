@@ -81,14 +81,16 @@ struct from_string_t<std::optional<T>> {
   }
 };
 
-// ADL version
 template <class T>
-  requires requires(T& out, std::string_view arg) {
-    from_string_argument(out, arg);
-    {
-      from_string_argument(out, arg)
-    } -> same_as_ignoring_cvref<std::expected<void, invalid_argument_value>>;
-  }
+concept has_adl_from_string_argument = requires(T& out, std::string_view arg) {
+  from_string_argument(out, arg);
+  {
+    from_string_argument(out, arg)
+  } -> same_as_ignoring_cvref<std::expected<void, invalid_argument_value>>;
+};
+
+// ADL version
+template <has_adl_from_string_argument T>
 struct from_string_t<T> {
   static constexpr std::expected<void, invalid_argument_value> operator()(
     T& out,

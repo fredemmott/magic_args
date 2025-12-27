@@ -101,14 +101,16 @@ struct to_formattable_t<R> {
 };
 #endif
 
+template <class T>
+concept has_adl_formattable_argument_value = requires(T&& v) {
+  { formattable_argument_value(v) } -> std::formattable<char>;
+};
+
 // ADL for `formattable_argument_value()`
 //
 // Use `requires requires` as G++13 (Ubuntu 24.04) is not happy with the
 // trailing-return-type SFINAE trick for undefined ADL
-template <class T>
-  requires requires(T v) {
-    { formattable_argument_value(v) } -> std::formattable<char>;
-  }
+template <has_adl_formattable_argument_value T>
 struct to_formattable_t<T> {
   static constexpr auto operator()(T&& v) {
     return formattable_argument_value(v);
