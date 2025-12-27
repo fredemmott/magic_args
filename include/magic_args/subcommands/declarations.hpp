@@ -93,7 +93,7 @@ constexpr auto subcommand_name() {
         remove_namespace_t<rawName>::value,
         "Command"_constexpr,
         "command"_constexpr,
-        "_"_constexpr>::value>::buffer;
+        "_"_constexpr>::value>::value;
     }
   }
 }

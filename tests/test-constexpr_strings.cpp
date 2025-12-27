@@ -6,12 +6,6 @@
 
 using namespace magic_args::detail::constexpr_strings;
 
-template <class T, std::convertible_to<std::string_view> U>
-  requires requires(T t) { std::string_view {T::value}; }
-constexpr bool operator==(const T& t, const U& u) {
-  return std::string_view {t.value} == u;
-}
-
 TEST_CASE("concat strings") {
   STATIC_CHECK(concat("foo", "bar") == "foobar");
   STATIC_CHECK(concat("", "bar") == "bar");
