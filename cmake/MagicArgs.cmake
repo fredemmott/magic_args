@@ -11,7 +11,7 @@ function(magic_args_enumerate_subcommands TARGET)
     TARGET "${TARGET}"
     POST_BUILD
     COMMAND
-    magic_args::list-subcommands
+    magic_args::enumerate-subcommands
     "--text-file=${ARG_TEXT_FILE}"
     "--symlinks=${ARG_SYMLINKS_DIR}"
     "--hardlinks=${ARG_HARDLINKS_DIR}"

@@ -6,14 +6,14 @@
 #include <fstream>
 #include <print>
 
-#include "list-subcommands_config.hpp"
+#include "enumerate-subcommands_config.hpp"
 
 #ifdef _WIN32
-#include "list-subcommands_win32.hpp"
+#include "enumerate-subcommands_win32.hpp"
 #elif __has_include(<elf.h>)
-#include "list-subcommands_elf.hpp"
+#include "enumerate-subcommands_elf.hpp"
 #else
-#include "list-subcommands_dlfcn.hpp"
+#include "enumerate-subcommands_dlfcn.hpp"
 #endif
 
 #ifdef _MSC_VER

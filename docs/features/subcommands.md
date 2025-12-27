@@ -98,13 +98,13 @@ Especially with [multi-call binaries](multi-call.md), it can be useful to get th
 
 This constant contains a list of C strings, terminated with the empty string (i.e. two nulls in a row). For example, if you define the subcommands `foo` and `bar`, it will contain `"foo\0bar\0\0"`.
 
-A `magic_args-list-subcommands` executable is included to retrieve this information, and it is made available to CMake users via the `magic_args::list-subcommands` target.
+A `magic_args-enumerate-subcommands` executable is included to retrieve this information, and it is made available to CMake users via the `magic_args::enumerate-subcommands` target.
 
 This is especially useful when adding multi-call binaries: build systems can use this data to automatically create the required links.
 
 ## Automatically creating links
 
-[`magic_args-list-subcommands`](#listing-subcommands) has several options to help you create the required links:
+[`magic_args-enumerate-subcommands`](#listing-subcommands) has several options to help you create the required links:
 
 - `--hardlinks DIRECTORY` - *recommended*: creates the directory if needed, then creates a hard link for each subcommand
 - `--symlinks DIRECTORY`: creates the directory if needed, then creates a symbolic link for each subcommand
@@ -114,7 +114,7 @@ Hard links are recommended if everything is on the same filesystem, especially o
 There are additional options that can help with build system integration:
 
 - `--text-file PATH`: subcommands are written to the specified text file, one-per-line
-- `--stamp-file PATH`: this file is created or updated every time `list-subcommands` completes without error; the other output files *may* be updated if an error occurs after partial success
+- `--stamp-file PATH`: this file is created or updated every time `enumerate-subcommands` completes without error; the other output files *may* be updated if an error occurs after partial success
 - `--quiet`: suppresses `stdout` output
 
 The usual pattern is to use `--hardlinks`, `--quiet`, and `--stamp-file` in your build system, and `--text-file` to feed to a post-build installer.

@@ -17,7 +17,7 @@ add_example(example-subcommands subcommands.cpp)
 add_example(example-multicall multicall.cpp)
 add_example(example-multicall-powershell-style multicall-powershell-style.cpp)
 
-# The cmake command needs the 'list-subcommands' utility
+# The cmake command needs the 'enumerate-subcommands' utility
 if (BUILD_UTILITIES)
   include(MagicArgs)
   magic_args_enumerate_subcommands(
