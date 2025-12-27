@@ -23,10 +23,8 @@ For most users, the easiest and best way to use subcommands is the `MAGIC_ARGS_S
 #include <magic_args/magic_args.hpp>
 #include <magic_args/subcommands.hpp>
 
+// Invocable as `myexe foo`
 struct CommandFoo {
-  // The name used on the command line: `myapp foo`
-  static constexpr auto name = "foo";
-
   // The arguments for this specific subcommand
   struct arguments_type {
     // optional,
@@ -42,7 +40,9 @@ struct CommandFoo {
 };
 
 struct CommandBar {
-  static constexpr auto name = "bar";
+  // invocable as `myexe herp` - overrides default `myexe bar`
+  static constexpr auto name = "herp";
+    
   struct arguments_type {
     static constexpr auto description = "Do the bar thing";
     bool mFlag {false};
