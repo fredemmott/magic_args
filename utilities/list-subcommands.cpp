@@ -79,7 +79,7 @@ std::expected<void, int> create_link(
   }
   const auto link
     = root / std::format("{}{}", name, BuildConfig::ExecutableSuffix);
-  if (exists(link)) {
+  if (exists(link) || symlink_status(link).type() == fs::file_type::symlink) {
     fs::remove(link);
   }
 
