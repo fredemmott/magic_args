@@ -74,6 +74,8 @@ target_compile_features(
   INTERFACE
   cxx_std_23
 )
+# For projects using add_subdirectory()
+add_library(magic_args::magic_args ALIAS magic_args)
 
 set(ENABLE_ICONV "manual" CACHE STRING "Where to use iconv: manual|not-windows|OFF|ON; 'manual' means that iconv is available, but macOS users must either set MAGIC_ARGS_DISABLE_ICONV or manually link against iconv; 'not-windows' will use Win32 APIs for encoding conversion on Windows, and iconv on all other platforms")
 set_property(CACHE ENABLE_ICONV PROPERTY STRINGS "manual" "not-windows" "OFF" "ON")
@@ -177,6 +179,3 @@ install(
   FILE_SET HEADERS
   DESTINATION include/magic_args
 )
-
-# For projects using add_subdirectory()
-add_library(magic_args::magic_args ALIAS magic_args)
