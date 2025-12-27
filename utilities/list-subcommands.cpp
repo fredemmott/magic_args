@@ -34,6 +34,11 @@ struct arguments {
   magic_args::option<std::string> mSymlinks {
     .mHelp = "Create symlinks in this directory",
   };
+  magic_args::flag mRelativeSymlinks {
+    .mHelp
+    = "Create symlinks with a relative path to EXECUTABLE, instead of an "
+      "absolute path",
+  };
   magic_args::option<std::string> mHardlinks {
     .mHelp = "Create hard links in this directory",
   };
@@ -65,7 +70,8 @@ void ensure_directory_or_empty_string(const fs::path& path) {
 }
 
 enum class LinkKind {
-  Symlink,
+  RelativeSymlink,
+  AbsoluteSymlink,
   Hardlink,
 };
 
@@ -83,17 +89,21 @@ std::expected<void, int> create_link(
     fs::remove(link);
   }
 
-  if constexpr (K == LinkKind::Symlink) {
-    fs::create_symlink(target, link);
-  } else {
+  if constexpr (K == LinkKind::Hardlink) {
     fs::create_hard_link(target, link);
+  } else if constexpr (K == LinkKind::AbsoluteSymlink) {
+    fs::create_symlink(fs::canonical(target), link);
+  } else {
+    static_assert(K == LinkKind::RelativeSymlink);
+    const auto relative = fs::relative(target, link.parent_path());
+    fs::create_symlink(relative, link);
   }
   return {};
 } catch (const fs::filesystem_error& e) {
   std::println(
     stderr,
     "Failed to create {} link `{}/{}{}`: {}",
-    K == LinkKind::Symlink ? "symlink" : "hardlink",
+    K == LinkKind::Hardlink ? "hardlink" : "symlink",
     root.string(),
     name,
     BuildConfig::ExecutableSuffix,
@@ -164,6 +174,10 @@ MAGIC_ARGS_MAIN(const arguments& args) {
     return EXIT_FAILURE;
   }
 
+  const auto& create_symlink = args.mRelativeSymlinks
+    ? create_link<LinkKind::RelativeSymlink>
+    : create_link<LinkKind::AbsoluteSymlink>;
+
   auto begin = *dataPtr;
   while (*begin) {
     const std::string_view view {begin};
@@ -175,8 +189,7 @@ MAGIC_ARGS_MAIN(const arguments& args) {
       std::println(textFile.get(), "{}", view);
     }
 
-    if (const auto ok
-        = create_link<LinkKind::Symlink>(executablePath, symlinksPath, view);
+    if (const auto ok = create_symlink(executablePath, symlinksPath, view);
         !ok) {
       return ok.error();
     }
