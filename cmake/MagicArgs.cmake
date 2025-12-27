@@ -15,6 +15,7 @@ function(magic_args_enumerate_subcommands TARGET)
     "--symlinks=${ARG_SYMLINKS_DIR}"
     "--hardlinks=${ARG_HARDLINKS_DIR}"
     "--stamp-file=${ARG_STAMP_FILE}"
+    "--force"
     "--output-style=quiet"
     "$<TARGET_FILE:${TARGET}>"
     VERBATIM
@@ -71,6 +72,7 @@ execute_process(
   \"--symlinks=\${SYMLINKS}\"
   \"--stamp-file=\${STAMP_FILE}\"
   --output-style=cmake-install
+  --force
   ${RELATIVE_SYMLINKS}
   \"\${TARGET_EXECUTABLE}\"
   COMMAND_ERROR_IS_FATAL ANY

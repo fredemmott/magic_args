@@ -64,6 +64,11 @@ auto formattable_argument_value(const OutputStyle& m) {
 }
 
 struct arguments {
+  magic_args::flag mForce {
+    .mHelp = "Overwrite link if it already exists",
+    .mShortName = "f",
+  };
+
   magic_args::option<std::string> mTextFile {
     .mHelp = "Write list to text file; you might also want --quiet",
   };
@@ -177,7 +182,7 @@ std::expected<void, int> create_link(
   const fs::path& target,
   const fs::path& root,
   const std::string_view name,
-  const OutputStyle output) try {
+  const arguments& args) try {
   if (root.empty()) {
     return {};
   }
@@ -188,18 +193,26 @@ std::expected<void, int> create_link(
   const auto normalizedLink = fs::absolute(link.lexically_normal());
   switch (TLink::state(target, link)) {
     case LinkState::UpToDate:
-      if (output == OutputStyle::CMakeInstall) {
+      if (args.mOutputStyle == OutputStyle::CMakeInstall) {
         std::println("-- Up-to-date: {}", normalizedLink.string());
       }
       return {};
     case LinkState::Absent:
       break;
     case LinkState::Differs:
-      fs::remove(link);
+      if (args.mForce) {
+        fs::remove(link);
+      } else {
+        std::println(
+          stderr,
+          "File already exists; use `--force` to overwrite: {}",
+          normalizedLink.string());
+        return std::unexpected {EXIT_FAILURE};
+      }
       break;
   }
 
-  if (output == OutputStyle::CMakeInstall) {
+  if (args.mOutputStyle == OutputStyle::CMakeInstall) {
     std::println("-- Installing: {}", normalizedLink.string());
   }
 
@@ -296,12 +309,12 @@ MAGIC_ARGS_MAIN(const arguments& args) {
     }
 
     if (const auto ok
-        = create_symlink(executablePath, symlinksPath, view, args.mOutputStyle);
+        = create_symlink(executablePath, symlinksPath, view, args);
         !ok) {
       return ok.error();
     }
-    if (const auto ok = create_link<hardlink_t>(
-          executablePath, hardlinksPath, view, args.mOutputStyle);
+    if (const auto ok
+        = create_link<hardlink_t>(executablePath, hardlinksPath, view, args);
         !ok) {
       return ok.error();
     }
