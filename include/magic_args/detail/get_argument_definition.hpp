@@ -23,7 +23,7 @@ concept static_basic_argument = requires {
 
 template <class T>
 concept static_basic_option = static_basic_argument<T> && requires {
-  { T::short_name } -> explicitly_convertible_to<std::string_view>;
+  { T::short_name } -> same_as_ignoring_cvref<std::string_view>;
 };
 
 template <class T>
@@ -69,11 +69,11 @@ struct argument_definition_t {
     return default_value_by_index<T, I>();
   }
 
-  static constexpr auto short_name = constexpr_strings::empty_v;
   static constexpr auto behavior
     = std::same_as<value_type, bool> ? Behavior::Flag : Behavior::Option;
 
   static constexpr auto name = get_argument_name_by_index<T, I, Traits>();
+  static constexpr std::string_view short_name {};
 };
 
 // Positional arguments
@@ -106,7 +106,7 @@ struct argument_definition_t<T, I, Traits> {
   static constexpr auto behavior = member_type::behavior;
   static constexpr auto name = get_argument_name_by_index<T, I, Traits>();
 
-  static constexpr auto short_name = [] {
+  static constexpr auto short_name_buffer = [] {
     constexpr auto Raw = default_value_by_index<T, I>().mShortName;
     if constexpr (Raw.empty()) {
       return constexpr_strings::empty_v;
@@ -119,6 +119,7 @@ struct argument_definition_t<T, I, Traits> {
       return constexpr_strings::identity_t<Arr> {};
     }
   }();
+  static constexpr std::string_view short_name {short_name_buffer};
 };
 }// namespace magic_args::detail
 

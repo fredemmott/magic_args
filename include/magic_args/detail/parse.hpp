@@ -178,10 +178,12 @@ std::optional<option_match> option_matches_short(const std::string_view arg) {
   } else if constexpr (TDef::short_name.empty()) {
     return std::nullopt;
   } else {
-    static constexpr auto Expected = constexpr_strings::
-      concat_t<Traits::short_arg_prefix, TDef::short_name> {};
-
-    if (arg != Expected) {
+    if (!arg.starts_with(Traits::short_arg_prefix)) {
+      return std::nullopt;
+    }
+    const auto tail
+      = arg.substr(std::string_view {Traits::short_arg_prefix}.size());
+    if (tail != TDef::short_name) {
       return std::nullopt;
     }
 
