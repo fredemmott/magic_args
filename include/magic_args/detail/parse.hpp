@@ -119,14 +119,15 @@ std::string provided_argument_name(const std::string_view arg) {
   return {begin, end};
 };
 
-[[nodiscard]] inline bool consume(
-  std::string_view& sv,
+[[nodiscard]] inline std::optional<std::string_view> consume(
+  std::string_view& in,
   const std::string_view prefix) {
-  if (!sv.starts_with(prefix)) {
-    return false;
+  if (!in.starts_with(prefix)) {
+    return std::nullopt;
   }
-  sv.remove_prefix(prefix.size());
-  return true;
+  const auto slice = in.substr(0, prefix.size());
+  in.remove_prefix(prefix.size());
+  return slice;
 }
 
 struct option_match {
@@ -143,31 +144,25 @@ struct option_match {
 template <parsing_traits Traits, static_basic_option TDef>
 [[nodiscard]]
 std::optional<option_match> option_matches_long(const std::string_view arg) {
-  using namespace constexpr_strings;
-
-  static constexpr auto PrefixStorage
-    = concat_t<Traits::long_arg_prefix, TDef::name>::value;
-  constexpr auto Prefix = std::string_view {PrefixStorage};
-
-  if (!arg.starts_with(Prefix)) {
+  auto tail = arg;
+  if (!consume(tail, Traits::long_arg_prefix)) {
     return std::nullopt;
   }
 
-  const std::string_view nameSlice {arg.begin(), arg.begin() + Prefix.size()};
-
-  std::string_view tail {arg.begin() + Prefix.size(), arg.end()};
+  const auto name = consume(tail, TDef::name);
+  if (!name) {
+    return std::nullopt;
+  }
 
   if (tail.empty()) {
-    // `--foo`
-    return option_match {nameSlice};
+    return option_match {*name};
   }
 
   if (!consume(tail, Traits::value_separator)) {
-    // `--foobar` when we want `--foo=`
     return std::nullopt;
   }
 
-  return option_match {nameSlice, tail};
+  return option_match {*name, tail};
 }
 
 template <parsing_traits Traits, static_basic_option TDef>
