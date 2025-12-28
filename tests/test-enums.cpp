@@ -30,7 +30,7 @@ struct CustomizedEnumArgs {
   CustomizedEnum mValue {};
 };
 
-std::expected<void, magic_args::invalid_argument_value> from_string_argument(
+std::expected<void, magic_args::invalid_argument_value> from_argument_value(
   CustomizedEnum& v,
   const std::string_view s) {
   using enum CustomizedEnum;
@@ -45,7 +45,7 @@ std::expected<void, magic_args::invalid_argument_value> from_string_argument(
   return std::unexpected {magic_args::invalid_argument_value {}};
 }
 
-auto formattable_argument_value(const CustomizedEnum e) {
+auto to_argument_value(const CustomizedEnum e) {
   using enum CustomizedEnum;
   switch (e) {
     case Foo:

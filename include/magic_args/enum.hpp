@@ -22,7 +22,7 @@ template <class T>
 concept cpp_enum = std::is_enum_v<std::decay_t<T>>;
 
 template <cpp_enum T>
-  requires(!has_adl_formattable_argument_value<T>)
+  requires(!has_adl_to_argument_value<T>)
 struct to_formattable_t<T> {
   static constexpr auto operator()(T&& v) {
     return magic_enum::enum_name(std::forward<T>(v));
@@ -30,7 +30,7 @@ struct to_formattable_t<T> {
 };
 
 template <cpp_enum T>
-  requires(!has_adl_from_string_argument<T>)
+  requires(!has_adl_from_argument_value<T>)
 struct from_string_t<T> {
   static constexpr std::expected<void, invalid_argument_value> operator()(
     T& out,

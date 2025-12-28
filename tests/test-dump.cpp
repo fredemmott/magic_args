@@ -18,14 +18,14 @@ struct MyCustomType {
   std::string mValue;
 };
 
-std::expected<void, magic_args::invalid_argument_value> from_string_argument(
+std::expected<void, magic_args::invalid_argument_value> from_argument_value(
   MyCustomType& value,
   const std::string_view arg) {
   value.mValue = std::string {arg};
   return {};
 }
 
-auto formattable_argument_value(const MyCustomType& value) {
+auto to_argument_value(const MyCustomType& value) {
   return value.mValue;
 }
 

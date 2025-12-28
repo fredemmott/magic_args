@@ -10,7 +10,7 @@ enum class OutputStyle {
   CMakeInstall,
 };
 
-std::expected<void, magic_args::invalid_argument_value> from_string_argument(
+std::expected<void, magic_args::invalid_argument_value> from_argument_value(
   OutputStyle& m,
   std::string_view s) {
   if (s == "list") {
@@ -28,7 +28,7 @@ std::expected<void, magic_args::invalid_argument_value> from_string_argument(
   return std::unexpected {magic_args::invalid_argument_value {}};
 }
 
-auto formattable_argument_value(const OutputStyle& m) {
+auto to_argument_value(const OutputStyle& m) {
   using enum OutputStyle;
   switch (m) {
     case List:

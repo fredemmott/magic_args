@@ -16,9 +16,9 @@ parent: Features
 You can override these or add support for additional types by implementing these functions in the same namespace as the type:
 
 ```c++
-auto formattable_argument_value(const YourType&)
+auto to_argument_value(const YourType&)
   -> std::formattable<char> auto;
 
 std::expected<void, magic_args::invalid_argument_value>
-  from_string_argument(YourType& out, std::string_view in);
+  from_argument_value(YourType& out, std::string_view in);
 ```

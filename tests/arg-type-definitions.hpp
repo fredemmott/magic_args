@@ -10,7 +10,7 @@ struct MyValueType {
   std::string mValue;
   constexpr bool operator==(const MyValueType&) const noexcept = default;
 };
-std::expected<void, magic_args::invalid_argument_value> from_string_argument(
+std::expected<void, magic_args::invalid_argument_value> from_argument_value(
   MyValueType& v,
   std::string_view arg) {
   if (arg == MyValueType::InvalidValue) {
