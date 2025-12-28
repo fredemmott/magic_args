@@ -34,6 +34,8 @@ template <class T, detail::definition_tags::any TTag>
 struct decorated_argument final {
   using value_type = T;
 
+  static constexpr auto behavior = TTag::behavior;
+
   static constexpr bool is_std_optional = detail::std_optional<T>;
   static constexpr bool is_required = std::
     same_as<TTag, detail::definition_tags::mandatory_positional_argument_t>;

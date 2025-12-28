@@ -3,6 +3,10 @@
 #ifndef MAGIC_ARGS_DETAIL_CONSTEXPR_STRINGS_HPP
 #define MAGIC_ARGS_DETAIL_CONSTEXPR_STRINGS_HPP
 
+#ifndef MAGIC_ARGS_SINGLE_FILE
+#include "concepts.hpp"
+#endif
+
 #include <algorithm>
 #include <ranges>
 #include <utility>
@@ -10,27 +14,28 @@
 namespace magic_args::detail::constexpr_strings {
 
 template <std::size_t N>
-struct literal_t final {
+struct value_t final {
   static constexpr std::size_t size = N;
   std::array<char, size> value {};
 
-  consteval literal_t() = default;
+  consteval value_t() = default;
 
-  consteval literal_t(const char (&str)[N + 1]) {
+  consteval value_t(const char (&str)[N + 1]) {
     std::ranges::copy_n(str, size, value.begin());
   }
 
-  consteval literal_t(const std::array<char, N>& in) : value(in) {
+  consteval value_t(const std::array<char, N>& in) : value(in) {
   }
 
   consteval operator std::string_view() const noexcept {
     return std::string_view {value};
   }
 };
+value_t() -> value_t<0>;
 template <std::size_t N>
-literal_t(const char (&)[N]) -> literal_t<N - 1>;
+value_t(const char (&)[N]) -> value_t<N - 1>;
 
-template <literal_t T>
+template <value_t T>
 consteval auto operator""_constexpr() {
   return T.value;
 }
@@ -72,6 +77,36 @@ struct result_t {
   constexpr bool operator==(this const Self&, T&& other) noexcept {
     return std::string_view {Self::value} == std::forward<T>(other);
   }
+
+  template <class Self>
+    requires requires { Self::value; }
+  [[nodiscard]]
+  constexpr std::size_t size(this const Self&) {
+    return std::string_view {Self::value}.size();
+  }
+
+  template <class Self>
+    requires requires { Self::value; }
+  [[nodiscard]]
+  constexpr bool empty(this const Self& self) {
+    return self.size() == 0;
+  }
+
+  template <class Self>
+    requires requires { Self::value; }
+  constexpr auto front(this const Self&) {
+    return std::string_view {Self::value}.front();
+  }
+};
+
+struct empty_t : result_t {
+  static constexpr std::array<char, 0> value {};
+};
+constexpr auto empty_v = empty_t::value;
+
+template <auto Value>
+struct identity_t : result_t {
+  static constexpr auto value = Value;
 };
 
 template <auto TData, auto TPrefix>

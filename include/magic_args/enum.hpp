@@ -49,25 +49,20 @@ struct from_string_t<T> {
  * Without this specialization, the default would only be shown if
  * different to the default-constructed enum value.
  */
-template <basic_option TArg>
-  requires std::is_enum_v<typename TArg::value_type>
-struct describe_default_value_t<TArg> {
-  using TValue = typename TArg::value_type;
-  static std::string operator()(const TValue value) {
+template <static_basic_option TArgDef>
+  requires std::is_enum_v<typename TArgDef::value_type>
+struct describe_default_value_t<TArgDef> {
+  using value_type = typename TArgDef::value_type;
+  static std::string operator()(const value_type value) {
     return std::format("{}", to_formattable(value));
   }
 };
 
-template <basic_argument TArg>
-  requires std::is_enum_v<typename std::decay_t<TArg>::value_type>
-struct get_argument_help_t<TArg> {
-  static std::string operator()(const TArg& argDef) {
-    if (!argDef.mHelp.empty()) {
-      return std::string {argDef.mHelp};
-    }
-
-    const auto values
-      = magic_enum::enum_values<typename std::decay_t<TArg>::value_type>();
+template <class T>
+  requires std::is_enum_v<T>
+struct generate_argument_help_t<T> {
+  static std::string operator()() {
+    const auto values = magic_enum::enum_values<T>();
     if (values.empty()) {
       return {};
     }

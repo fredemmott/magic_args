@@ -84,6 +84,10 @@ struct ShortFlags {
   magic_args::flag mFlagB {.mShortName = "b"};
   magic_args::flag mFlagC {.mShortName = "c"};
 };
+using arg_def_0 = magic_args::detail::
+  argument_definition_t<ShortFlags, 0, magic_args::gnu_style_parsing_traits>;
+static_assert(magic_args::detail::static_basic_argument<arg_def_0>);
+static_assert(magic_args::detail::static_basic_option<arg_def_0>);
 
 struct OptionsOnly {
   std::string mString;

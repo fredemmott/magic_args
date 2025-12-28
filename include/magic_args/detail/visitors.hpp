@@ -33,8 +33,7 @@ bool visit_all_defined_arguments(const auto& visitor, auto& ret) {
   auto tuple = tie_struct(ret);
   return [&]<std::size_t... I>(std::index_sequence<I...>) {
     return (
-      visitor(get_argument_definition<TRet, I, Traits>(), get<I>(tuple))
-      || ...);
+      visitor(argument_definition_t<TRet, I, Traits> {}, get<I>(tuple)) || ...);
   }(std::make_index_sequence<count_members<TRet>()> {});
 }
 
@@ -42,8 +41,8 @@ template <parsing_traits Traits>
 [[nodiscard]]
 bool visit_options(const auto& visitor, auto& ret) {
   return visit_all_defined_arguments<Traits>(
-    [&]<basic_argument TDef, class TValue>(const TDef& def, TValue&& value) {
-      if constexpr (basic_option<TDef>) {
+    [&]<class TDef, class TValue>(const TDef& def, TValue&& value) {
+      if constexpr (is_option(TDef::behavior)) {
         return visitor(def, std::forward<TValue>(value));
       } else {
         return false;
@@ -56,11 +55,11 @@ template <parsing_traits Traits>
 [[nodiscard]]
 bool visit_positional_arguments(const auto& visitor, auto& ret) {
   return visit_all_defined_arguments<Traits>(
-    [&]<basic_argument TDef, class TValue>(const TDef& def, TValue&& value) {
-      if constexpr (basic_option<TDef>) {
-        return false;
-      } else {
+    [&]<class TDef, class TValue>(const TDef& def, TValue&& value) {
+      if constexpr (is_positional_argument(TDef::behavior)) {
         return visitor(def, std::forward<TValue>(value));
+      } else {
+        return false;
       }
     },
     ret);

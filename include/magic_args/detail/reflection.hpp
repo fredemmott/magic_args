@@ -349,8 +349,17 @@ template <class T, std::size_t N>
 constexpr auto member_name_by_index
   = demangle_member<mangled_name_by_index<T, N>>();
 
+template <class T, std::size_t I>
+using member_type_by_index
+  = std::remove_cvref_t<decltype(get<I>(tie_struct(T {})))>;
+
 template <class T>
 constexpr auto type_name = demangle_type<mangled_name<T>()>();
+
+template <class T, std::size_t I>
+constexpr auto default_value_by_index() {
+  return std::get<I>(tie_struct(T {}));
+}
 
 #ifdef __clang__
 #pragma clang diagnostic pop

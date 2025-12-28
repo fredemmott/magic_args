@@ -4,6 +4,7 @@
 #define MAGIC_ARGS_MAIN_MACROS_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
+#include "detail/overloaded.hpp"
 #include "iconv.hpp"
 #include "parse.hpp"
 #include "windows.hpp"

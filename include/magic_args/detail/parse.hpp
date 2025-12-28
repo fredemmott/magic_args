@@ -77,9 +77,13 @@ struct common_arguments_t {
   }();
 
   static constexpr auto short_help = [] {
-    static constexpr auto storage = constexpr_strings::
-      concat_t<T::short_arg_prefix, T::short_help_arg>::value;
-    return std::string_view {storage};
+    if constexpr (std::string_view {T::short_arg_prefix}.empty()) {
+      return std::string_view {};
+    } else {
+      static constexpr auto storage = constexpr_strings::
+        concat_t<T::short_arg_prefix, T::short_help_arg>::value;
+      return std::string_view {storage};
+    }
   }();
 
   static constexpr auto version = [] {
@@ -89,12 +93,10 @@ struct common_arguments_t {
   }();
 };
 
-template <parsing_traits Traits, basic_argument T>
-std::string provided_argument_name(
-  const T& argDef,
-  const std::string_view arg) {
-  if constexpr (!basic_option<T>) {
-    return std::string {argDef.mName};
+template <parsing_traits Traits, static_basic_argument TDef>
+std::string provided_argument_name(const std::string_view arg) {
+  if constexpr (is_positional_argument(TDef::behavior)) {
+    return std::string {TDef::name};
   } else {
     const auto index = arg.find(Traits::value_separator);
     if (index == std::string_view::npos) {
@@ -117,6 +119,16 @@ std::string provided_argument_name(
   return {begin, end};
 };
 
+[[nodiscard]] inline bool consume(
+  std::string_view& sv,
+  const std::string_view prefix) {
+  if (!sv.starts_with(prefix)) {
+    return false;
+  }
+  sv.remove_prefix(prefix.size());
+  return true;
+}
+
 struct option_match {
   // MUST be entirely within `std::string_view arg`
   std::string_view mName;
@@ -128,80 +140,64 @@ struct option_match {
   }
 };
 
-template <parsing_traits Traits, basic_option T>
+template <parsing_traits Traits, static_basic_option TDef>
 [[nodiscard]]
-std::optional<option_match> option_matches_long(
-  const T& argDef,
-  const std::string_view arg) {
-  constexpr std::string_view Prefix {Traits::long_arg_prefix};
-  constexpr std::string_view Separator {Traits::value_separator};
+std::optional<option_match> option_matches_long(const std::string_view arg) {
+  using namespace constexpr_strings;
+
+  static constexpr auto PrefixStorage
+    = concat_t<Traits::long_arg_prefix, TDef::name>::value;
+  constexpr auto Prefix = std::string_view {PrefixStorage};
 
   if (!arg.starts_with(Prefix)) {
     return std::nullopt;
   }
+
+  const std::string_view nameSlice {arg.begin(), arg.begin() + Prefix.size()};
+
   std::string_view tail {arg.begin() + Prefix.size(), arg.end()};
-
-  if (!tail.starts_with(argDef.mName)) {
-    return std::nullopt;
-  }
-
-  option_match ret {
-    .mName = consume(tail, argDef.mName.size()),
-    .mValue = {},
-  };
 
   if (tail.empty()) {
     // `--foo`
-    return ret;
+    return option_match {nameSlice};
   }
 
-  if (!tail.starts_with(Separator)) {
+  if (!consume(tail, Traits::value_separator)) {
     // `--foobar` when we want `--foo=`
     return std::nullopt;
   }
 
-  // `--foo=` or `--foo=bar`
-  tail.remove_prefix(Separator.size());
-  ret.mValue = tail;
-
-  return ret;
+  return option_match {nameSlice, tail};
 }
 
-template <parsing_traits Traits, basic_option T>
+template <parsing_traits Traits, static_basic_option TDef>
 [[nodiscard]]
-std::optional<option_match> option_matches_short(
-  const T& argDef,
-  const std::string_view arg) {
-  if (argDef.mShortName.empty()) {
+std::optional<option_match> option_matches_short(const std::string_view arg) {
+  if constexpr (std::size(Traits::short_arg_prefix) == 0) {
     return std::nullopt;
-  }
-
-  constexpr std::string_view Prefix = Traits::short_arg_prefix;
-  if (!arg.starts_with(Prefix)) {
+  } else if constexpr (std::size(TDef::short_name) == 0) {
     return std::nullopt;
-  }
+  } else {
+    static constexpr auto Expected = constexpr_strings::
+      concat_t<Traits::short_arg_prefix, TDef::short_name> {};
 
-  const std::string_view tail {arg.begin() + Prefix.size(), arg.end()};
-  if (tail != argDef.mShortName) {
-    return std::nullopt;
-  }
+    if (arg != Expected) {
+      return std::nullopt;
+    }
 
-  return option_match {.mName = tail, .mValue = {}};
+    return option_match {arg};
+  }
 }
 
-template <parsing_traits Traits, basic_option T>
+template <parsing_traits Traits, static_basic_option TDef>
 [[nodiscard]]
-std::optional<option_match> option_matches(
-  const T& argDef,
-  std::string_view arg) {
-  if (const auto ret = option_matches_long<Traits>(argDef, arg); ret) {
+std::optional<option_match> option_matches(const std::string_view arg) {
+  if (const auto ret = option_matches_long<Traits, TDef>(arg); ret) {
     return ret;
   }
 
-  if constexpr (requires { Traits::short_arg_prefix; }) {
-    if (const auto ret = option_matches_short<Traits>(argDef, arg); ret) {
-      return ret;
-    }
+  if (const auto ret = option_matches_short<Traits, TDef>(arg); ret) {
+    return ret;
   }
 
   return std::nullopt;
@@ -219,19 +215,17 @@ using arg_parse_result
 
 template <
   parsing_traits Traits,
-  basic_argument T,
-  class V = std::decay_t<typename T::value_type>>
-  requires(!basic_option<T>)
+  static_basic_positional_argument TArgDef,
+  class V = std::decay_t<typename TArgDef::value_type>>
 arg_parse_result<V> parse_option(
-  [[maybe_unused]] const T& arg,
+  [[maybe_unused]] const typename TArgDef::value_type& arg,
   [[maybe_unused]] const random_access_range_of<std::string_view> auto& args) {
   return std::nullopt;
 }
 
-template <parsing_traits Traits, basic_argument T>
+template <parsing_traits Traits, static_basic_argument TDef>
 auto map_value_parse_error(
   const random_access_range_of<std::string_view> auto& args,
-  const T& argDef,
   const std::string_view value,
   invalid_argument_value e) {
   if (!e.mSource.empty()) {
@@ -240,7 +234,7 @@ auto map_value_parse_error(
   }
   e.mSource = {
     .mArgvSlice = std::ranges::to<std::vector<std::string>>(args),
-    .mName = provided_argument_name<Traits>(argDef, *std::ranges::begin(args)),
+    .mName = provided_argument_name<Traits, TDef>(*std::ranges::begin(args)),
     .mValue = std::string {value},
   };
   return std::unexpected {std::move(e)};
@@ -248,13 +242,13 @@ auto map_value_parse_error(
 
 template <
   parsing_traits Traits,
-  basic_option T,
-  class V = std::decay_t<typename T::value_type>>
+  static_basic_option TDefinition,
+  class V = std::decay_t<typename TDefinition::value_type>>
+  requires(TDefinition::behavior == Behavior::Option)
 arg_parse_result<V> parse_option(
-  const T& argDef,
   const random_access_range_of<std::string_view> auto& args) {
   const auto first = *std::ranges::begin(args);
-  const auto match = option_matches<Traits>(argDef, first);
+  const auto match = option_matches<Traits, TDefinition>(first);
   if (!match) {
     return std::nullopt;
   }
@@ -267,7 +261,7 @@ arg_parse_result<V> parse_option(
     if (args.size() == 1) {
       return std::unexpected {missing_argument_value {
         .mSource = {
-          .mName = provided_argument_name<Traits>(argDef, first),
+          .mName = provided_argument_name<Traits, TDefinition>(first),
           .mArgvMember = std::string { first },
         },
       }};
@@ -278,17 +272,17 @@ arg_parse_result<V> parse_option(
 
   V ret {};
   if (const auto converted = from_string(ret, value); !converted) {
-    return map_value_parse_error<Traits>(
-      std::views::take(args, consumed), argDef, value, converted.error());
+    return map_value_parse_error<Traits, TDefinition>(
+      std::views::take(args, consumed), value, converted.error());
   }
   return {arg_parse_match {ret, consumed}};
 }
 
-template <parsing_traits Traits>
+template <parsing_traits Traits, static_basic_option TArgDef>
+  requires(TArgDef::behavior == Behavior::Flag)
 arg_parse_result<bool> parse_option(
-  const flag& arg,
   const random_access_range_of<std::string_view> auto& args) {
-  if (option_matches<Traits>(arg, *std::ranges::begin(args))) {
+  if (option_matches<Traits, TArgDef>(*std::ranges::begin(args))) {
     return {arg_parse_match {true, 1}};
   }
   return std::nullopt;
@@ -307,12 +301,12 @@ struct counted_flag_value_t {
   }
 };
 
-template <parsing_traits Traits>
+template <parsing_traits Traits, static_basic_option TArgDef>
+  requires(TArgDef::behavior == Behavior::CountedFlag)
 arg_parse_result<counted_flag_value_t> parse_option(
-  const counted_flag& arg,
   const random_access_range_of<std::string_view> auto& args) {
   using enum counted_flag_value_t::kind;
-  const auto match = option_matches<Traits>(arg, *std::ranges::begin(args));
+  const auto match = option_matches<Traits, TArgDef>(*std::ranges::begin(args));
   if (!match) {
     return std::nullopt;
   }
@@ -323,8 +317,8 @@ arg_parse_result<counted_flag_value_t> parse_option(
 
   std::size_t value {};
   if (const auto ret = from_string(value, *match->mValue); !ret) {
-    return map_value_parse_error<Traits>(
-      args, arg, *match->mValue, ret.error());
+    return map_value_parse_error<Traits, TArgDef>(
+      args, *match->mValue, ret.error());
   }
   return {arg_parse_match {counted_flag_value_t {Assign, value}, 1}};
 }
@@ -351,18 +345,16 @@ inline void assign_value(counted_flag& arg, const counted_flag_value_t& value) {
 
 template <
   parsing_traits Traits,
-  basic_argument T,
-  class V = typename T::value_type>
-  requires(!basic_option<T>)
+  static_basic_positional_argument TArgDef,
+  class V = typename TArgDef::value_type>
 arg_parse_result<V> parse_positional_argument(
-  const T& argDef,
   const random_access_range_of<std::string_view> auto& args) {
   using namespace detail;
 
   if (args.empty()) {
-    if constexpr (T::is_required) {
+    if constexpr (is_required(TArgDef::behavior)) {
       return std::unexpected {
-        missing_required_argument {std::string {argDef.mName}}};
+        missing_required_argument {std::string {TArgDef::name}}};
     } else {
       return std::nullopt;
     }
@@ -377,9 +369,8 @@ arg_parse_result<V> parse_positional_argument(
       const auto& arg = args[i];
       typename V::value_type v {};
       if (const auto parsed = from_string(v, arg); !parsed) {
-        return map_value_parse_error<Traits>(
+        return map_value_parse_error<Traits, TArgDef>(
           std::views::single(*(std::ranges::begin(args) + i)),
-          argDef,
           arg,
           parsed.error());
       }
@@ -389,8 +380,8 @@ arg_parse_result<V> parse_positional_argument(
   } else {
     V ret {};
     if (const auto parsed = from_string(ret, args.front()); !parsed) {
-      return map_value_parse_error<Traits>(
-        std::views::take(args, 1), argDef, args.front(), parsed.error());
+      return map_value_parse_error<Traits, TArgDef>(
+        std::views::take(args, 1), args.front(), parsed.error());
     }
     return arg_parse_match {std::move(ret), 1};
   }

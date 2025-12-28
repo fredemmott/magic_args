@@ -6,7 +6,6 @@
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include "detail/concepts.hpp"
 #include "detail/config.hpp"
-#include "detail/overloaded.hpp"
 #include "detail/parse.hpp"
 #include "detail/parsing_traits_for_args.hpp"
 #include "detail/static_assert_not_an_enum.hpp"
@@ -71,8 +70,8 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
     }
 
     const auto matchedOption = detail::visit_options<Traits>(
-      [&](const auto& def, auto& out) {
-        auto result = parse_option<Traits>(def, std::views::drop(args, i));
+      [&]<static_basic_argument TDef>(const TDef&, auto& out) {
+        auto result = parse_option<Traits, TDef>(std::views::drop(args, i));
         if (!result) {
           return false;
         }
@@ -108,22 +107,24 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
           = arg.substr(std::string_view {Traits::short_arg_prefix}.size());
         for (const char it: flags) {
           const bool matched = detail::visit_options<Traits>(
-            [&](const auto& def, auto& out) {
-              if (def.mShortName != std::string_view {&it, 1}) {
+            [&]<class TDef>(const TDef&, auto& out) {
+              constexpr auto ShortName = TDef::short_name;
+              if (ShortName.size() != 1 || ShortName.front() != it) {
                 return false;
               }
 
-              return overloaded {
-                [](flag& v) {
-                  assign_value(v, true);
-                  return true;
-                },
-                [](counted_flag& v) {
-                  assign_value(v, counted_flag_value_t::increment());
-                  return true;
-                },
-                [](auto&) { return false; },
-              }(out);
+              if constexpr (TDef::behavior == Behavior::Flag) {
+                assign_value(out, true);
+                return true;
+              } else if constexpr (TDef::behavior == Behavior::CountedFlag) {
+                assign_value(
+                  out,
+                  counted_flag_value_t {
+                    counted_flag_value_t::kind::Increase, 1});
+                return true;
+              } else {
+                return false;
+              }
             },
             ret);
           if (!matched) {
@@ -161,8 +162,8 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
     (first_optional_positional_argument<T>() == -1)
     || (first_optional_positional_argument<T>() >= last_mandatory_positional_argument<T>()));
   std::ignore = detail::visit_positional_arguments<Traits>(
-    [&](const auto& def, auto& out) {
-      auto result = parse_positional_argument<Traits>(def, positionalArgs);
+    [&]<static_basic_argument TArgDef>(const TArgDef&, auto& out) {
+      auto result = parse_positional_argument<Traits, TArgDef>(positionalArgs);
       if (!result) {
         return false;
       }

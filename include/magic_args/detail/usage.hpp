@@ -20,107 +20,122 @@
 
 namespace magic_args::detail {
 
-template <parsing_traits, basic_argument TArg>
-  requires(!basic_option<TArg>)
-void show_option_usage(FILE*, const TArg&, const typename TArg::value_type&) {
+template <class T>
+struct generate_argument_help_t {
+  static std::string_view operator()() {
+    return {};
+  }
+};
+
+template <class TArgs, std::size_t I>
+static auto get_argument_help_by_index() {
+  using member_type = member_type_by_index<TArgs, I>;
+  if constexpr (!basic_argument<member_type>) {
+    return generate_argument_help_t<member_type> {}();
+  } else {
+    constexpr auto value = std::get<I>(tie_struct(TArgs {})).mHelp;
+    if constexpr (!value.empty()) {
+      return value;
+    } else {
+      return generate_argument_help_t<typename member_type::value_type> {}();
+    }
+  }
 }
 
-template <basic_option TArg>
-struct describe_default_value_t {
-  using TValue = TArg::value_type;
+template <
+  class TArgs,
+  std::size_t I,
+  parsing_traits Traits,
+  class TArgDef = argument_definition_t<TArgs, I, Traits>>
+  requires(!static_basic_option<TArgDef>)
+void show_option_usage(FILE*) {
+}
 
-  static std::string operator()(const TValue&) {
+template <static_basic_option TArgDef>
+struct describe_default_value_t {
+  using value_type = TArgDef::value_type;
+
+  static std::string operator()(const value_type&) {
     return {};
   }
 
-  static std::string operator()(const TValue& value)
-    requires detail::formattable<TValue> && std::equality_comparable<TValue>
+  static std::string operator()(const value_type& value)
+    requires detail::formattable<value_type>
+    && std::equality_comparable<value_type>
   {
-    if (value == TValue {}) {
+    if (value == value_type {}) {
       return {};
     }
     return to_string(value);
   }
 
-  static std::string operator()(const TValue& value)
-    requires detail::formattable<TValue> && (!std::equality_comparable<TValue>)
-    && std::default_initializable<TValue>
+  static std::string operator()(const value_type& value)
+    requires detail::formattable<value_type>
+    && (!std::equality_comparable<value_type>)
+    && std::default_initializable<value_type>
   {
-    if (const auto ret = to_string(value); ret != to_string(TValue {})) {
+    if (const auto ret = to_string(value); ret != to_string(value_type {})) {
       return ret;
     }
     return {};
   }
 
  private:
-  static std::string to_string(const TValue& value)
-    requires detail::formattable<TValue>
+  static std::string to_string(const value_type& value)
+    requires detail::formattable<value_type>
   {
     return std::format("{}", to_formattable(value));
   }
 };
 
 template <
-  basic_option TArg,
-  same_as_ignoring_cvref<typename TArg::value_type> TValue>
-std::string describe_default_value(const TArg&, TValue&& value) {
-  return describe_default_value_t<TArg> {}(std::forward<TValue>(value));
-}
-
-template <basic_argument TArg>
-struct get_argument_help_t {
-  static constexpr auto operator()(const TArg& argDef) {
-    return argDef.mHelp;
-  }
-};
-
-template <basic_argument TArg>
-constexpr auto get_argument_help(TArg&& argDef) {
-  return get_argument_help_t<TArg> {}(std::forward<TArg>(argDef));
-}
-
-template <parsing_traits Traits, basic_option TArg>
-void show_option_usage(
-  FILE* output,
-  const TArg& argDef,
-  const typename TArg::value_type& initialValue) {
-  const auto shortArg = [&argDef] {
-    if constexpr (requires {
-                    argDef.mShortName;
-                    Traits::short_arg_prefix;
-                  }) {
-      if (!argDef.mShortName.empty()) {
-        return std::format(
-          "{}{},", Traits::short_arg_prefix, argDef.mShortName);
-      }
+  class TArgs,
+  std::size_t I,
+  parsing_traits Traits,
+  class TArgDef = argument_definition_t<TArgs, I, Traits>>
+void show_option_usage(FILE* output) {
+  const auto shortArg = [] {
+    constexpr auto ShortName
+      = argument_definition_t<TArgs, I, Traits>::short_name;
+    if constexpr (!ShortName.empty()) {
+      return std::format(
+        "{}{},",
+        std::string {Traits::short_arg_prefix},
+        std::string {ShortName});
+    } else {
+      return std::string {};
     }
-    return std::string {};
   }();
   const auto longArg = [&] {
-    if constexpr (same_as_ignoring_cvref<flag, TArg>) {
-      return std::format("{}{}", Traits::long_arg_prefix, argDef.mName);
-    } else if constexpr (same_as_ignoring_cvref<counted_flag, TArg>) {
+    if constexpr (TArgDef::behavior == Behavior::Flag) {
+      return std::format(
+        "{}{}",
+        std::string_view {Traits::long_arg_prefix},
+        std::string_view {TArgDef::name});
+    } else if constexpr (TArgDef::behavior == Behavior::CountedFlag) {
       return std::format(
         "{}{}[{}VALUE]",
-        Traits::long_arg_prefix,
-        argDef.mName,
-        Traits::value_separator);
+        std::string_view {Traits::long_arg_prefix},
+        std::string_view {TArgDef::name},
+        std::string_view {Traits::value_separator});
     } else {
       return std::format(
         "{}{}{}VALUE",
-        Traits::long_arg_prefix,
-        argDef.mName,
-        Traits::value_separator);
+        std::string_view {Traits::long_arg_prefix},
+        std::string_view {TArgDef::name},
+        std::string_view {Traits::value_separator});
     }
   }();
 
   const auto header = std::format("  {:3} {}", shortArg, longArg);
 
   std::vector<std::string> extra;
-  if (const auto help = get_argument_help(argDef); !help.empty()) {
+  if (const auto help = get_argument_help_by_index<TArgs, I>(); !help.empty()) {
     extra.emplace_back(help);
   }
-  if (const auto defaultValue = describe_default_value(argDef, initialValue);
+
+  if (const auto defaultValue
+      = describe_default_value_t<TArgDef> {}(TArgDef::default_value());
       !defaultValue.empty()) {
     extra.emplace_back(std::format("(default: {})", defaultValue));
   }
@@ -143,18 +158,51 @@ void show_option_usage(
   }
 }
 
-template <parsing_traits Traits, basic_option T>
-void show_positional_argument_usage(FILE*, const T&) {
+template <
+  class TArgs,
+  std::size_t I,
+  parsing_traits Traits,
+  class TArgDef = argument_definition_t<TArgs, I, Traits>>
+void show_positional_argument_usage(FILE*) {
 }
 
-template <parsing_traits Traits, basic_argument T>
-  requires(!basic_option<T>)
-void show_positional_argument_usage(FILE* output, const T& arg) {
-  if (arg.mHelp.empty()) {
-    detail::println(output, "      {}", arg.mName);
+template <
+  class TArgs,
+  std::size_t I,
+  parsing_traits Traits,
+  static_basic_positional_argument TArgDef
+  = argument_definition_t<TArgs, I, Traits>>
+void show_positional_argument_usage(FILE* output) {
+  const auto help = get_argument_help_by_index<TArgs, I>();
+  if (help.empty()) {
+    detail::println(output, "      {}", std::string_view {TArgDef::name});
     return;
   }
-  detail::println(output, "      {:25}{}", arg.mName, arg.mHelp);
+  detail::println(
+    output, "      {:25}{}", std::string_view {TArgDef::name}, help);
+}
+
+template <class T, std::size_t I, parsing_traits Traits>
+void append_positional_name(FILE* output) {
+  using TArgDef = argument_definition_t<T, I, Traits>;
+  if constexpr (is_positional_argument(TArgDef::behavior)) {
+    std::string name {TArgDef::name};
+    if (toupper(name.back()) == 'S') {
+      // Real de-pluralization requires a lookup database; we can't do
+      // that, so this seems to be the only practical approach. If
+      // it's not good enough for you, specify a
+      // `positional_argument<T>` and provide a name.
+      name.pop_back();
+    }
+    if constexpr (vector_like<typename TArgDef::value_type>) {
+      name = std::format("{0} [{0} [...]]", name);
+    }
+    if (is_required(TArgDef::behavior)) {
+      detail::print(output, " {}", name);
+    } else {
+      detail::print(output, " [{}]", name);
+    }
+  }
 }
 
 template <parsing_traits Traits, class T>
@@ -163,14 +211,12 @@ void show_usage(FILE* output, argv_range auto&& argv) {
   constexpr auto N = count_members<T>();
 
   constexpr bool hasOptions = []<std::size_t... I>(std::index_sequence<I...>) {
-    return (
-      basic_option<decltype(get_argument_definition<T, I, Traits>())> || ...);
+    return (is_option(argument_definition_t<T, I, Traits>::behavior) || ...);
   }(std::make_index_sequence<N> {});
   constexpr bool hasPositionalArguments
     = []<std::size_t... I>(std::index_sequence<I...>) {
         return (
-          (basic_argument<decltype(get_argument_definition<T, I, Traits>())>
-           && !basic_option<decltype(get_argument_definition<T, I, Traits>())>)
+          is_positional_argument(argument_definition_t<T, I, Traits>::behavior)
           || ...);
       }(std::make_index_sequence<N> {});
 
@@ -181,31 +227,8 @@ void show_usage(FILE* output, argv_range auto&& argv) {
     detail::println(output, "{}", oneLiner);
   } else {
     detail::print(output, "{} [--]", oneLiner);
-    []<std::size_t... I>(auto output, std::index_sequence<I...>) {
-      (
-        [&] {
-          const auto arg = get_argument_definition<T, I, Traits>();
-          using TArg = std::decay_t<decltype(arg)>;
-          if constexpr (!(basic_option<TArg> || std::same_as<TArg, flag>)) {
-            auto name = std::string {arg.mName};
-            if (toupper(name.back()) == 'S') {
-              // Real de-pluralization requires a lookup database; we can't do
-              // that, so this seems to be the only practical approach. If
-              // it's not good enough for you, specify a
-              // `positional_argument<T>` and provide a name.
-              name.pop_back();
-            }
-            if constexpr (vector_like<typename TArg::value_type>) {
-              name = std::format("{0} [{0} [...]]", name);
-            }
-            if (TArg::is_required) {
-              detail::print(output, " {}", name);
-            } else {
-              detail::print(output, " [{}]", name);
-            }
-          }
-        }(),
-        ...);
+    []<std::size_t... I>(FILE* output, std::index_sequence<I...>) {
+      (append_positional_name<T, I, Traits>(output), ...);
     }(output, std::make_index_sequence<N> {});
     detail::println(output, "");
   }
@@ -224,39 +247,31 @@ void show_usage(FILE* output, argv_range auto&& argv) {
   detail::print(output, "\nOptions:\n\n");
   if (hasOptions) {
     [output]<std::size_t... I>(std::index_sequence<I...>) {
-      (show_option_usage<Traits>(
-         output,
-         get_argument_definition<T, I, Traits>(),
-         get<I>(tie_struct(T {}))),
-       ...);
+      (show_option_usage<T, I, Traits>(output), ...);
     }(std::make_index_sequence<N> {});
     detail::print(output, "\n");
   }
 
-  if constexpr (requires { Traits::short_help_arg; }) {
-    show_option_usage<Traits>(
-      output,
-      flag {
-        false,
-        Traits::long_help_arg,
-        "show this message",
-        Traits::short_help_arg},
-      {});
+  using CommonArguments = common_arguments_t<Traits>;
+  if constexpr (CommonArguments::short_help.empty()) {
+    std::println(
+      output, "        {:24} show this message", CommonArguments::long_help);
   } else {
-    show_option_usage<Traits>(
-      output, flag {false, Traits::long_help_arg, "show this message"}, {});
+    std::println(
+      output,
+      "  {:2}, {:24} show this message",
+      CommonArguments::short_help,
+      CommonArguments::long_help);
   }
   if constexpr (has_version<T>) {
-    show_option_usage<Traits>(
-      output, flag {false, Traits::version_arg, "print program version"}, {});
+    std::println(
+      output, "      {:24} print program version", CommonArguments::version);
   }
 
   if (hasPositionalArguments) {
     detail::print(output, "\nArguments:\n\n");
     [output]<std::size_t... I>(std::index_sequence<I...>) {
-      (show_positional_argument_usage<Traits>(
-         output, get_argument_definition<T, I, Traits>()),
-       ...);
+      (show_positional_argument_usage<T, I, Traits>(output), ...);
     }(std::make_index_sequence<N> {});
   }
 }
