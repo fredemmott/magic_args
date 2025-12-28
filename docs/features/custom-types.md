@@ -10,8 +10,10 @@ parent: Features
 
 *magic_args* automatically supports types which:
 
-- satisfy `std::formattable<char>`
-- support `operator>>` from a `std::stringstream`
+- satisfy the `std::formattable<char>` concept
+- can be converted to a string by:
+  - `std::stringstream {} >> foo`
+  - satisfying the `std::assignable_from<std::string_view>` concept
 
 You can override these or add support for additional types by implementing these functions in the same namespace as the type:
 
