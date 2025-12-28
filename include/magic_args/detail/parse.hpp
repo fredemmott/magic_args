@@ -182,7 +182,7 @@ std::optional<option_match> option_matches_short(const std::string_view arg) {
       return std::nullopt;
     }
 
-    return option_match {arg};
+    return option_match {tail};
   }
 }
 
@@ -193,15 +193,19 @@ std::optional<option_match> option_matches_negated_flag(
   if constexpr (!parsing_traits_with_negated_flags<Traits>) {
     return std::nullopt;
   } else {
-    static constexpr auto Expected = constexpr_strings::concat_t<
-      Traits::long_arg_prefix,
-      Traits::template negated_flag_name<TDef::name>()> {};
-
-    if (arg != Expected) {
+    auto tail = arg;
+    if (!consume(tail, Traits::long_arg_prefix)) {
       return std::nullopt;
     }
-
-    return option_match {arg};
+    if (tail.empty()) {
+      return std::nullopt;
+    }
+    if (
+      tail
+      == std::string_view {Traits::template negated_flag_name<TDef::name>()}) {
+      return option_match {tail};
+    }
+    return std::nullopt;
   }
 }
 
