@@ -34,6 +34,12 @@ struct gnu_style_parsing_traits {
     using namespace detail::constexpr_strings;
     return to_upper_t<underscore_t<remove_field_prefix_t<Name> {}> {}> {};
   }
+
+  template <auto Name>
+  static consteval auto negated_flag_name() {
+    using namespace detail::constexpr_strings;
+    return concat_t<"no-"_constexpr, Name>::value;
+  }
 };
 static_assert(parsing_traits<gnu_style_parsing_traits>);
 

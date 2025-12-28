@@ -95,7 +95,7 @@ concept same_as_any_of = (std::same_as<T, Us> || ...);
 namespace magic_args::inline public_api {
 
 template <class T>
-concept parsing_traits = requires(std::string arg) {
+concept parsing_traits = requires {
   { T::long_arg_prefix } -> detail::string_literal;
   { T::short_arg_prefix } -> detail::string_literal;
   { T::value_separator } -> detail::string_literal;
@@ -124,9 +124,19 @@ concept parsing_traits = requires(std::string arg) {
 };
 
 template <class T>
+concept parsing_traits_with_negated_flags = parsing_traits<T> && requires {
+  {
+    T::template negated_flag_name<std::array {'f', 'o', 'o'}>()
+  } -> detail::explicitly_convertible_to<std::string_view>;
+  requires requires {
+    typename std::bool_constant<(
+      (void)T::template negated_flag_name<std::array {'f', 'o', 'o'}>(), true)>;
+  };
+};
+
+template <class T>
 concept has_parsing_traits
   = requires { requires parsing_traits<typename T::parsing_traits>; };
-
 }// namespace magic_args::inline public_api
 
 #endif

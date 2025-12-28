@@ -150,9 +150,9 @@ Usage: my_test [OPTIONS...]
 
 Options:
 
-      --foo
-      --bar
-  -b, --baz                    do the bazzy thing
+      --[no-]foo
+      --[no-]bar
+  -b, --[no-]baz               do the bazzy thing
 
   -?, --help                   show this message
 )EOF"));
@@ -194,7 +194,7 @@ Usage: my_test [OPTIONS...] [--] [INPUT] [OUTPUT]
 
 Options:
 
-      --flag
+      --[no-]flag
 
   -?, --help                   show this message
 
@@ -219,7 +219,7 @@ Usage: my_test [OPTIONS...] [--] INPUT [OUTPUT]
 
 Options:
 
-      --flag
+      --[no-]flag
 
   -?, --help                   show this message
 
@@ -244,7 +244,7 @@ Usage: my_test [OPTIONS...] [--] [OUTPUT] [INPUT [INPUT [...]]]
 
 Options:
 
-      --flag
+      --[no-]flag
 
   -?, --help                   show this message
 

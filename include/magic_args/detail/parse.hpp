@@ -173,13 +173,32 @@ std::optional<option_match> option_matches_long(const std::string_view arg) {
 template <parsing_traits Traits, static_basic_option TDef>
 [[nodiscard]]
 std::optional<option_match> option_matches_short(const std::string_view arg) {
-  if constexpr (std::size(Traits::short_arg_prefix) == 0) {
+  if constexpr (std::string_view {Traits::short_arg_prefix}.empty()) {
     return std::nullopt;
-  } else if constexpr (std::size(TDef::short_name) == 0) {
+  } else if constexpr (TDef::short_name.empty()) {
     return std::nullopt;
   } else {
     static constexpr auto Expected = constexpr_strings::
       concat_t<Traits::short_arg_prefix, TDef::short_name> {};
+
+    if (arg != Expected) {
+      return std::nullopt;
+    }
+
+    return option_match {arg};
+  }
+}
+
+template <parsing_traits Traits, static_basic_option TDef>
+  requires(TDef::behavior == Behavior::Flag)
+std::optional<option_match> option_matches_negated_flag(
+  const std::string_view arg) {
+  if constexpr (!parsing_traits_with_negated_flags<Traits>) {
+    return std::nullopt;
+  } else {
+    static constexpr auto Expected = constexpr_strings::concat_t<
+      Traits::long_arg_prefix,
+      Traits::template negated_flag_name<TDef::name>()> {};
 
     if (arg != Expected) {
       return std::nullopt;
@@ -248,6 +267,7 @@ template <
 arg_parse_result<V> parse_option(
   const random_access_range_of<std::string_view> auto& args) {
   const auto first = *std::ranges::begin(args);
+
   const auto match = option_matches<Traits, TDefinition>(first);
   if (!match) {
     return std::nullopt;
@@ -284,6 +304,9 @@ arg_parse_result<bool> parse_option(
   const random_access_range_of<std::string_view> auto& args) {
   if (option_matches<Traits, TArgDef>(*std::ranges::begin(args))) {
     return {arg_parse_match {true, 1}};
+  }
+  if (option_matches_negated_flag<Traits, TArgDef>(*std::ranges::begin(args))) {
+    return {arg_parse_match {false, 1}};
   }
   return std::nullopt;
 }

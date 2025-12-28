@@ -39,8 +39,8 @@ Usage: test_app [OPTIONS...]
 Options:
 
       --string=VALUE
-      --flag
-  -d, --documented-flag        This flag is documented
+      --[no-]flag
+  -d, --[no-]documented-flag   This flag is documented
 
   -?, --help                   show this message
 )EOF"));

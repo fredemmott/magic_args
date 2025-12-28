@@ -108,10 +108,32 @@ void show_option_usage(FILE* output) {
   }();
   const auto longArg = [&] {
     if constexpr (TArgDef::behavior == Behavior::Flag) {
-      return std::format(
-        "{}{}",
-        std::string_view {Traits::long_arg_prefix},
-        std::string_view {TArgDef::name});
+      const auto trueView = std::string_view {TArgDef::name};
+      if constexpr (parsing_traits_with_negated_flags<Traits>) {
+        constexpr auto negated
+          = Traits::template negated_flag_name<TArgDef::name>();
+        const auto falseView = std::string_view {negated};
+        if (falseView.ends_with(trueView)) {
+          return std::format(
+            "{}[{}]{}",
+            std::string_view {Traits::long_arg_prefix},
+            falseView.substr(0, falseView.size() - trueView.size()),
+            trueView);
+        } else if (falseView.starts_with(trueView)) {
+          return std::format(
+            "{}{}[{}]",
+            std::string_view {Traits::long_arg_prefix},
+            trueView,
+            falseView.substr(trueView.size()),
+            trueView);
+        } else {
+          return std::format(
+            "{}{}", std::string_view {Traits::long_arg_prefix}, trueView);
+        }
+      } else {
+        return std::format(
+          "{}{}", std::string_view {Traits::long_arg_prefix}, trueView);
+      }
     } else if constexpr (TArgDef::behavior == Behavior::CountedFlag) {
       return std::format(
         "{}{}[{}VALUE]",
