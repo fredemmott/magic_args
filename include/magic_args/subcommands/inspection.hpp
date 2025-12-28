@@ -29,21 +29,17 @@ struct subcommands_list_t {
 
 template <root_command_traits Traits, subcommand First, subcommand... Rest>
 struct subcommands_list_t<Traits, First, Rest...> {
-  static constexpr auto make() {
+  static constexpr auto value = [] {
     using namespace constexpr_strings;
     constexpr auto first
-      = concat<concat_byte_array_traits>(
-          subcommand_name<Traits, First>(), std::array {'\0'})
-          .get();
+      = append_null_t<subcommand_name_t<Traits, First>::value>::value;
     if constexpr (sizeof...(Rest) == 0) {
       return first;
     } else {
-      constexpr auto rest = subcommands_list_t<Traits, Rest...>::make();
-      return concat<concat_byte_array_traits>(first, rest).get();
+      constexpr auto rest = subcommands_list_t<Traits, Rest...>::value;
+      return concat_t<first, rest>::value;
     }
-  }
-
-  static constexpr auto value = make();
+  }();
 };
 
 template <subcommand First, subcommand... Rest>
@@ -52,22 +48,21 @@ struct subcommands_list_t<First, Rest...>
 
 template <class... Args>
 struct introspectable_subcommands_list_t {
-  static constexpr auto buffer = [] {
-    using namespace constexpr_strings;
-    return concat<concat_byte_array_traits>(
-             subcommands_list_t<Args...>::value, std::array {'\0'})
-      .get();
+  static constexpr auto value = [] {
+    return constexpr_strings::append_null_t<
+      subcommands_list_t<Args...>::value>::value;
   }();
 
-  static constexpr auto size = buffer.size();
+  static constexpr auto size = value.size();
 
+  // This is what we actually put in the symbol table
   struct wrapper_t {
-    char data[size];
+    char data[size] {};
   };
 
   static constexpr auto wrapper
     = []<std::size_t... Is>(std::index_sequence<Is...>) -> wrapper_t {
-    return {{buffer[Is]...}};
+    return {{value[Is]...}};
   }(std::make_index_sequence<size> {});
 };
 

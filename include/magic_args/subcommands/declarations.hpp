@@ -58,7 +58,7 @@ concept explicitly_named = requires {
 namespace magic_args::detail {
 
 template <auto Name>
-struct remove_namespace_t {
+struct remove_namespace_t : constexpr_strings::result_t {
   static constexpr auto value = [] {
     constexpr std::string_view view {Name};
     constexpr auto idx = view.rfind("::");
@@ -74,29 +74,31 @@ struct remove_namespace_t {
 };
 
 template <class Traits, class T>
-constexpr auto subcommand_name() {
-  if constexpr (explicitly_named<T>) {
-    constexpr std::string_view name {T::name};
-    std::array<char, name.size()> ret;
-    std::ranges::copy(name, ret.begin());
-    return ret;
-  } else {
-    using namespace constexpr_strings;
-    constexpr auto rawName = remove_prefixes_t<
-      type_name<T>,
-      "struct "_constexpr,
-      "class "_constexpr>::value;
-    if constexpr (subcommand_naming_traits<Traits, T>) {
-      return Traits::template normalize_subcommand_name<T, rawName>();
+struct subcommand_name_t : constexpr_strings::result_t {
+  static constexpr auto value = [] {
+    if constexpr (explicitly_named<T>) {
+      constexpr std::string_view name {T::name};
+      std::array<char, name.size()> ret;
+      std::ranges::copy(name, ret.begin());
+      return ret;
     } else {
-      return hyphenate_t<remove_prefixes_or_suffixes_t<
-        remove_namespace_t<rawName>::value,
-        "Command"_constexpr,
-        "command"_constexpr,
-        "_"_constexpr>::value>::value;
+      using namespace constexpr_strings;
+      constexpr auto rawName = remove_prefixes_t<
+        type_name<T>,
+        "struct "_constexpr,
+        "class "_constexpr>::value;
+      if constexpr (subcommand_naming_traits<Traits, T>) {
+        return Traits::template normalize_subcommand_name<T, rawName>();
+      } else {
+        return hyphenate_t<remove_prefixes_or_suffixes_t<
+          remove_namespace_t<rawName>::value,
+          "Command"_constexpr,
+          "command"_constexpr,
+          "_"_constexpr>::value>::value;
+      }
     }
-  }
-}
+  }();
+};
 
 }// namespace magic_args::detail
 

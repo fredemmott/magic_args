@@ -10,16 +10,27 @@
 namespace magic_args::detail::constexpr_strings {
 
 template <std::size_t N>
-struct constexpr_string {
-  static constexpr std::size_t size = N - 1;
-  std::array<char, size> value;
+struct literal_t final {
+  static constexpr std::size_t size = N;
+  std::array<char, size> value {};
 
-  consteval constexpr_string(const char (&str)[N]) {
+  consteval literal_t() = default;
+
+  consteval literal_t(const char (&str)[N + 1]) {
     std::ranges::copy_n(str, size, value.begin());
   }
-};
 
-template <constexpr_string T>
+  consteval literal_t(const std::array<char, N>& in) : value(in) {
+  }
+
+  consteval operator std::string_view() const noexcept {
+    return std::string_view {value};
+  }
+};
+template <std::size_t N>
+literal_t(const char (&)[N]) -> literal_t<N - 1>;
+
+template <literal_t T>
 consteval auto operator""_constexpr() {
   return T.value;
 }
@@ -49,7 +60,7 @@ constexpr char to_upper(const char c) {
   return c;
 }
 
-struct transformer_t {
+struct result_t {
   template <class Self>
     requires requires { Self::value; }
   constexpr operator std::string_view(this const Self&) noexcept {
@@ -64,7 +75,7 @@ struct transformer_t {
 };
 
 template <auto TData, auto TPrefix>
-struct remove_prefix_t : transformer_t {
+struct remove_prefix_t : result_t {
   static constexpr std::string_view input {TData};
   static constexpr std::string_view prefix {TPrefix};
   static constexpr bool matches = input.starts_with(prefix);
@@ -83,7 +94,7 @@ struct remove_prefix_t : transformer_t {
 };
 
 template <auto TData, auto TSuffix>
-struct remove_suffix_t : transformer_t {
+struct remove_suffix_t : result_t {
   static constexpr std::string_view input {TData};
   static constexpr std::string_view suffix {TSuffix};
   static constexpr bool matches = input.ends_with(suffix);
@@ -102,7 +113,7 @@ struct remove_suffix_t : transformer_t {
 };
 
 template <template <auto, auto> class T, auto TData, auto TFirst, auto... TRest>
-struct fold_left_t : transformer_t {
+struct fold_left_t : result_t {
   static constexpr auto value = [] {
     if constexpr (sizeof...(TRest) == 0) {
       return T<TData, TFirst>::value;
@@ -123,7 +134,7 @@ using remove_prefixes_or_suffixes_t = remove_prefixes_t<
   TRest...>;
 
 template <auto T>
-struct remove_template_args_t : transformer_t {
+struct remove_template_args_t : result_t {
   static constexpr auto input = std::string_view {T};
   static constexpr auto size = [] {
     constexpr auto pos = input.find('<');
@@ -141,7 +152,7 @@ struct remove_template_args_t : transformer_t {
 };
 
 template <auto Name>
-struct hyphenate_t : transformer_t {
+struct hyphenate_t : result_t {
   static_assert(!std::string_view {Name}.empty());
   static consteval std::size_t count() {
     std::size_t size = 1;
@@ -186,7 +197,7 @@ struct hyphenate_t : transformer_t {
 };
 
 template <auto Name>
-struct to_upper_t : transformer_t {
+struct to_upper_t : result_t {
   using value_type = std::array<char, std::string_view {Name}.size()>;
   static constexpr auto make_value() {
     static constexpr std::string_view sv {Name};
@@ -201,7 +212,7 @@ struct to_upper_t : transformer_t {
 };
 
 template <auto Name>
-struct underscore_t : transformer_t {
+struct underscore_t : result_t {
   static consteval std::size_t count() {
     std::size_t size = 1;
     for (auto&& c: std::string_view {Name}.substr(1)) {
@@ -233,7 +244,7 @@ struct underscore_t : transformer_t {
 };
 
 template <auto Name>
-struct remove_field_prefix_t : transformer_t {
+struct remove_field_prefix_t : result_t {
   static consteval std::size_t prefix_size() {
     constexpr std::string_view sv {Name};
     if (sv.starts_with('_')) {
@@ -261,7 +272,7 @@ struct remove_field_prefix_t : transformer_t {
 };
 
 template <auto Name>
-struct upper_camel_t : transformer_t {
+struct upper_camel_t : result_t {
   static_assert(!std::string_view {Name}.empty());
   static constexpr std::size_t count() {
     std::size_t size = 1;
@@ -299,128 +310,27 @@ struct upper_camel_t : transformer_t {
   }();
 };
 
-// "foo" + "bar" should be length 6, not length 8
-// Input has null after foo, null after bar, we're dropping both
-struct concat_c_string_traits {
-  using element_type = char;
-  template <std::size_t N>
-  static constexpr auto value_size = N + 1;// trailing null
-
-  static constexpr auto lhs_subrange(const auto& lhs) {
-    return std::views::take(lhs, std::ranges::size(lhs) - 1);
-  }
-
-  static constexpr auto rhs_subrange(const auto& rhs) {
-    return lhs_subrange(rhs);
-  }
-
-  template <std::size_t N>
-  static constexpr auto dereference(const std::array<char, N>& buf) {
-    static_assert(N > 0, "Must at least have a trailing null");
-    return std::string_view {buf.data(), N - 1};
-  }
+template <auto... Ts>
+struct concat_t : result_t {
+  static constexpr auto value = [] {
+    constexpr auto size = (0 + ... + std::string_view {Ts}.size());
+    std::array<char, size> ret {};
+    auto out = ret.begin();
+    (
+      [&out](const auto input) {
+        out = std::ranges::copy(std::string_view {input}, out).out;
+      }(Ts),
+      ...);
+    return ret;
+  }();
 };
 
-struct concat_byte_array_traits {
-  using element_type = char;
-  template <std::size_t N>
-  static constexpr auto value_size = N;
-
-  static constexpr auto lhs_subrange(auto&& lhs) {
-    return std::views::all(std::forward<decltype(lhs)>(lhs));
-  }
-
-  static constexpr auto rhs_subrange(auto&& rhs) {
-    return std::views::all(std::forward<decltype(rhs)>(rhs));
-  }
-
-  static constexpr auto dereference(const auto& buf) {
-    return buf;
-  }
+template <auto T, char V>
+struct append_char_t : result_t {
+  static constexpr auto value = concat_t<T, std::array {V}>::value;
 };
-
-template <std::size_t N, std::size_t M, class Traits = concat_c_string_traits>
-struct concat_t {
-  using element_type = Traits::element_type;
-
-  static constexpr std::size_t size
-    = Traits::lhs_subrange(std::array<element_type, N> {}).size()
-    + Traits::rhs_subrange(std::array<element_type, M> {}).size();
-
-  using buffer_type
-    = std::array<element_type, Traits::template value_size<size>>;
-
-  concat_t() = delete;
-
-  template <class LHS, class RHS>
-  consteval concat_t(LHS&& lhs, RHS&& rhs, std::type_identity<Traits> = {}) {
-    const auto lhsSlice
-      = Traits::lhs_subrange(std::views::all(std::forward<LHS>(lhs)));
-    const auto rhsSlice
-      = Traits::rhs_subrange(std::views::all(std::forward<RHS>(rhs)));
-    const auto afterLhs = std::ranges::copy(lhsSlice, mBuf.begin()).out;
-    std::ranges::copy(rhsSlice, afterLhs);
-  }
-
-  constexpr auto get() const noexcept {
-    return Traits::dereference(mBuf);
-  }
-
-  template <class T>
-    requires requires(concat_t v, T other) { v.get() == other; }
-  constexpr bool operator==(const T& other) const noexcept {
-    return get() == other;
-  }
-
-  constexpr auto operator*() const noexcept {
-    return get();
-  }
-
- private:
-  buffer_type mBuf {};
-};
-
-template <class T>
-struct c_or_cpp_array_extent_t;
-
-template <class E, std::size_t N>
-struct c_or_cpp_array_extent_t<std::array<E, N>>
-  : std::integral_constant<std::size_t, N> {};
-
-template <class E, std::size_t N>
-struct c_or_cpp_array_extent_t<E[N]> : std::integral_constant<std::size_t, N> {
-};
-
-template <class T>
-constexpr auto c_or_cpp_array_extent_v
-  = c_or_cpp_array_extent_t<std::remove_cvref_t<T>>::value;
-
-template <class T, class U>
-concat_t(T&&, U&&)
-  -> concat_t<c_or_cpp_array_extent_v<T>, c_or_cpp_array_extent_v<U>>;
-template <class T, class U, class V>
-concat_t(T&&, U&&, V&&) -> concat_t<
-  c_or_cpp_array_extent_v<T>,
-  c_or_cpp_array_extent_v<U>,
-  typename std::remove_cvref_t<V>::type>;
-
-template <
-  class Traits = concat_c_string_traits,
-  class First,
-  class Second,
-  class... Rest>
-consteval auto concat(First&& first, Second&& second, Rest&&... rest) {
-  const auto lhs = concat_t {
-    std::forward<First>(first),
-    std::forward<Second>(second),
-    std::type_identity<Traits> {},
-  };
-  if constexpr (sizeof...(Rest) == 0) {
-    return lhs;
-  } else {
-    return concat<Traits>(lhs.get(), std::forward<Rest>(rest)...);
-  }
-}
+template <auto T>
+using append_null_t = append_char_t<T, '\0'>;
 
 }// namespace magic_args::detail::constexpr_strings
 

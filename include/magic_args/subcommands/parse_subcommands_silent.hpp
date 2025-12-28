@@ -77,7 +77,7 @@ void parse_subcommands_silent_impl(
   std::optional<TExpected>& result,
   std::string_view command,
   argv_range auto&& argv) {
-  if (std::string_view {subcommand_name<RootTraits, First>()} != command) {
+  if (subcommand_name_t<RootTraits, First> {} != command) {
     if constexpr (sizeof...(Rest) > 0) {
       parse_subcommands_silent_impl<RootTraits, ParsingTraits, Rest...>(
         result, command, argv);

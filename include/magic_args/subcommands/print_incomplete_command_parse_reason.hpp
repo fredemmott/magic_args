@@ -32,8 +32,8 @@ void show_command_usage(argv_range auto&& argv, FILE* stream) {
 
   (
     [&]<class T> {
-      static constexpr auto nameBuffer = subcommand_name<RootTraits, T>();
-      constexpr std::string_view name {nameBuffer};
+      static constexpr auto nameStorage = subcommand_name_t<RootTraits, T>::value;
+      constexpr std::string_view name {nameStorage};
 
       using TArgs = typename T::arguments_type;
       if constexpr (has_description<TArgs>) {
@@ -47,25 +47,25 @@ void show_command_usage(argv_range auto&& argv, FILE* stream) {
   detail::println(
     stream,
     "\n  {:2}, {:24} show this message",
-    *CommonArguments::short_help,
-    *CommonArguments::long_help);
+    CommonArguments::short_help,
+    CommonArguments::long_help);
 
   if constexpr (has_version<RootTraits>) {
     detail::println(
-      stream, "      {:24} print program version", *CommonArguments::version);
+      stream, "      {:24} print program version", CommonArguments::version);
   }
 
   if constexpr (detail::skip_args_count<ParsingTraits>() == 0) {
     detail::println(
       stream,
       "\nFor more information, run:\n\n  COMMAND {}",
-      *CommonArguments::long_help);
+      CommonArguments::long_help);
   } else {
     detail::println(
       stream,
       "\nFor more information, run:\n\n  {} COMMAND {}",
       get_prefix_for_user_messages<ParsingTraits>(argv),
-      *CommonArguments::long_help);
+      CommonArguments::long_help);
   }
 }
 

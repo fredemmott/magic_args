@@ -70,13 +70,23 @@ std::string get_prefix_for_user_messages(argv_range auto&& argv) {
 
 template <parsing_traits T>
 struct common_arguments_t {
- public:
-  static constexpr auto long_help
-    = constexpr_strings::concat(T::long_arg_prefix, T::long_help_arg);
-  static constexpr auto short_help
-    = constexpr_strings::concat(T::short_arg_prefix, T::short_help_arg);
-  static constexpr auto version
-    = constexpr_strings::concat(T::long_arg_prefix, T::version_arg);
+  static constexpr auto long_help = [] {
+    static constexpr auto storage = constexpr_strings::
+      concat_t<T::long_arg_prefix, T::long_help_arg>::value;
+    return std::string_view {storage};
+  }();
+
+  static constexpr auto short_help = [] {
+    static constexpr auto storage = constexpr_strings::
+      concat_t<T::short_arg_prefix, T::short_help_arg>::value;
+    return std::string_view {storage};
+  }();
+
+  static constexpr auto version = [] {
+    static constexpr auto storage
+      = constexpr_strings::concat_t<T::long_arg_prefix, T::version_arg>::value;
+    return std::string_view {storage};
+  }();
 };
 
 template <parsing_traits Traits, basic_argument T>
@@ -351,7 +361,8 @@ arg_parse_result<V> parse_positional_argument(
 
   if (args.empty()) {
     if constexpr (T::is_required) {
-      return std::unexpected {missing_required_argument {std::string { argDef.mName }}};
+      return std::unexpected {
+        missing_required_argument {std::string {argDef.mName}}};
     } else {
       return std::nullopt;
     }

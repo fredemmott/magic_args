@@ -54,7 +54,7 @@ struct AppendTraits {
   template <class Command, auto Name>
   static constexpr auto normalize_subcommand_name() {
     using namespace magic_args::detail::constexpr_strings;
-    return concat<concat_byte_array_traits>(Name, "Append"_constexpr).get();
+    return concat_t<Name, "Append"_constexpr>::value;
   }
 };
 
@@ -65,7 +65,10 @@ struct ReflectTraits {
   }
 };
 
-using magic_args::detail::subcommand_name;
+template <class Traits, class T>
+constexpr auto subcommand_name() {
+  return magic_args::detail::subcommand_name_t<Traits, T> {};
+}
 
 TEMPLATE_TEST_CASE(
   "without traits",

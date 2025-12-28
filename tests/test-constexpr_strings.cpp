@@ -6,17 +6,31 @@
 
 using namespace magic_args::detail::constexpr_strings;
 
+static constexpr auto Foo = "Foo"_constexpr;
+static constexpr auto Bar = "Bar"_constexpr;
+static constexpr auto Baz = "Baz"_constexpr;
+static constexpr auto Empty = ""_constexpr;
+
 TEST_CASE("concat strings") {
-  STATIC_CHECK(concat("foo", "bar") == "foobar");
-  STATIC_CHECK(concat("", "bar") == "bar");
-  STATIC_CHECK(concat("foo", "") == "foo");
+  STATIC_CHECK(concat_t<Foo, Bar> {} == "FooBar");
+  STATIC_CHECK(concat_t<Foo, Bar, Baz> {} == "FooBarBaz");
+  STATIC_CHECK(concat_t<Foo, Empty> {} == "Foo");
+  STATIC_CHECK(concat_t<Empty, Bar> {} == "Bar");
+  STATIC_CHECK(concat_t<Empty, Empty> {} == "");
 }
 
 TEST_CASE("concat byte arrays") {
-  using T = concat_byte_array_traits;
-  STATIC_CHECK(concat<T>("foo", "bar") == "foo\0bar\0"_constexpr);
-  STATIC_CHECK(concat<T>("", "bar") == "\0bar\0"_constexpr);
-  STATIC_CHECK(concat<T>("foo", "") == "foo\0\0"_constexpr);
+  static constexpr auto Foo0 = append_null_t<Foo>::value;
+  STATIC_CHECK(Foo0.size() == 4);
+  STATIC_CHECK(Foo0 == "Foo\0"_constexpr);
+  static constexpr auto Bar0 = append_null_t<Bar>::value;
+  static constexpr auto Baz0 = append_null_t<Baz>::value;
+
+  static constexpr auto All = concat_t<Foo0, Bar0, Baz0>::value;
+
+  STATIC_CHECK(All.size() == 12);
+  STATIC_CHECK(All == "Foo\0Bar\0Baz\0"_constexpr);
+  STATIC_CHECK_FALSE(All == "Foo\0ABC\0DEF\0"_constexpr);
 }
 
 TEST_CASE("hyphenate_t") {
