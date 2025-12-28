@@ -1,11 +1,6 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
 #ifdef TEST_SINGLE_HEADER
-#ifdef _WIN32
-#define MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS
-#else
-#define MAGIC_ARGS_ENABLE_ICONV_EXTENSIONS
-#endif
 
 #include <magic_args/magic_args.hpp>
 #else

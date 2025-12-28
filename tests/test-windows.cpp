@@ -1,13 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
+#include <magic_args/magic_args.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
-#ifdef TEST_SINGLE_HEADER
-#define MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS
-#include <magic_args/magic_args.hpp>
-#else
-#include <magic_args/magic_args.hpp>
-#include <magic_args/windows.hpp>
-#endif
 
 #include <Windows.h>
 

@@ -1,18 +1,7 @@
 // Copyright 2025 Fred Emmott <fred@fredemmott.com>
 // SPDX-License-Identifier: MIT
 
-/* If you're not using the single-header version, you can
- * include <magic_args/windows.hpp> instead of defining
- * MAGIC_ARGS_ENABLE_WINDOWS_EXTENSIONS.
- *
- * This is off by default as it depends on <Windows.h>
- */
 #include <magic_args/magic_args.hpp>
-#if __has_include(<magic_args/windows.hpp>)
-#include <magic_args/windows.hpp>
-#endif
-#include <thread>
-
 #include <Windows.h>
 
 struct MyArgs {
