@@ -16,35 +16,32 @@
 
 namespace magic_args::detail {
 
+using from_string_result = std::expected<void, invalid_argument_value>;
+
 template <class T>
 struct from_string_t {
-  static constexpr std::expected<void, invalid_argument_value> operator()(
-    T& out,
-    std::string_view arg) = delete;
+  static constexpr from_string_result operator()(T& out, std::string_view arg)
+    = delete;
 };
 
 template <class T>
 concept parseable = requires(T& v, std::string_view arg) {
   from_string_t<T> {}(v, arg);
-  {
-    from_string_t<T> {}(v, arg)
-  } -> same_as_ignoring_cvref<std::expected<void, invalid_argument_value>>;
+  { from_string_t<T> {}(v, arg) } -> same_as_ignoring_cvref<from_string_result>;
 };
 
-template <parseable T>
-std::expected<void, invalid_argument_value> from_string(
-  T& out,
-  std::string_view arg) {
-  return from_string_t<T> {}(out, arg);
+template <class TOut, std::convertible_to<std::string_view> TIn>
+  requires parseable<std::remove_cvref_t<TOut>>
+from_string_result from_string(TOut&& out, TIn&& in) {
+  return from_string_t<std::remove_cvref_t<TOut>> {}(
+    std::forward<TOut>(out), std::forward<TIn>(in));
 }
 
 template <class T>
-  requires std::assignable_from<T&, std::string>
+  requires std::assignable_from<T&, std::string_view>
 struct from_string_t<T> {
-  static std::expected<void, invalid_argument_value> operator()(
-    T& out,
-    std::string_view arg) {
-    out = std::string {arg};
+  static from_string_result operator()(T& out, std::string_view arg) {
+    out = arg;
     return {};
   }
 };
@@ -53,9 +50,7 @@ template <class T>
   requires(!std::assignable_from<T&, std::string>)
   && requires(std::stringstream ss, T v) { ss >> v; }
 struct from_string_t<T> {
-  static constexpr std::expected<void, invalid_argument_value> operator()(
-    T& out,
-    std::string_view arg) {
+  static constexpr from_string_result operator()(T& out, std::string_view arg) {
     std::stringstream ss {std::string {arg}};
     ss >> out;
     if (ss.fail()) {
@@ -65,14 +60,13 @@ struct from_string_t<T> {
   }
 };
 
-template <class T>
-  requires requires(T v, std::string_view arg) { from_string(v, arg); }
+template <parseable T>
 struct from_string_t<std::optional<T>> {
-  static constexpr std::expected<void, invalid_argument_value> operator()(
+  static constexpr from_string_result operator()(
     std::optional<T>& out,
     std::string_view arg) {
     T value {};
-    const auto inner = from_string(value, arg);
+    const auto inner = from_string_t<T> {}(value, arg);
     if (!inner) {
       return inner;
     }
@@ -84,9 +78,7 @@ struct from_string_t<std::optional<T>> {
 template <class T>
 concept has_adl_from_argument_value = requires(T& out, std::string_view arg) {
   from_argument_value(out, arg);
-  {
-    from_argument_value(out, arg)
-  } -> same_as_ignoring_cvref<std::expected<void, invalid_argument_value>>;
+  { from_argument_value(out, arg) } -> std::convertible_to<from_string_result>;
 };
 
 // ADL version
