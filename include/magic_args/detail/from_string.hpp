@@ -10,9 +10,15 @@
 
 #include <expected>
 #include <optional>
-#include <sstream>
 #include <string>
 #include <string_view>
+#include <version>
+
+#ifdef __cpp_lib_spanstream
+#include <spanstream>
+#else
+#include <sstream>
+#endif
 
 namespace magic_args::detail {
 
@@ -46,12 +52,23 @@ struct from_string_t<T> {
   }
 };
 
+inline auto stringview_stream(const std::string_view in) {
+#ifdef __cpp_lib_spanstream
+  return std::ispanstream {in};
+#else
+  // Needed for Apple Clang as of 2025-12-28
+  return std::stringstream {std::string {in}};
+#endif
+}
+
 template <class T>
   requires(!std::assignable_from<T&, std::string>)
-  && requires(std::stringstream ss, T v) { ss >> v; }
+  && requires(decltype(stringview_stream({}))& ss, T& v) { ss >> v; }
 struct from_string_t<T> {
-  static constexpr from_string_result operator()(T& out, std::string_view arg) {
-    std::stringstream ss {std::string {arg}};
+  static constexpr from_string_result operator()(
+    T& out,
+    const std::string_view arg) {
+    auto ss = stringview_stream(arg);
     ss >> out;
     if (ss.fail()) {
       return std::unexpected {invalid_argument_value {}};
