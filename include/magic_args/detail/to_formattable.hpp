@@ -38,7 +38,7 @@ struct to_formattable_t<T> {
 
 template <class T>
   requires formattable<decltype(std::declval<T>().value())> && requires(T v) {
-    { v.has_value() } -> std::same_as<bool>;
+    { v.has_value() } -> std::convertible_to<bool>;
     { v.value() } -> formattable;
   }
 struct to_formattable_t<T> {
