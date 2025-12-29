@@ -107,9 +107,8 @@ TEST_CASE("match first, but pass invalid arguments (silent)") {
   const auto& tagged
     = get<magic_args::incomplete_subcommand_parse_reason_t<CommandFooBar>>(
       ret.error());
-  REQUIRE(holds_alternative<magic_args::invalid_argument>(tagged.value()));
-  const auto e = get<magic_args::invalid_argument>(tagged.value());
-  CHECK(e.mKind == magic_args::invalid_argument::kind::Option);
+  REQUIRE(holds_alternative<magic_args::unrecognized_option>(tagged.value()));
+  const auto e = get<magic_args::unrecognized_option>(tagged.value());
   CHECK(e.mSource.mArg == "--INVALID");
 }
 
@@ -125,9 +124,8 @@ TEST_CASE("match second, but pass invalid arguments (silent)") {
   const auto& tagged
     = get<magic_args::incomplete_subcommand_parse_reason_t<CommandHerp>>(
       ret.error());
-  REQUIRE(holds_alternative<magic_args::invalid_argument>(tagged.value()));
-  const auto e = get<magic_args::invalid_argument>(tagged.value());
-  CHECK(e.mKind == magic_args::invalid_argument::kind::Option);
+  REQUIRE(holds_alternative<magic_args::unrecognized_option>(tagged.value()));
+  const auto e = get<magic_args::unrecognized_option>(tagged.value());
   CHECK(e.mSource.mArg == "--INVALID");
 }
 

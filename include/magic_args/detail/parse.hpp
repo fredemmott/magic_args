@@ -410,8 +410,7 @@ parse_argument_result parse_option_impl(
         std::unreachable();
       },
       [=](const argument_not_matched&) -> parse_argument_result {
-        return std::unexpected {invalid_argument {
-          .mKind = invalid_argument::kind::Option,
+        return std::unexpected {unrecognized_option {
           .mSource = {std::string {remainingArgv.front()}},
         }};
       },
@@ -450,7 +449,7 @@ parse_argument_result parse_short_option(
     if (exactMatch) {
       return exactMatch;
     }
-    if (!holds_alternative<invalid_argument>(exactMatch.error())) {
+    if (!holds_alternative<unrecognized_option>(exactMatch.error())) {
       return exactMatch;
     }
 

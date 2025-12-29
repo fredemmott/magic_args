@@ -55,22 +55,26 @@ struct missing_argument_value {
   source_t mSource;
   constexpr bool operator==(const missing_argument_value&) const = default;
 };
-struct invalid_argument {
+struct unrecognized_option {
   static constexpr bool is_error = true;
   static constexpr bool user_requested = false;
 
-  enum class kind {
-    Option,
-    Positional,
-  };
   struct source_t {
     std::string mArg;
     constexpr bool operator==(const source_t&) const = default;
   };
 
-  kind mKind {};
   source_t mSource;
-  constexpr bool operator==(const invalid_argument&) const = default;
+  constexpr bool operator==(const unrecognized_option&) const = default;
+};
+struct too_many_arguments {
+  static constexpr bool is_error = true;
+  static constexpr bool user_requested = false;
+
+  using source_t = unrecognized_option::source_t;
+
+  source_t mSource;
+  constexpr bool operator==(const too_many_arguments&) const = default;
 };
 
 struct invalid_argument_value {
@@ -132,7 +136,8 @@ using incomplete_parse_reason_t = detail::constrained_pack<
     version_requested,
     missing_required_argument,
     missing_argument_value,
-    invalid_argument,
+    unrecognized_option,
+    too_many_arguments,
     invalid_argument_value>;
 
 template <incomplete_parse_reason T>

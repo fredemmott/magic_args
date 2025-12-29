@@ -140,8 +140,7 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
     return ret;
   }
 
-  return std::unexpected {invalid_argument {
-    .mKind = invalid_argument::kind::Positional,
+  return std::unexpected {too_many_arguments {
     .mSource = {std::string {remainingArgs.front()}},
   }};
 }

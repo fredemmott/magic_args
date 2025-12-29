@@ -58,26 +58,27 @@ void print_incomplete_parse_reason(
 }
 template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
-  const invalid_argument& arg,
+  const unrecognized_option& arg,
   argv_range auto&& argv,
   [[maybe_unused]] FILE* outputStream,
   FILE* errorStream) {
-  switch (arg.mKind) {
-    case invalid_argument::kind::Option:
-      detail::print(
-        errorStream,
-        "{}: Unrecognized option: {}",
-        get_prefix_for_user_messages<Traits>(argv),
-        arg.mSource.mArg);
-      break;
-    case invalid_argument::kind::Positional:
-      detail::print(
-        errorStream,
-        "{}: Unexpected argument: {}",
-        get_prefix_for_user_messages<Traits>(argv),
-        arg.mSource.mArg);
-      break;
-  }
+  detail::print(
+    errorStream,
+    "{}: Unrecognized option: {}",
+    get_prefix_for_user_messages<Traits>(argv),
+    arg.mSource.mArg);
+}
+template <parsing_traits Traits, class T>
+void print_incomplete_parse_reason(
+  const too_many_arguments& arg,
+  argv_range auto&& argv,
+  [[maybe_unused]] FILE* outputStream,
+  FILE* errorStream) {
+  detail::print(
+    errorStream,
+    "{}: Unexpected argument: {}",
+    get_prefix_for_user_messages<Traits>(argv),
+    arg.mSource.mArg);
 }
 template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(

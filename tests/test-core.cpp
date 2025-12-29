@@ -98,7 +98,7 @@ my_test: Unexpected argument: --not-a-valid-arg
 Usage: my_test [OPTIONS...]
 )EOF")}));
   REQUIRE_FALSE(args.has_value());
-  CHECK(holds_alternative<magic_args::invalid_argument>(args.error()));
+  CHECK(holds_alternative<magic_args::too_many_arguments>(args.error()));
 }
 
 TEMPLATE_TEST_CASE(
@@ -110,10 +110,9 @@ TEMPLATE_TEST_CASE(
   std::vector<std::string_view> argv {testName, "--", "--not-a-valid-arg"};
   const auto args = magic_args::parse_silent<TestType>(argv);
   REQUIRE_FALSE(args.has_value());
-  REQUIRE(holds_alternative<magic_args::invalid_argument>(args.error()));
-  const auto& e = get<magic_args::invalid_argument>(args.error());
   // Positional because of `--`
-  CHECK(e.mKind == magic_args::invalid_argument::kind::Positional);
+  REQUIRE(holds_alternative<magic_args::too_many_arguments>(args.error()));
+  const auto& e = get<magic_args::too_many_arguments>(args.error());
   CHECK(e.mSource.mArg == "--not-a-valid-arg");
 }
 
@@ -144,7 +143,7 @@ TEMPLATE_TEST_CASE(
   Output out, err;
   const auto args = magic_args::parse<TestType>(argv, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(std::holds_alternative<magic_args::invalid_argument>(args.error()));
+  CHECK(std::holds_alternative<magic_args::unrecognized_option>(args.error()));
   CHECK(out.empty());
   CHECK_THAT(
     err.get(),
@@ -169,9 +168,9 @@ TEMPLATE_TEST_CASE(
 
   const auto args = magic_args::parse_silent<TestType>(argv);
   REQUIRE_FALSE(args.has_value());
-  REQUIRE(std::holds_alternative<magic_args::invalid_argument>(args.error()));
-  const auto& e = get<magic_args::invalid_argument>(args.error());
-  CHECK(e.mKind == magic_args::invalid_argument::kind::Option);
+  REQUIRE(
+    std::holds_alternative<magic_args::unrecognized_option>(args.error()));
+  const auto& e = get<magic_args::unrecognized_option>(args.error());
   CHECK(e.mSource.mArg == invalid);
 }
 
@@ -313,7 +312,7 @@ TEST_CASE("parameters, extra") {
   const auto args
     = magic_args::parse<FlagsAndPositionalArguments>(argv, out, err);
   REQUIRE_FALSE(args.has_value());
-  CHECK(holds_alternative<magic_args::invalid_argument>(args.error()));
+  CHECK(holds_alternative<magic_args::too_many_arguments>(args.error()));
   CHECK(out.empty());
   CHECK_THAT(err.get(), StartsWith(std::string {chomp(R"EOF(
 my_test: Unexpected argument: bogus

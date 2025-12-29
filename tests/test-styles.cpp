@@ -234,7 +234,7 @@ TEST_CASE("Value separators: =") {
   const auto psArgs
     = magic_args::parse_silent<PSArgs>(std::array {"test_app", "-String=foo"});
   REQUIRE_FALSE(psArgs);
-  CHECK(holds_alternative<magic_args::invalid_argument>(psArgs.error()));
+  CHECK(holds_alternative<magic_args::unrecognized_option>(psArgs.error()));
 }
 
 TEST_CASE("Value separators: :") {
@@ -246,5 +246,5 @@ TEST_CASE("Value separators: :") {
   const auto gnuArgs = magic_args::parse_silent<GNUArgs>(
     std::array {"test_app", "--string:foo"});
   REQUIRE_FALSE(gnuArgs);
-  CHECK(holds_alternative<magic_args::invalid_argument>(gnuArgs.error()));
+  CHECK(holds_alternative<magic_args::unrecognized_option>(gnuArgs.error()));
 }
