@@ -24,7 +24,6 @@ template <parsing_traits Traits, class T>
 std::expected<T, incomplete_parse_reason_t> parse_silent(
   detail::argv_range auto&& argv) {
   using namespace detail;
-  using CommonArguments = common_arguments_t<Traits>;
 
   T ret {};
 
@@ -44,14 +43,23 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
     if (arg == "--") {
       break;
     }
-    if (
-      arg == CommonArguments::long_help || arg == CommonArguments::short_help) {
-      return std::unexpected {help_requested {}};
-    }
-    if constexpr (has_version<T>) {
-      if (arg == CommonArguments::version) {
-        return std::unexpected {version_requested {}};
+    auto tail = arg;
+    if (consume(tail, Traits::long_arg_prefix)) {
+      if (tail == Traits::long_help_arg) {
+        return std::unexpected {help_requested {}};
       }
+      if constexpr (has_version<T>) {
+        if (tail == Traits::version_arg) {
+          return std::unexpected {version_requested {}};
+        }
+      }
+      continue;
+    }
+    if (consume(tail, Traits::short_arg_prefix)) {
+      if (tail == Traits::short_help_arg && !tail.empty()) {
+        return std::unexpected {help_requested {}};
+      }
+      continue;
     }
   }
 

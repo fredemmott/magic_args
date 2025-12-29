@@ -127,17 +127,22 @@ TExpected parse_subcommands_silent(detail::argv_range auto&& argv) {
   const std::string_view command {
     detail::command_from_argument<ParsingTraits>(commandArg)};
 
-  using CommonArguments = detail::common_arguments_t<ParsingTraits>;
-
-  if (
-    command == CommonArguments::long_help
-    || command == CommonArguments::short_help || command == "help") {
-    return std::unexpected {help_requested {}};
-  }
-
-  if constexpr (detail::has_version<RootTraits>) {
-    if (command == CommonArguments::version) {
-      return std::unexpected {version_requested {}};
+  using namespace detail;
+  if (auto longArg = command;
+      consume(longArg, ParsingTraits::long_arg_prefix)) {
+    if (longArg == ParsingTraits::long_help_arg) {
+      return std::unexpected {help_requested {}};
+    }
+    if constexpr (has_version<RootTraits>) {
+      if (longArg == ParsingTraits::version_arg) {
+        return std::unexpected {version_requested {}};
+      }
+    }
+  } else if constexpr (parsing_traits_with_short_help<ParsingTraits>) {
+    if (auto shortArg = command;
+        consume(shortArg, ParsingTraits::short_arg_prefix)
+        && shortArg == ParsingTraits::short_help_arg) {
+      return std::unexpected {help_requested {}};
     }
   }
 

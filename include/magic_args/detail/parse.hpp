@@ -68,31 +68,6 @@ std::string get_prefix_for_user_messages(argv_range auto&& argv) {
   return prefix;
 }
 
-template <parsing_traits T>
-struct common_arguments_t {
-  static constexpr auto long_help = [] {
-    static constexpr auto storage = constexpr_strings::
-      concat_t<T::long_arg_prefix, T::long_help_arg>::value;
-    return std::string_view {storage};
-  }();
-
-  static constexpr auto short_help = [] {
-    if constexpr (std::string_view {T::short_arg_prefix}.empty()) {
-      return std::string_view {};
-    } else {
-      static constexpr auto storage = constexpr_strings::
-        concat_t<T::short_arg_prefix, T::short_help_arg>::value;
-      return std::string_view {storage};
-    }
-  }();
-
-  static constexpr auto version = [] {
-    static constexpr auto storage
-      = constexpr_strings::concat_t<T::long_arg_prefix, T::version_arg>::value;
-    return std::string_view {storage};
-  }();
-};
-
 template <parsing_traits Traits, static_basic_argument TDef>
 std::string provided_argument_name(const std::string_view arg) {
   if constexpr (is_positional_argument(TDef::behavior)) {
@@ -122,6 +97,9 @@ std::string provided_argument_name(const std::string_view arg) {
 [[nodiscard]] inline std::optional<std::string_view> consume(
   std::string_view& in,
   const std::string_view prefix) {
+  if (prefix.empty()) {
+    return std::nullopt;
+  }
   if (!in.starts_with(prefix)) {
     return std::nullopt;
   }

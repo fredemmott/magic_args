@@ -131,12 +131,10 @@ void show_option_usage(FILE* output) {
             setFalse.substr(setTrue.size()),
             setTrue);
         } else {
-          return std::format(
-            "{}{}", Traits::long_arg_prefix, setTrue);
+          return std::format("{}{}", Traits::long_arg_prefix, setTrue);
         }
       } else {
-        return std::format(
-          "{}{}", Traits::long_arg_prefix, setTrue);
+        return std::format("{}{}", Traits::long_arg_prefix, setTrue);
       }
     } else if constexpr (TArgDef::behavior == Behavior::CountedFlag) {
       return std::format(
@@ -278,20 +276,23 @@ void show_usage(FILE* output, argv_range auto&& argv) {
     detail::print(output, "\n");
   }
 
-  using CommonArguments = common_arguments_t<Traits>;
-  if constexpr (CommonArguments::short_help.empty()) {
-    std::println(
-      output, "        {:24} show this message", CommonArguments::long_help);
+  const auto longHelp
+    = std::format("{}{}", Traits::long_arg_prefix, Traits::long_help_arg);
+  const auto shortHelp = std::string_view {Traits::short_help_arg}.empty()
+    ? std::string {}
+    : std::format("{}{}", Traits::short_arg_prefix, Traits::short_help_arg);
+  const auto version = has_version<T>
+    ? std::format("{}{}", Traits::long_arg_prefix, Traits::version_arg)
+    : std::string {};
+
+  if (shortHelp.empty()) {
+    std::println(output, "        {:24} show this message", longHelp);
   } else {
     std::println(
-      output,
-      "  {:2}, {:24} show this message",
-      CommonArguments::short_help,
-      CommonArguments::long_help);
+      output, "  {:2}, {:24} show this message", shortHelp, longHelp);
   }
   if constexpr (has_version<T>) {
-    std::println(
-      output, "      {:24} print program version", CommonArguments::version);
+    std::println(output, "      {:24} print program version", version);
   }
 
   if (hasPositionalArguments) {

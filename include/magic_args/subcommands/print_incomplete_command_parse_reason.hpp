@@ -14,7 +14,6 @@ namespace magic_args::detail {
 template <root_command_traits RootTraits, subcommand... Ts>
 void show_command_usage(argv_range auto&& argv, FILE* stream) {
   using ParsingTraits = root_command_parsing_traits_t<RootTraits>;
-  using CommonArguments = common_arguments_t<ParsingTraits>;
   if constexpr (detail::skip_args_count<ParsingTraits>() == 0) {
     detail::println(stream, "Usage: COMMAND [OPTIONS...]");
   } else {
@@ -32,7 +31,8 @@ void show_command_usage(argv_range auto&& argv, FILE* stream) {
 
   (
     [&]<class T> {
-      static constexpr auto nameStorage = subcommand_name_t<RootTraits, T>::value;
+      static constexpr auto nameStorage
+        = subcommand_name_t<RootTraits, T>::value;
       constexpr std::string_view name {nameStorage};
 
       using TArgs = typename T::arguments_type;
@@ -44,28 +44,43 @@ void show_command_usage(argv_range auto&& argv, FILE* stream) {
     }.template operator()<Ts>(),
     ...);
 
-  detail::println(
-    stream,
-    "\n  {:2}, {:24} show this message",
-    CommonArguments::short_help,
-    CommonArguments::long_help);
+  if constexpr (parsing_traits_with_short_help<ParsingTraits>) {
+    detail::println(
+      stream,
+      "\n  {:2}, {:24} show this message",
+      std::format(
+        "{}{}", ParsingTraits::short_arg_prefix, ParsingTraits::short_help_arg),
+      std::format(
+        "{}{}", ParsingTraits::long_arg_prefix, ParsingTraits::long_help_arg));
+  } else {
+    detail::println(
+      stream,
+      "\n      {:24} show this message",
+      std::format(
+        "{}{}", ParsingTraits::long_arg_prefix, ParsingTraits::long_help_arg));
+  }
 
   if constexpr (has_version<RootTraits>) {
     detail::println(
-      stream, "      {:24} print program version", CommonArguments::version);
+      stream,
+      "      {:24} print program version",
+      std::format(
+        "{}{}", ParsingTraits::long_arg_prefix, ParsingTraits::version_arg));
   }
 
   if constexpr (detail::skip_args_count<ParsingTraits>() == 0) {
     detail::println(
       stream,
-      "\nFor more information, run:\n\n  COMMAND {}",
-      CommonArguments::long_help);
+      "\nFor more information, run:\n\n  COMMAND {}{}",
+      ParsingTraits::long_arg_prefix,
+      ParsingTraits::long_help_arg);
   } else {
     detail::println(
       stream,
-      "\nFor more information, run:\n\n  {} COMMAND {}",
+      "\nFor more information, run:\n\n  {} COMMAND {}{}",
       get_prefix_for_user_messages<ParsingTraits>(argv),
-      CommonArguments::long_help);
+      ParsingTraits::long_arg_prefix,
+      ParsingTraits::long_help_arg);
   }
 }
 

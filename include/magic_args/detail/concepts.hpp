@@ -37,7 +37,7 @@ concept has_description = requires {
 template <class T>
 concept has_version = requires {
   { T::version } -> std::convertible_to<std::string_view>;
-};
+} && !std::string_view {T::version}.empty();
 template <class T>
 concept has_examples = requires {
   requires std::ranges::input_range<decltype(T::examples)>;
@@ -122,6 +122,14 @@ concept parsing_traits = requires {
       true)>;
   };
 };
+
+template <class T>
+concept parsing_traits_with_short_flags
+  = parsing_traits<T> && !std::string_view {T::short_arg_prefix}.empty();
+
+template <class T>
+concept parsing_traits_with_short_help = parsing_traits_with_short_flags<T>
+  && !std::string_view {T::short_help_arg}.empty();
 
 template <class T>
 concept parsing_traits_with_negated_flags = parsing_traits<T> && requires {
