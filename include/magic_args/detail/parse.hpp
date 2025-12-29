@@ -193,16 +193,18 @@ std::optional<option_match> option_matches_negated_flag(
   if constexpr (!parsing_traits_with_negated_flags<Traits>) {
     return std::nullopt;
   } else {
+    static_assert(
+      !TDef::negated_flag_name.empty(),
+      "have a flag without a negated name, but traits provide negated names");
     auto tail = arg;
+
     if (!consume(tail, Traits::long_arg_prefix)) {
       return std::nullopt;
     }
     if (tail.empty()) {
       return std::nullopt;
     }
-    if (
-      tail
-      == std::string_view {Traits::template negated_flag_name<TDef::name>()}) {
+    if (tail == TDef::negated_flag_name) {
       return option_match {tail};
     }
     return std::nullopt;

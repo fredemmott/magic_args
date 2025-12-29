@@ -108,31 +108,35 @@ void show_option_usage(FILE* output) {
   }();
   const auto longArg = [&] {
     if constexpr (TArgDef::behavior == Behavior::Flag) {
-      const auto trueView = std::string_view {TArgDef::name};
-      if constexpr (parsing_traits_with_negated_flags<Traits>) {
-        constexpr auto negated
-          = Traits::template negated_flag_name<TArgDef::name>();
-        const auto falseView = std::string_view {negated};
-        if (falseView.ends_with(trueView)) {
+      static_assert(
+        static_flag<TArgDef>,
+        "Have a static argument definition with Flag behavior, but not a "
+        "static flag definition");
+
+      constexpr auto setTrue = TArgDef::name;
+      constexpr auto setFalse = TArgDef::negated_flag_name;
+
+      if constexpr (!setFalse.empty()) {
+        if (setFalse.ends_with(setTrue)) {
           return std::format(
             "{}[{}]{}",
-            std::string_view {Traits::long_arg_prefix},
-            falseView.substr(0, falseView.size() - trueView.size()),
-            trueView);
-        } else if (falseView.starts_with(trueView)) {
+            Traits::long_arg_prefix,
+            setFalse.substr(0, setFalse.size() - setTrue.size()),
+            setTrue);
+        } else if (setFalse.starts_with(setTrue)) {
           return std::format(
             "{}{}[{}]",
-            std::string_view {Traits::long_arg_prefix},
-            trueView,
-            falseView.substr(trueView.size()),
-            trueView);
+            Traits::long_arg_prefix,
+            setTrue,
+            setFalse.substr(setTrue.size()),
+            setTrue);
         } else {
           return std::format(
-            "{}{}", std::string_view {Traits::long_arg_prefix}, trueView);
+            "{}{}", Traits::long_arg_prefix, setTrue);
         }
       } else {
         return std::format(
-          "{}{}", std::string_view {Traits::long_arg_prefix}, trueView);
+          "{}{}", Traits::long_arg_prefix, setTrue);
       }
     } else if constexpr (TArgDef::behavior == Behavior::CountedFlag) {
       return std::format(
