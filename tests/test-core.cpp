@@ -184,6 +184,20 @@ TEST_CASE("multiple short flags") {
   CHECK(args->mFlagC);
 }
 
+TEST_CASE("flag then negated flag") {
+  const auto args = magic_args::parse_silent<FlagsOnly>(
+    std::array {"myApp", "--foo", "--no-foo"});
+  REQUIRE(args.has_value());
+  CHECK(!args->mFoo);
+}
+
+TEST_CASE("negated flag then flag") {
+  const auto args = magic_args::parse_silent<FlagsOnly>(
+    std::array {"myApp", "--no-foo", "--foo"});
+  REQUIRE(args.has_value());
+  CHECK(args->mFoo);
+}
+
 TEST_CASE("flags only, specifying flags") {
   std::vector<std::string_view> argv {testName, "--foo"};
 
