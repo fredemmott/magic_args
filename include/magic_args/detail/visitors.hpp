@@ -37,6 +37,7 @@ bool visit_all_defined_arguments(const auto& visitor, auto& ret) {
   }(std::make_index_sequence<count_members<TRet>()> {});
 }
 
+// Returns whether any visitor returned true
 template <parsing_traits Traits>
 [[nodiscard]]
 bool visit_options(const auto& visitor, auto& ret) {
@@ -51,6 +52,7 @@ bool visit_options(const auto& visitor, auto& ret) {
     ret);
 }
 
+// Returns whether any vistor returned true
 template <parsing_traits Traits>
 [[nodiscard]]
 bool visit_positional_arguments(const auto& visitor, auto& ret) {

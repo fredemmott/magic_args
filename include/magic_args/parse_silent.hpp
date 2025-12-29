@@ -66,137 +66,84 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
   const auto arg0 = std::filesystem::path {args.front()}.stem().string();
 
   std::vector<std::string_view> positionalArgs;
+  positionalArgs.reserve(args.size() - skip_args_count<Traits>());
 
   // Handle options
-  std::optional<incomplete_parse_reason_t> failure;
   for (std::size_t i = skip_args_count<Traits>(); i < args.size();) {
-    const auto arg = args[i];
+    const auto rest = std::span {args}.subspan(i);
+    const auto arg = rest.front();
     if (arg == "--") {
-      std::ranges::copy(
-        std::views::drop(args, i + 1), std::back_inserter(positionalArgs));
+      // Currently support GCC 14 which doesn't have append_range()
+      const auto next = rest.subspan(1);
+      positionalArgs.insert(positionalArgs.end(), next.begin(), next.end());
       break;
     }
 
-    const auto matchedOption = detail::visit_options<Traits>(
-      [&]<static_basic_argument TDef>(const TDef&, auto& out) {
-        auto result = parse_option<Traits, TDef>(std::views::drop(args, i));
-        if (!result) {
-          return false;
-        }
-        if (!result->has_value()) {
-          failure = result->error();
-          return true;
-        }
-        assign_value(out, std::move((*result)->mValue));
-        i += (*result)->mConsumed;
-        return true;
-      },
-      ret);
-
-    if (failure) {
-      return std::unexpected {failure.value()};
-    }
-    if (matchedOption) {
-      continue;
-    }
-
     if (arg.starts_with(Traits::long_arg_prefix)) {
-      return std::unexpected {invalid_argument {
-        .mKind = invalid_argument::kind::Option,
-        .mSource = {std::string {arg}},
-      }};
-    }
-
-    if constexpr (Traits::single_char_short_args) {
-      if (
-        arg.starts_with(Traits::short_arg_prefix)
-        && arg != Traits::short_arg_prefix) {
-        const auto flags
-          = arg.substr(std::string_view {Traits::short_arg_prefix}.size());
-        for (const char it: flags) {
-          const bool matched = detail::visit_options<Traits>(
-            [&]<class TDef>(const TDef&, auto& out) {
-              constexpr auto ShortName = TDef::short_name;
-              if (ShortName.size() != 1 || ShortName.front() != it) {
-                return false;
-              }
-
-              if constexpr (TDef::behavior == Behavior::Flag) {
-                assign_value(out, true);
-                return true;
-              } else if constexpr (TDef::behavior == Behavior::CountedFlag) {
-                assign_value(
-                  out,
-                  counted_flag_value_t {
-                    counted_flag_value_t::kind::Increase, 1});
-                return true;
-              } else {
-                return false;
-              }
-            },
-            ret);
-          if (!matched) {
-            return std::unexpected {invalid_argument {
-              .mKind = invalid_argument::kind::Option,
-              .mSource = {std::string {arg}},
-            }};
-          }
-        }
-        ++i;
+      const auto match = parse_long_option<Traits>(ret, rest);
+      if (match) [[likely]] {
+        i += match->consumed_argc;
         continue;
       }
+      return std::unexpected {match.error()};
     }
 
-    // The short prefixes have other meanings, e.g.:
-    //
-    // GNU, Powershell: `-` often means 'stdout'
-    // Classic MS: '/' can mean 'root of the filesystem
-    if (
-      arg.starts_with(Traits::short_arg_prefix)
-      && arg != Traits::short_arg_prefix) {
-      return std::unexpected {invalid_argument {
-        .mKind = invalid_argument::kind::Option,
-        .mSource = {std::string {arg}},
-      }};
+    if constexpr (parsing_traits_with_short_args<Traits>) {
+      if (arg.starts_with(Traits::short_arg_prefix)) {
+        if (arg.size() == std::string_view {Traits::short_arg_prefix}.size()) {
+          positionalArgs.emplace_back(arg);
+          ++i;
+          continue;
+        }
+
+        const auto match = parse_short_option<Traits>(ret, rest);
+        if (match) {
+          i += match->consumed_argc;
+          continue;
+        }
+        return std::unexpected {match.error()};
+      }
     }
 
     positionalArgs.emplace_back(arg);
     ++i;
   }
 
-  // Handle positional args
   static_assert(only_last_positional_argument_may_have_multiple_values<T>());
   static_assert(
     (first_optional_positional_argument<T>() == -1)
     || (first_optional_positional_argument<T>() >= last_mandatory_positional_argument<T>()));
-  std::ignore = detail::visit_positional_arguments<Traits>(
-    [&]<static_basic_argument TArgDef>(const TArgDef&, auto& out) {
-      auto result = parse_positional_argument<Traits, TArgDef>(positionalArgs);
-      if (!result) {
-        return false;
-      }
-      if (!result->has_value()) {
-        failure = result->error();
+
+  // Visit them all in order; visiting will consume argv
+  std::optional<incomplete_parse_reason_t> failure;
+  std::span<const std::string_view> remainingArgs {positionalArgs};
+  std::ignore = visit_positional_arguments<Traits>(
+    [&]<static_basic_positional_argument TArgDef>(
+      const TArgDef&, auto& memberOut) {
+      auto& valueOut = project_value(memberOut);
+
+      const auto result
+        = parse_positional_argument<Traits, TArgDef>(remainingArgs, valueOut);
+      if (!result) [[unlikely]] {
+        failure = result.error();
         return true;
       }
-      assign_value(out, std::move((*result)->mValue));
-      positionalArgs.erase(
-        positionalArgs.begin(), positionalArgs.begin() + (*result)->mConsumed);
+      remainingArgs = remainingArgs.subspan(result->consumed_argc);
       return false;
     },
     ret);
-  if (failure) {
-    return std::unexpected {failure.value()};
+  if (failure) [[unlikely]] {
+    return std::unexpected {*failure};
   }
 
-  if (!positionalArgs.empty()) {
-    return std::unexpected {invalid_argument {
-      .mKind = invalid_argument::kind::Positional,
-      .mSource = {std::string {positionalArgs.front()}},
-    }};
+  if (remainingArgs.empty()) [[likely]] {
+    return ret;
   }
 
-  return ret;
+  return std::unexpected {invalid_argument {
+    .mKind = invalid_argument::kind::Positional,
+    .mSource = {std::string {remainingArgs.front()}},
+  }};
 }
 
 template <class T>

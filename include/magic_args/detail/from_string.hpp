@@ -38,6 +38,7 @@ concept parseable = requires(T& v, std::string_view arg) {
 
 template <class TOut, std::convertible_to<std::string_view> TIn>
   requires parseable<std::remove_cvref_t<TOut>>
+[[nodiscard]]
 from_string_result from_string(TOut&& out, TIn&& in) {
   return from_string_t<std::remove_cvref_t<TOut>> {}(
     std::forward<TOut>(out), std::forward<TIn>(in));

@@ -7,8 +7,9 @@
 #include <magic_args/argument_definitions.hpp>
 #include <magic_args/incomplete_parse_reason.hpp>
 
-#include "constexpr_strings.hpp"
 #include "from_string.hpp"
+#include "overloaded.hpp"
+#include "visitors.hpp"
 #endif
 
 #include <algorithm>
@@ -81,151 +82,9 @@ std::string provided_argument_name(const std::string_view arg) {
   }
 }
 
-[[nodiscard]] inline std::string_view consume(
-  std::string_view& sv,
-  const std::size_t size) {
-  if (size > sv.size()) [[unlikely]] {
-    throw std::out_of_range {std::format(
-      "Asked to consume {} bytes, but only {} available", size, sv.size())};
-  }
-  const auto begin = sv.begin();
-  const auto end = sv.begin() + size;
-  sv.remove_prefix(size);
-  return {begin, end};
-};
-
-[[nodiscard]] inline std::optional<std::string_view> consume(
-  std::string_view& in,
-  const std::string_view prefix) {
-  if (prefix.empty()) {
-    return std::nullopt;
-  }
-  if (!in.starts_with(prefix)) {
-    return std::nullopt;
-  }
-  const auto slice = in.substr(0, prefix.size());
-  in.remove_prefix(prefix.size());
-  return slice;
-}
-
-struct option_match {
-  // MUST be entirely within `std::string_view arg`
-  std::string_view mName;
-  // unless `nullopt`, MUST be entirely within `std::string_view arg`
-  std::optional<std::string_view> mValue;
-
-  constexpr bool has_value() const noexcept {
-    return mValue.has_value();
-  }
-};
-
-template <parsing_traits Traits, static_basic_option TDef>
-[[nodiscard]]
-std::optional<option_match> option_matches_long(const std::string_view arg) {
-  auto tail = arg;
-  if (!consume(tail, Traits::long_arg_prefix)) {
-    return std::nullopt;
-  }
-
-  const auto name = consume(tail, TDef::name);
-  if (!name) {
-    return std::nullopt;
-  }
-
-  if (tail.empty()) {
-    return option_match {*name};
-  }
-
-  if (!consume(tail, Traits::value_separator)) {
-    return std::nullopt;
-  }
-
-  return option_match {*name, tail};
-}
-
-template <parsing_traits Traits, static_basic_option TDef>
-[[nodiscard]]
-std::optional<option_match> option_matches_short(const std::string_view arg) {
-  if constexpr (std::string_view {Traits::short_arg_prefix}.empty()) {
-    return std::nullopt;
-  } else if constexpr (TDef::short_name.empty()) {
-    return std::nullopt;
-  } else {
-    if (!arg.starts_with(Traits::short_arg_prefix)) {
-      return std::nullopt;
-    }
-    const auto tail
-      = arg.substr(std::string_view {Traits::short_arg_prefix}.size());
-    if (tail != TDef::short_name) {
-      return std::nullopt;
-    }
-
-    return option_match {tail};
-  }
-}
-
-template <parsing_traits Traits, static_basic_option TDef>
-  requires(TDef::behavior == Behavior::Flag)
-std::optional<option_match> option_matches_negated_flag(
-  const std::string_view arg) {
-  if constexpr (!parsing_traits_with_negated_flags<Traits>) {
-    return std::nullopt;
-  } else {
-    static_assert(
-      !TDef::negated_flag_name.empty(),
-      "have a flag without a negated name, but traits provide negated names");
-    auto tail = arg;
-
-    if (!consume(tail, Traits::long_arg_prefix)) {
-      return std::nullopt;
-    }
-    if (tail.empty()) {
-      return std::nullopt;
-    }
-    if (tail == TDef::negated_flag_name) {
-      return option_match {tail};
-    }
-    return std::nullopt;
-  }
-}
-
-template <parsing_traits Traits, static_basic_option TDef>
-[[nodiscard]]
-std::optional<option_match> option_matches(const std::string_view arg) {
-  if (const auto ret = option_matches_long<Traits, TDef>(arg); ret) {
-    return ret;
-  }
-
-  if (const auto ret = option_matches_short<Traits, TDef>(arg); ret) {
-    return ret;
-  }
-
-  return std::nullopt;
-}
-
-template <class T>
-struct arg_parse_match {
-  T mValue;
-  std::size_t mConsumed;
-};
-
-template <class T>
-using arg_parse_result
-  = std::optional<std::expected<arg_parse_match<T>, incomplete_parse_reason_t>>;
-
-template <
-  parsing_traits Traits,
-  static_basic_positional_argument TArgDef,
-  class V = std::decay_t<typename TArgDef::value_type>>
-arg_parse_result<V> parse_option(
-  [[maybe_unused]] const typename TArgDef::value_type& arg,
-  [[maybe_unused]] const random_access_range_of<std::string_view> auto& args) {
-  return std::nullopt;
-}
-
 template <parsing_traits Traits, static_basic_argument TDef>
 auto map_value_parse_error(
-  const random_access_range_of<std::string_view> auto& args,
+  std::span<const std::string_view> args,
   const std::string_view value,
   invalid_argument_value e) {
   if (!e.mSource.empty()) {
@@ -237,168 +96,388 @@ auto map_value_parse_error(
     .mName = provided_argument_name<Traits, TDef>(*std::ranges::begin(args)),
     .mValue = std::string {value},
   };
-  return std::unexpected {std::move(e)};
+  return std::move(e);
 }
 
-template <
-  parsing_traits Traits,
-  static_basic_option TDefinition,
-  class V = std::decay_t<typename TDefinition::value_type>>
-  requires(TDefinition::behavior == Behavior::Option)
-arg_parse_result<V> parse_option(
-  const random_access_range_of<std::string_view> auto& args) {
-  const auto first = *std::ranges::begin(args);
+struct consume_result {
+  // The consumed portion
+  std::string_view head;
+  // The remainder
+  std::string_view tail;
+};
 
-  const auto match = option_matches<Traits, TDefinition>(first);
-  if (!match) {
+[[nodiscard]] inline consume_result consume(
+  std::string_view& view,
+  const std::size_t size) {
+  if (size > view.size()) [[unlikely]] {
+    throw std::out_of_range {std::format(
+      "Asked to consume {} bytes, but only {} available", size, view.size())};
+  }
+  const auto head = view.substr(0, size);
+  view.remove_prefix(size);
+  return {head, view};
+};
+
+[[nodiscard]] inline std::optional<consume_result> consume(
+  std::string_view& view,
+  const std::string_view prefix) {
+  if (prefix.empty()) {
     return std::nullopt;
   }
+  if (!view.starts_with(prefix)) {
+    return std::nullopt;
+  }
+  const auto head = view.substr(0, prefix.size());
+  view.remove_prefix(prefix.size());
+  return consume_result {head, view};
+}
 
-  std::size_t consumed = 1;
-  std::string_view value;
-  if (match->has_value()) {
-    value = *match->mValue;
-  } else {
-    if (args.size() == 1) {
-      return std::unexpected {missing_argument_value {
-        .mSource = {
-          .mName = provided_argument_name<Traits, TDefinition>(first),
-          .mArgvMember = std::string { first },
-        },
-      }};
+using argument_not_matched = std::monostate;
+struct argument_match final {
+  std::size_t consumed_argc {};
+};
+
+using option_match_result = std::variant<
+  argument_not_matched,
+  argument_match,
+  missing_argument_value,
+  invalid_argument_value>;
+
+using parse_argument_result
+  = std::expected<argument_match, incomplete_parse_reason_t>;
+
+template <parsing_traits Traits, static_basic_option TDef>
+struct match_long_option_t {
+  static option_match_result operator()(
+    const std::span<const std::string_view> args,
+    typename TDef::value_type& out) {
+    const auto arg = args[0];
+
+    auto tail = arg;
+    if (!consume(tail, Traits::long_arg_prefix)) {
+      return argument_not_matched {};
     }
-    value = args[1];
-    ++consumed;
-  }
 
-  V ret {};
-  if (const auto converted = from_string(ret, value); !converted) {
-    return map_value_parse_error<Traits, TDefinition>(
-      std::views::take(args, consumed), value, converted.error());
-  }
-  return {arg_parse_match {ret, consumed}};
-}
+    const auto name = consume(tail, TDef::name);
+    if (!name) {
+      return argument_not_matched {};
+    }
 
-template <parsing_traits Traits, static_basic_option TArgDef>
-  requires(TArgDef::behavior == Behavior::Flag)
-arg_parse_result<bool> parse_option(
-  const random_access_range_of<std::string_view> auto& args) {
-  if (option_matches<Traits, TArgDef>(*std::ranges::begin(args))) {
-    return {arg_parse_match {true, 1}};
-  }
-  if (option_matches_negated_flag<Traits, TArgDef>(*std::ranges::begin(args))) {
-    return {arg_parse_match {false, 1}};
-  }
-  return std::nullopt;
-}
+    if (tail.empty()) {
+      if (std::ranges::size(args) == 1) {
+        return missing_argument_value {
+          .mSource = {
+            .mName = std::string { name->head },
+            .mArgvMember = std::string { arg },
+          },
+        };
+      }
 
-struct counted_flag_value_t {
-  enum class kind {
-    Increase,
-    Assign,
-  };
-  kind mKind {};
-  std::size_t mCount {};
+      if (const auto ok = from_string(out, args[1]); !ok) [[unlikely]] {
+        return map_value_parse_error<Traits, TDef>(args, args[1], ok.error());
+      }
+      return argument_match {.consumed_argc = 2};
+    }
 
-  static constexpr counted_flag_value_t increment() {
-    return {kind::Increase, 1};
+    if (!consume(tail, Traits::value_separator)) {
+      // arg is `--foobar`, but we're trying to match `--foo`
+      return argument_not_matched {};
+    }
+
+    // --foo=value
+    if (const auto ok = from_string(out, tail); !ok) [[unlikely]] {
+      return map_value_parse_error<Traits, TDef>(args, tail, ok.error());
+    }
+
+    return argument_match {.consumed_argc = 1};
   }
 };
 
-template <parsing_traits Traits, static_basic_option TArgDef>
-  requires(TArgDef::behavior == Behavior::CountedFlag)
-arg_parse_result<counted_flag_value_t> parse_option(
-  const random_access_range_of<std::string_view> auto& args) {
-  using enum counted_flag_value_t::kind;
-  const auto match = option_matches<Traits, TArgDef>(*std::ranges::begin(args));
-  if (!match) {
-    return std::nullopt;
-  }
-
-  if (!match->has_value()) {
-    return {arg_parse_match {counted_flag_value_t {Increase, 1}, 1}};
-  }
-
-  std::size_t value {};
-  if (const auto ret = from_string(value, *match->mValue); !ret) {
-    return map_value_parse_error<Traits, TArgDef>(
-      args, *match->mValue, ret.error());
-  }
-  return {arg_parse_match {counted_flag_value_t {Assign, value}, 1}};
+template <parsing_traits Traits, static_basic_option TDef>
+[[nodiscard]]
+option_match_result match_long_option(
+  const std::span<const std::string_view> args,
+  typename TDef::value_type& out) {
+  return match_long_option_t<Traits, TDef> {}(args, out);
 }
 
-template <class TArg, class TValue>
-  requires requires(TArg& arg, TValue&& value) {
-    arg = std::forward<TValue>(value);
+template <parsing_traits Traits, static_flag TDef>
+struct match_long_option_t<Traits, TDef> {
+  static option_match_result operator()(
+    const std::span<const std::string_view> args,
+    typename TDef::value_type& out) {
+    const auto arg = args[0];
+
+    auto tail = arg;
+    if (!consume(tail, Traits::long_arg_prefix)) {
+      return argument_not_matched {};
+    }
+
+    std::optional<std::string_view> providedValue;
+    if (const auto match = consume({tail}, TDef::name)) {
+      if (match->tail.empty()) {
+        out = true;
+        return argument_match {.consumed_argc = 1};
+      }
+      if (match->tail.starts_with(Traits::value_separator)) [[unlikely]] {
+        providedValue = match->tail;
+      }
+    }
+
+    if constexpr (static_negatable_flag<TDef>) {
+      if (const auto match = consume(tail, TDef::negated_flag_name)) {
+        if (match->tail.empty()) {
+          out = false;
+          return argument_match {.consumed_argc = 1};
+        }
+        if (match->tail.starts_with(Traits::value_separator)) [[unlikely]] {
+          providedValue = match->tail;
+        }
+      }
+    }
+
+    if (providedValue) [[unlikely]] {
+      return map_value_parse_error<Traits, TDef>(args, *providedValue, {});
+    }
+
+    return argument_not_matched {};
   }
-void assign_value(TArg& arg, TValue&& value) {
-  arg = std::forward<TValue>(value);
+};
+
+template <parsing_traits Traits, static_counted_flag TDef>
+struct match_long_option_t<Traits, TDef> {
+  static option_match_result operator()(
+    const std::span<const std::string_view> args,
+    typename TDef::value_type& out) {
+    const auto arg = args[0];
+
+    auto tail = arg;
+    if (!consume(tail, Traits::long_arg_prefix)) {
+      return argument_not_matched {};
+    }
+
+    if (!consume(tail, TDef::name)) {
+      return argument_not_matched {};
+    }
+    if (tail.empty()) {
+      ++out;
+      return argument_match {.consumed_argc = 1};
+    }
+
+    if (!tail.starts_with(Traits::value_separator)) [[likely]] {
+      return argument_not_matched {};
+    }
+
+    const auto ok = from_string(out, tail.substr(1));
+    if (!ok) [[unlikely]] {
+      return map_value_parse_error<Traits, TDef>(args, tail, ok.error());
+    }
+
+    return argument_match {.consumed_argc = 1};
+  }
+};
+
+template <static_short_flag TDef>
+void apply_as_flag(typename TDef::value_type& out) {
+  out = true;
 }
 
-inline void assign_value(counted_flag& arg, const counted_flag_value_t& value) {
-  using enum counted_flag_value_t::kind;
-  switch (value.mKind) {
-    case Increase:
-      arg.mValue += value.mCount;
-      break;
-    case Assign:
-      arg.mValue = value.mCount;
-      break;
+template <static_short_counted_flag TDef>
+void apply_as_flag(typename TDef::value_type& out) {
+  ++out;
+}
+
+template <class T>
+concept can_apply_as_flag
+  = requires(typename T::value_type& out) { apply_as_flag<T>(out); };
+
+template <parsing_traits_with_short_args Traits, static_basic_option TDef>
+  requires(!static_short_basic_option<TDef>)
+[[nodiscard]]
+option_match_result match_short_option(
+  [[maybe_unused]] const std::span<const std::string_view>& args,
+  [[maybe_unused]] typename TDef::value_type& out) {
+  return argument_not_matched {};
+}
+
+template <parsing_traits_with_short_args Traits, static_short_basic_option TDef>
+[[nodiscard]]
+option_match_result match_short_option(
+  const std::span<const std::string_view>& args,
+  typename TDef::value_type& out) {
+  auto tail = args[0];
+
+  if (!consume(tail, Traits::short_arg_prefix)) {
+    return argument_not_matched {};
+  }
+
+  if (tail != TDef::short_name) {
+    return argument_not_matched {};
+  }
+
+  if constexpr (can_apply_as_flag<TDef>) {
+    apply_as_flag<TDef>(out);
+    return argument_match {.consumed_argc = 1};
+  } else {
+    if (std::ranges::size(args) == 1) {
+      return missing_argument_value {
+        .mSource = {
+        .mName = std::string { TDef::short_name },
+          .mArgvMember = std::string { args[0] },
+        },
+      };
+    }
+    if (const auto ok = from_string(out, args[1]); !ok) [[unlikely]] {
+      return map_value_parse_error<Traits, TDef>(args, tail, ok.error());
+    }
+    return argument_match {.consumed_argc = 2};
   }
 }
 
-template <
-  parsing_traits Traits,
-  static_basic_positional_argument TArgDef,
-  class V = typename TArgDef::value_type>
-arg_parse_result<V> parse_positional_argument(
-  const random_access_range_of<std::string_view> auto& args) {
-  using namespace detail;
+template <parsing_traits Traits, static_basic_positional_argument TArgDef>
+parse_argument_result parse_positional_argument(
+  const random_access_range_of<std::string_view> auto& args,
+  typename TArgDef::value_type& out) {
+  using value_type = typename TArgDef::value_type;
 
-  if (args.empty()) {
+  if (std::ranges::empty(args)) {
     if constexpr (is_required(TArgDef::behavior)) {
       return std::unexpected {
         missing_required_argument {std::string {TArgDef::name}}};
     } else {
-      return std::nullopt;
+      return argument_match {.consumed_argc = 0};
     }
   }
 
-  if constexpr (vector_like<V>) {
-    V ret {};
-    ret.reserve(args.size());
+  if constexpr (vector_like<value_type>) {
+    out.reserve(args.size());
     // As of 2025-12-12, Apple Clang on Github Actions does not support
     // `std::views::enumerate`
     for (std::size_t i = 0; i < args.size(); ++i) {
       const auto& arg = args[i];
-      typename V::value_type v {};
+      typename value_type::value_type v {};
       if (const auto parsed = from_string(v, arg); !parsed) {
-        return map_value_parse_error<Traits, TArgDef>(
+        return std::unexpected {map_value_parse_error<Traits, TArgDef>(
           std::views::single(*(std::ranges::begin(args) + i)),
           arg,
-          parsed.error());
+          parsed.error())};
       }
-      ret.push_back(std::move(v));
+      out.emplace_back(std::move(v));
     }
-    return {arg_parse_match {ret, args.size()}};
+    return argument_match {.consumed_argc = args.size()};
   } else {
-    V ret {};
-    if (const auto parsed = from_string(ret, args.front()); !parsed) {
-      return map_value_parse_error<Traits, TArgDef>(
-        std::views::take(args, 1), args.front(), parsed.error());
+    if (const auto parsed = from_string(out, args.front()); !parsed) {
+      return std::unexpected {map_value_parse_error<Traits, TArgDef>(
+        std::views::take(args, 1), args.front(), parsed.error())};
     }
-    return arg_parse_match {std::move(ret), 1};
+    return argument_match {.consumed_argc = 1};
   }
 }
 
-template <
-  parsing_traits Traits,
-  basic_option T,
-  class V = typename T::value_type>
-arg_parse_result<V> parse_positional_argument(
-  [[maybe_unused]] const T& argDef,
-  [[maybe_unused]] std::span<std::string_view> args) {
-  return std::nullopt;
+auto& project_value(auto& member) {
+  using member_type = std::remove_cvref_t<decltype(member)>;
+  if constexpr (basic_argument<member_type>) {
+    return member.mValue;
+  } else {
+    return member;
+  }
+}
+
+template <parsing_traits Traits, auto TFnIt, class TArgs>
+parse_argument_result parse_option_impl(
+  TArgs& argsOut,
+  std::span<const std::string_view> remainingArgv) {
+  option_match_result match {};
+  std::ignore = visit_options<Traits>(
+    [&]<class TDef>(const TDef&, auto& memberOut) {
+      auto& out = project_value(memberOut);
+
+      const auto result
+        = TFnIt(std::type_identity<TDef> {}, remainingArgv, out);
+      if (holds_alternative<argument_not_matched>(result)) {
+        return false;
+      }
+      match = result;
+      return true;
+    },
+    argsOut);
+  if (const auto p = get_if<argument_match>(&match)) {
+    return *p;
+  }
+  return std::visit(
+    overloaded {
+      [](const argument_match&) -> parse_argument_result {
+        std::unreachable();
+      },
+      [=](const argument_not_matched&) -> parse_argument_result {
+        return std::unexpected {invalid_argument {
+          .mKind = invalid_argument::kind::Option,
+          .mSource = {std::string {remainingArgv.front()}},
+        }};
+      },
+      [](const incomplete_parse_reason auto& r) -> parse_argument_result {
+        return std::unexpected {r};
+      },
+    },
+    match);
+}
+
+template <parsing_traits Traits, class TArgs>
+parse_argument_result parse_long_option(
+  TArgs& argsOut,
+  std::span<const std::string_view> remainingArgv) {
+  return parse_option_impl<
+    Traits,
+    []<static_basic_option TArgDef>(
+      std::type_identity<TArgDef>, const auto args, auto& argOut) {
+      return match_long_option<Traits, TArgDef>(args, argOut);
+    }>(argsOut, remainingArgv);
+}
+
+template <parsing_traits Traits, class TArgs>
+parse_argument_result parse_short_option(
+  TArgs& argsOut,
+  std::span<const std::string_view> remainingArgv) {
+  const auto exactMatch = parse_option_impl<
+    Traits,
+    []<static_basic_option TArgDef>(
+      std::type_identity<TArgDef>, const auto args, auto& argOut) {
+      return match_short_option<Traits, TArgDef>(args, argOut);
+    }>(argsOut, remainingArgv);
+  if constexpr (!Traits::single_char_short_args) {
+    return exactMatch;
+  } else {
+    if (exactMatch) {
+      return exactMatch;
+    }
+    if (!holds_alternative<invalid_argument>(exactMatch.error())) {
+      return exactMatch;
+    }
+
+    auto arg = remainingArgv.front();
+    const auto tail = consume(arg, Traits::short_arg_prefix)->tail;
+    for (const char c: tail) {
+      const bool matched = detail::visit_all_defined_arguments<Traits>(
+        overloaded {
+          [c]<can_apply_as_flag TArgDef>(const TArgDef, auto& memberOut) {
+            if (
+              TArgDef::short_name.size() != 1
+              || TArgDef::short_name.front() != c) {
+              return false;
+            }
+
+            auto& valueOut = project_value(memberOut);
+            apply_as_flag<TArgDef>(valueOut);
+            return true;
+          },
+          [](const auto, auto&) { return false; }},
+        argsOut);
+      if (!matched) [[unlikely]] {
+        return exactMatch;
+      }
+    }
+    return argument_match {.consumed_argc = 1};
+  }
 }
 
 }// namespace magic_args::detail

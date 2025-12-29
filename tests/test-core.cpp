@@ -484,5 +484,6 @@ Usage: my_test [OPTIONS...] [--] [POSITIONAL]
   REQUIRE_FALSE(args.has_value());
   REQUIRE(holds_alternative<magic_args::missing_argument_value>(args.error()));
   const auto& e = get<magic_args::missing_argument_value>(args.error());
-  CHECK(e.mSource.mName == "--raw");
+  CHECK(e.mSource.mName == "raw");
+  CHECK(e.mSource.mArgvMember == "--raw");
 }

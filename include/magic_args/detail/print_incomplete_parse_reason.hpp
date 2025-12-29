@@ -54,7 +54,7 @@ void print_incomplete_parse_reason(
     errorStream,
     "{}: option `{}` requires a value",
     get_prefix_for_user_messages<Traits>(argv),
-    r.mSource.mName);
+    r.mSource.mArgvMember);
 }
 template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(

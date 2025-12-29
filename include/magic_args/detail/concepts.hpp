@@ -124,11 +124,11 @@ concept parsing_traits = requires {
 };
 
 template <class T>
-concept parsing_traits_with_short_flags
+concept parsing_traits_with_short_args
   = parsing_traits<T> && !std::string_view {T::short_arg_prefix}.empty();
 
 template <class T>
-concept parsing_traits_with_short_help = parsing_traits_with_short_flags<T>
+concept parsing_traits_with_short_help = parsing_traits_with_short_args<T>
   && !std::string_view {T::short_help_arg}.empty();
 
 template <class T>

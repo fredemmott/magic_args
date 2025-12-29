@@ -27,10 +27,26 @@ concept static_basic_option
       { T::short_name } -> same_as_ignoring_cvref<std::string_view>;
     };
 template <class T>
-concept static_flag
-  = static_basic_option<T> && (T::behavior == Behavior::Flag) && requires {
-      { T::negated_flag_name } -> same_as_ignoring_cvref<std::string_view>;
-    };
+concept static_flag = static_basic_option<T> && (T::behavior == Behavior::Flag);
+
+template <class T>
+concept static_short_basic_option
+  = static_basic_option<T> && !T::short_name.empty();
+template <class T>
+concept static_short_flag = static_flag<T> && !T::short_name.empty();
+
+template <class T>
+concept static_negatable_flag = static_flag<T> && requires {
+  { T::negated_flag_name } -> same_as_ignoring_cvref<std::string_view>;
+} && !T::negated_flag_name.empty();
+
+template <class T>
+concept static_counted_flag
+  = static_basic_option<T> && (T::behavior == Behavior::CountedFlag);
+
+template <class T>
+concept static_short_counted_flag
+  = static_counted_flag<T> && !T::short_name.empty();
 
 template <class T>
 concept static_basic_positional_argument
