@@ -6,6 +6,7 @@
 #include <concepts>
 #include <format>
 #include <print>
+#include <utility>
 
 namespace magic_args::inline public_api {
 
