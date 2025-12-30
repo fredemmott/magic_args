@@ -35,20 +35,20 @@ class print_text_sink {
   }
 
   template <class... Args>
-  void print(std::format_string<Args...> fmt, Args&&... args) {
+  void print(std::format_string<Args...> fmt, Args&&... args) const {
     std::print(mTarget, fmt, std::forward<Args>(args)...);
   }
 
   template <class... Args>
-  void println(std::format_string<Args...> fmt, Args&&... args) {
+  void println(std::format_string<Args...> fmt, Args&&... args) const {
     std::println(mTarget, fmt, std::forward<Args>(args)...);
   }
 };
 static_assert(text_sink<print_text_sink>);
 
 struct print_console_output {
-  print_text_sink out {stdout};
-  print_text_sink error {stderr};
+  const print_text_sink out {stdout};
+  const print_text_sink error {stderr};
 };
 static_assert(console_output<print_console_output>);
 
@@ -107,6 +107,23 @@ class capture_console_output {
     return mOut.empty() && mError.empty();
   }
 };
+static_assert(console_output<capture_console_output>);
+
+struct drop_console_output {
+  struct sink {
+    template <class... Args>
+    void print(std::format_string<Args...>, Args&&...) const {
+    }
+
+    template <class... Args>
+    void println(std::format_string<Args...>, Args&&...) const {
+    }
+  };
+
+  const sink out {};
+  const sink error {};
+};
+static_assert(console_output<drop_console_output>);
 }// namespace magic_args::inline public_api
 
 #endif

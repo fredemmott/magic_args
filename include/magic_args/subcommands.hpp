@@ -7,7 +7,6 @@
 #include "main_macros.hpp"
 #include "subcommands/inspection.hpp"
 #include "subcommands/invoke_subcommands.hpp"
-#include "subcommands/invoke_subcommands_silent.hpp"
 #include "subcommands/is_error.hpp"
 #include "subcommands/parse_subcommands.hpp"
 #include "subcommands/parse_subcommands_silent.hpp"

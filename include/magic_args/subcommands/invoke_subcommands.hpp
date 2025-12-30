@@ -4,7 +4,7 @@
 #define MAGIC_ARGS_SUBCOMMANDS_INVOKE_SUBCOMMANDS_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
-#include "invoke_subcommands_silent.hpp"
+#include "invocable_declarations.hpp"
 #include "parse_subcommands.hpp"
 #endif
 
@@ -46,6 +46,28 @@ template <
 auto invoke_subcommands(detail::argv_range auto&& argv, TOut&& output = {}) {
   return invoke_subcommands<gnu_style_parsing_traits, First, Rest...>(
     std::forward<decltype(argv)>(argv), output);
+}
+
+template <
+  root_command_traits Traits,
+  invocable_subcommand First,
+  compatible_invocable_subcommand<First>... Rest,
+  class TSuccess = std::
+    invoke_result_t<decltype(First::main), typename First::arguments_type&&>,
+  class TIncomplete = incomplete_command_parse_reason_t<First, Rest...>,
+  class TExpected = std::expected<TSuccess, TIncomplete>>
+TExpected invoke_subcommands_silent(detail::argv_range auto&& argv) {
+  return invoke_subcommands<Traits, First, Rest...>(
+    argv, drop_console_output {});
+}
+
+// Convenience helper, assuming gnu_style_parsing_traits
+template <
+  invocable_subcommand First,
+  compatible_invocable_subcommand<First>... Rest>
+auto invoke_subcommands_silent(detail::argv_range auto&& argv) {
+  return invoke_subcommands_silent<gnu_style_parsing_traits, First, Rest...>(
+    std::forward<decltype(argv)>(argv));
 }
 
 }// namespace magic_args::inline public_api

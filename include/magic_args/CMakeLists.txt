@@ -38,7 +38,6 @@ set(
   subcommands/print_incomplete_command_parse_reason.hpp
   subcommands/parse_subcommands.hpp
   subcommands/invocable_declarations.hpp
-  subcommands/invoke_subcommands_silent.hpp
   subcommands/invoke_subcommands.hpp
   subcommands/is_error.hpp
   subcommands/inspection.hpp
