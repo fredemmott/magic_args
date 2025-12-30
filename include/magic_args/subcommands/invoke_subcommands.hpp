@@ -51,12 +51,8 @@ auto invoke_subcommands(detail::argv_range auto&& argv, TOut&& output = {}) {
 template <
   root_command_traits Traits,
   invocable_subcommand First,
-  compatible_invocable_subcommand<First>... Rest,
-  class TSuccess = std::
-    invoke_result_t<decltype(First::main), typename First::arguments_type&&>,
-  class TIncomplete = incomplete_command_parse_reason_t<First, Rest...>,
-  class TExpected = std::expected<TSuccess, TIncomplete>>
-TExpected invoke_subcommands_silent(detail::argv_range auto&& argv) {
+  compatible_invocable_subcommand<First>... Rest>
+auto invoke_subcommands_silent(detail::argv_range auto&& argv) {
   return invoke_subcommands<Traits, First, Rest...>(
     argv, drop_console_output {});
 }
