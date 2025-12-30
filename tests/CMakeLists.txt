@@ -1,17 +1,22 @@
 add_library(
   test-lib
   STATIC
-  output.cpp output.hpp chomp.hpp
+  test_file_stream.cpp test_output.hpp chomp.hpp
 )
 target_compile_features(
   test-lib
   PUBLIC
   cxx_std_23
 )
+target_link_libraries(
+  test-lib
+  PUBLIC
+  magic_args::magic_args
+)
 if (WIN32)
-  target_sources(test-lib PRIVATE output-windows.cpp)
+  target_sources(test-lib PRIVATE test_file_stream-windows.cpp)
 else ()
-  target_sources(test-lib PRIVATE output-posix.cpp)
+  target_sources(test-lib PRIVATE test_file_stream-posix.cpp)
 endif ()
 
 add_compile_definitions(

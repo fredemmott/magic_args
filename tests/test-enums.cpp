@@ -5,7 +5,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include "chomp.hpp"
-#include "output.hpp"
+#include "test_output.hpp"
 
 enum CEnum {
   Foo,
@@ -57,27 +57,24 @@ auto to_argument_value(const CustomizedEnum e) {
 }
 
 TEST_CASE("defaults") {
-  Output out, err;
   const auto args
-    = magic_args::parse<PlainEnumArgs>(std::array {"myApp"}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+    = magic_args::parse_silent<PlainEnumArgs>(std::array {"myApp"});
   REQUIRE(args.has_value());
   CHECK(args->mCEnum == CEnum::Foo);
   CHECK(args->mScopedEnum == ScopedEnum::Herp);
 }
 
 TEST_CASE("defaults - --help") {
-  Output out, err;
-  const auto args = magic_args::parse<PlainEnumArgs>(
-    std::array {"myApp", "--help"}, out, err);
+  test_output output;
+  const auto args
+    = magic_args::parse<PlainEnumArgs>(std::array {"myApp", "--help"}, output);
   CHECK_FALSE(args.has_value());
   if (!args.has_value()) {
     CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
   }
 
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
+  CHECK(output.error_str().empty());
+  CHECK(output.out_str() == chomp(R"EOF(
 Usage: myApp [OPTIONS...]
 
 Options:
@@ -92,20 +89,17 @@ Options:
 }
 
 TEST_CASE("valid values") {
-  Output out, err;
-  const auto args = magic_args::parse<PlainEnumArgs>(
-    std::array {"myApp", "--c-enum=Bar", "--scoped-enum=Derp"}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  const auto args = magic_args::parse_silent<PlainEnumArgs>(
+    std::array {"myApp", "--c-enum=Bar", "--scoped-enum=Derp"});
   REQUIRE(args.has_value());
   CHECK(args->mCEnum == CEnum::Bar);
   CHECK(args->mScopedEnum == ScopedEnum::Derp);
 }
 
 TEST_CASE("invalid value - C enum") {
-  Output out, err;
+  test_output output;
   const auto args = magic_args::parse<PlainEnumArgs>(
-    std::array {"myApp", "--c-enum=INVALID"}, out, err);
+    std::array {"myApp", "--c-enum=INVALID"}, output);
   CHECK_FALSE(args.has_value());
   if (!args.has_value()) {
     CHECK(
@@ -117,8 +111,8 @@ TEST_CASE("invalid value - C enum") {
       CHECK(e.mSource.mValue == "INVALID");
     }
   }
-  CHECK(out.empty());
-  CHECK(err.get() == chomp(R"EOF(
+  CHECK(output.out_str().empty());
+  CHECK(output.error_str() == chomp(R"EOF(
 myApp: `INVALID` is not a valid value for `--c-enum` (seen: `--c-enum=INVALID`)
 
 Usage: myApp [OPTIONS...]
@@ -135,15 +129,15 @@ Options:
 }
 
 TEST_CASE("enum with customized serde - help") {
-  Output out, err;
+  test_output output;
   const auto args = magic_args::parse<CustomizedEnumArgs>(
-    std::array {"myApp", "--help"}, out, err);
+    std::array {"myApp", "--help"}, output);
   CHECK_FALSE(args);
   if (!args) {
     CHECK(holds_alternative<magic_args::help_requested>(args.error()));
   }
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
+  CHECK(output.error_str().empty());
+  CHECK(output.out_str() == chomp(R"EOF(
 Usage: myApp [OPTIONS...]
 
 Options:

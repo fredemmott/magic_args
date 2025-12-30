@@ -4,17 +4,13 @@
 #define MAGIC_ARGS_DETAIL_USAGE_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
-#include <magic_args/gnu_style_parsing_traits.hpp>
-
 #include "concepts.hpp"
+#include "console_output.hpp"
 #include "get_argument_definition.hpp"
 #include "parse.hpp"
-#include "parsing_traits_for_args.hpp"
-#include "print.hpp"
 #include "to_formattable.hpp"
 #endif
 
-#include <cstdio>
 #include <filesystem>
 #include <string>
 
@@ -48,7 +44,7 @@ template <
   parsing_traits Traits,
   class TArgDef = argument_definition_t<TArgs, I, Traits>>
   requires(!static_basic_option<TArgDef>)
-void show_option_usage(FILE*) {
+void show_option_usage(text_sink auto&) {
 }
 
 template <static_basic_option TArgDef>
@@ -93,7 +89,7 @@ template <
   std::size_t I,
   parsing_traits Traits,
   class TArgDef = argument_definition_t<TArgs, I, Traits>>
-void show_option_usage(FILE* output) {
+void show_option_usage(text_sink auto& output) {
   const auto shortArg = [] {
     constexpr auto ShortName
       = argument_definition_t<TArgs, I, Traits>::short_name;
@@ -165,7 +161,7 @@ void show_option_usage(FILE* output) {
   }
 
   if (extra.empty()) {
-    detail::println(output, "{}", header);
+    output.println("{}", header);
     return;
   }
 
@@ -173,11 +169,11 @@ void show_option_usage(FILE* output) {
   if (header.size() <= 30) {
     prefix = header;
   } else {
-    detail::println(output, "{}", header);
+    output.println("{}", header);
   }
 
   for (auto&& line: extra) {
-    detail::println(output, "{:30} {}", prefix, line);
+    output.println("{:30} {}", prefix, line);
     prefix = {};
   }
 }
@@ -187,7 +183,7 @@ template <
   std::size_t I,
   parsing_traits Traits,
   class TArgDef = argument_definition_t<TArgs, I, Traits>>
-void show_positional_argument_usage(FILE*) {
+void show_positional_argument_usage(text_sink auto&) {
 }
 
 template <
@@ -196,18 +192,17 @@ template <
   parsing_traits Traits,
   static_basic_positional_argument TArgDef
   = argument_definition_t<TArgs, I, Traits>>
-void show_positional_argument_usage(FILE* output) {
+void show_positional_argument_usage(text_sink auto& output) {
   const auto help = get_argument_help_by_index<TArgs, I>();
   if (help.empty()) {
-    detail::println(output, "      {}", std::string_view {TArgDef::name});
+    output.println("      {}", std::string_view {TArgDef::name});
     return;
   }
-  detail::println(
-    output, "      {:25}{}", std::string_view {TArgDef::name}, help);
+  output.println("      {:25}{}", std::string_view {TArgDef::name}, help);
 }
 
 template <class T, std::size_t I, parsing_traits Traits>
-void append_positional_name(FILE* output) {
+void append_positional_name(text_sink auto& output) {
   using TArgDef = argument_definition_t<T, I, Traits>;
   if constexpr (is_positional_argument(TArgDef::behavior)) {
     std::string name {TArgDef::name};
@@ -222,15 +217,15 @@ void append_positional_name(FILE* output) {
       name = std::format("{0} [{0} [...]]", name);
     }
     if (is_required(TArgDef::behavior)) {
-      detail::print(output, " {}", name);
+      output.print(" {}", name);
     } else {
-      detail::print(output, " [{}]", name);
+      output.print(" [{}]", name);
     }
   }
 }
 
 template <parsing_traits Traits, class T>
-void show_usage(FILE* output, argv_range auto&& argv) {
+void show_usage(text_sink auto& output, argv_range auto&& argv) {
   using namespace detail;
   constexpr auto N = count_members<T>();
 
@@ -248,32 +243,32 @@ void show_usage(FILE* output, argv_range auto&& argv) {
     "Usage: {} [OPTIONS...]",
     detail::get_prefix_for_user_messages<Traits>(argv));
   if constexpr (!hasPositionalArguments) {
-    detail::println(output, "{}", oneLiner);
+    output.println("{}", oneLiner);
   } else {
-    detail::print(output, "{} [--]", oneLiner);
-    []<std::size_t... I>(FILE* output, std::index_sequence<I...>) {
+    output.print("{} [--]", oneLiner);
+    [&output]<std::size_t... I>(std::index_sequence<I...>) {
       (append_positional_name<T, I, Traits>(output), ...);
-    }(output, std::make_index_sequence<N> {});
-    detail::println(output, "");
+    }(std::make_index_sequence<N> {});
+    output.println("");
   }
 
   if constexpr (has_description<T>) {
-    detail::println(output, "{}", std::string_view {T::description});
+    output.println("{}", std::string_view {T::description});
   }
 
   if constexpr (has_examples<T>) {
-    detail::print(output, "\nExamples:\n\n");
+    output.print("\nExamples:\n\n");
     for (auto&& example: T::examples) {
-      detail::println(output, "  {}", std::string_view {example});
+      output.println("  {}", std::string_view {example});
     }
   }
 
-  detail::print(output, "\nOptions:\n\n");
+  output.print("\nOptions:\n\n");
   if (hasOptions) {
-    [output]<std::size_t... I>(std::index_sequence<I...>) {
+    [&output]<std::size_t... I>(std::index_sequence<I...>) {
       (show_option_usage<T, I, Traits>(output), ...);
     }(std::make_index_sequence<N> {});
-    detail::print(output, "\n");
+    output.print("\n");
   }
 
   const auto longHelp
@@ -286,18 +281,17 @@ void show_usage(FILE* output, argv_range auto&& argv) {
     : std::string {};
 
   if (shortHelp.empty()) {
-    std::println(output, "        {:24} show this message", longHelp);
+    output.println("        {:24} show this message", longHelp);
   } else {
-    std::println(
-      output, "  {:2}, {:24} show this message", shortHelp, longHelp);
+    output.println("  {:2}, {:24} show this message", shortHelp, longHelp);
   }
   if constexpr (has_version<T>) {
-    std::println(output, "      {:24} print program version", version);
+    output.println("      {:24} print program version", version);
   }
 
   if (hasPositionalArguments) {
-    detail::print(output, "\nArguments:\n\n");
-    [output]<std::size_t... I>(std::index_sequence<I...>) {
+    output.print("\nArguments:\n\n");
+    [&output]<std::size_t... I>(std::index_sequence<I...>) {
       (show_positional_argument_usage<T, I, Traits>(output), ...);
     }(std::make_index_sequence<N> {});
   }

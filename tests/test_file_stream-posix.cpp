@@ -3,9 +3,9 @@
 
 #include <unistd.h>
 
-#include "output.hpp"
+#include "test_output.hpp"
 
-void Output::reset() {
+void test_file_stream::reset() {
   this->wait();
   mData.clear();
 
@@ -13,5 +13,5 @@ void Output::reset() {
   pipe(pipefd);
   mRead = fdopen(pipefd[0], "r");
   mWrite = fdopen(pipefd[1], "w");
-  mFuture = std::async(std::launch::async, &Output::run, this);
+  mFuture = std::async(std::launch::async, &test_file_stream::run, this);
 }

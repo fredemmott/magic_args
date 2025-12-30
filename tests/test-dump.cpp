@@ -6,7 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "chomp.hpp"
-#include "output.hpp"
+#include "test_output.hpp"
 
 enum class MyEnum {
   Foo,
@@ -45,13 +45,12 @@ struct Args {
 };
 
 TEST_CASE("defaults") {
-  Output out, err;
-  const auto args = magic_args::parse<Args>(std::array {"mytest"}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  test_output output;
+  const auto args = magic_args::parse<Args>(std::array {"mytest"}, output);
+  CHECK(output.empty());
   REQUIRE(args.has_value());
-  magic_args::dump(*args, out);
-  CHECK(out.get() == chomp(R"EOF(
+  magic_args::dump(*args, (output).out);
+  CHECK(output.out_str() == chomp(R"EOF(
 mString                       ``
 mOptionalInt                  `[nullopt]`
 mEnum                         `Foo`
@@ -64,27 +63,21 @@ mPositional                   ``
 }
 
 TEST_CASE("all") {
-  Output out, err;
-  const auto args = magic_args::parse<Args>(
-    std::array {
-      "mytest",
-      "--string=TestString",
-      "--optional-int=42",
-      "--enum=Bar",
-      "--option=TestOption",
-      "--flag",
-      "-vvv",
-      "--custom-type=TestCustomValue",
-      "Derp",
-    },
-    out,
-    err);
-  CHECK(out.empty());
-  // CHECK(err.empty());
-  CHECK(err.get() == "");
+  const auto args = magic_args::parse_silent<Args>(std::array {
+    "mytest",
+    "--string=TestString",
+    "--optional-int=42",
+    "--enum=Bar",
+    "--option=TestOption",
+    "--flag",
+    "-vvv",
+    "--custom-type=TestCustomValue",
+    "Derp",
+  });
   REQUIRE(args.has_value());
-  magic_args::dump(*args, out);
-  CHECK(out.get() == chomp(R"EOF(
+  test_output output;
+  magic_args::dump(*args, (output).out);
+  CHECK(output.out_str() == chomp(R"EOF(
 mString                       `TestString`
 mOptionalInt                  `42`
 mEnum                         `Bar`

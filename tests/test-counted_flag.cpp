@@ -6,7 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
-#include "output.hpp"
+#include "test_output.hpp"
 
 struct MyArgs {
   magic_args::counted_flag mVerbose {
@@ -65,14 +65,15 @@ TEST_CASE("mixed setters") {
 }
 
 TEST_CASE("help") {
-  Output out, err;
+  test_output output;
   const auto args
-    = magic_args::parse<MyArgs>(std::array {"myapp", "--help"}, out, err);
+    = magic_args::parse<MyArgs>(std::array {"myapp", "--help"}, output);
   CHECK(!args);
   if (!args) {
     CHECK(std::holds_alternative<magic_args::help_requested>(args.error()));
   }
-  CHECK(err.empty());
+  CHECK(output.error_str().empty());
   CHECK_THAT(
-    out.get(), Catch::Matchers::ContainsSubstring("-v, --verbose[=VALUE]"));
+    output.out_str(),
+    Catch::Matchers::ContainsSubstring("-v, --verbose[=VALUE]"));
 }

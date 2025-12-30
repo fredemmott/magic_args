@@ -4,7 +4,7 @@
 #include <magic_args/magic_args.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include "chomp.hpp"
-#include "output.hpp"
+#include "test_output.hpp"
 
 struct MyCustomType {
   std::string mValue;
@@ -29,12 +29,8 @@ struct WithDefaults {
 };
 
 TEST_CASE("default argument value - no options") {
-  Output out, err;
   const auto noOptions
-    = magic_args::parse<WithDefaults>(std::array {"mytest"}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-
+    = magic_args::parse_silent<WithDefaults>(std::array {"mytest"});
   REQUIRE(noOptions.has_value());
   CHECK(noOptions->mMyArg == "testValue");
   CHECK(noOptions->mMyArgWithHelp == "testValue2");
@@ -42,22 +38,18 @@ TEST_CASE("default argument value - no options") {
 }
 
 TEST_CASE("default argument value - overriden") {
-  Output out, err;
-  const auto noOptions = magic_args::parse<WithDefaults>(
-    std::array {"mytest", "--my-arg", "foobar"}, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
-
+  const auto noOptions = magic_args::parse_silent<WithDefaults>(
+    std::array {"mytest", "--my-arg", "foobar"});
   REQUIRE(noOptions.has_value());
   CHECK(noOptions->mMyArg == "foobar");
 }
 
 TEST_CASE("default argument value - --help") {
-  Output out, err;
-  const auto result = magic_args::parse<WithDefaults>(
-    std::vector {"mytest", "--help"}, out, err);
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
+  test_output output;
+  const auto result
+    = magic_args::parse<WithDefaults>(std::vector {"mytest", "--help"}, output);
+  CHECK(output.error_str().empty());
+  CHECK(output.out_str() == chomp(R"EOF(
 Usage: mytest [OPTIONS...]
 
 Options:

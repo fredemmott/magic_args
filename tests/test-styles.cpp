@@ -11,7 +11,7 @@
 
 #include "arg-type-definitions.hpp"
 #include "chomp.hpp"
-#include "output.hpp"
+#include "test_output.hpp"
 
 template <magic_args::parsing_traits T>
 struct BasicArgs {
@@ -28,12 +28,12 @@ using PSArgs = BasicArgs<magic_args::powershell_style_parsing_traits>;
 
 TEST_CASE("help, GNU-style") {
   std::vector<std::string_view> argv {"test_app", GENERATE("--help", "-?")};
-  Output out, err;
-  const auto args = magic_args::parse<GNUArgs>(argv, out, err);
+  test_output output;
+  const auto args = magic_args::parse<GNUArgs>(argv, output);
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::help_requested>(args.error()));
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
+  CHECK(output.error_str().empty());
+  CHECK(output.out_str() == chomp(R"EOF(
 Usage: test_app [OPTIONS...]
 
 Options:
@@ -48,12 +48,12 @@ Options:
 
 TEST_CASE("help, powershell-style") {
   std::vector<std::string_view> argv {"test_app", "-Help"};
-  Output out, err;
-  const auto args = magic_args::parse<PSArgs>(argv, out, err);
+  test_output output;
+  const auto args = magic_args::parse<PSArgs>(argv, output);
   REQUIRE_FALSE(args.has_value());
   CHECK(holds_alternative<magic_args::help_requested>(args.error()));
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
+  CHECK(output.error_str().empty());
+  CHECK(output.out_str() == chomp(R"EOF(
 Usage: test_app [OPTIONS...]
 
 Options:
@@ -76,10 +76,7 @@ TEST_CASE("args, powershell-style") {
     "-Flag",
     "-DocumentedFlag",
   };
-  Output out, err;
-  const auto args = magic_args::parse<PSArgs>(argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  const auto args = magic_args::parse_silent<PSArgs>(argv);
   REQUIRE(args.has_value());
   CHECK(args->mString == "stringValue");
   CHECK(args->mFlag);
@@ -89,10 +86,10 @@ TEST_CASE("PowerShell-style invalid value") {
   constexpr std::string_view argv[] {
     "my_test", "-Raw", MyValueType::InvalidValue};
 
-  Output out, err;
-  const auto args = magic_args::parse<CustomArgsPS>(argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.get() == chomp(R"EOF(
+  test_output output;
+  const auto args = magic_args::parse<CustomArgsPS>(argv, output);
+  CHECK(output.out_str().empty());
+  CHECK(output.error_str() == chomp(R"EOF(
 my_test: `___MAGIC_INVALID___` is not a valid value for `-Raw` (seen: `-Raw ___MAGIC_INVALID___`)
 
 Usage: my_test [OPTIONS...] [--] [POSITIONAL]
@@ -119,11 +116,11 @@ Arguments:
 TEST_CASE("PowerShell-style normalization") {
   std::vector<std::string_view> argv {"my_test", "-Help"};
 
-  Output out, err;
+  test_output output;
   static_assert(magic_args::has_parsing_traits<NormalizationPS>);
-  const auto args = magic_args::parse<NormalizationPS>(argv, out, err);
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
+  const auto args = magic_args::parse<NormalizationPS>(argv, output);
+  CHECK(output.error_str().empty());
+  CHECK(output.out_str() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
@@ -147,10 +144,10 @@ Options:
 TEST_CASE("GNU-style normalization") {
   std::vector<std::string_view> argv {"my_test", "--help"};
 
-  Output out, err;
-  const auto args = magic_args::parse<Normalization>(argv, out, err);
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
+  test_output output;
+  const auto args = magic_args::parse<Normalization>(argv, output);
+  CHECK(output.error_str().empty());
+  CHECK(output.out_str() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
@@ -174,12 +171,12 @@ Options:
 TEST_CASE("GNU-style verbatim names") {
   std::vector<std::string_view> argv {"my_test", "--help"};
 
-  Output out, err;
+  test_output output;
   const auto args = magic_args::parse<BasicNormalization<
     magic_args::verbatim_names<magic_args::gnu_style_parsing_traits>>>(
-    argv, out, err);
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
+    argv, output);
+  CHECK(output.error_str().empty());
+  CHECK(output.out_str() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:
@@ -201,12 +198,12 @@ Options:
 TEST_CASE("PowerShell-style verbatim names") {
   std::vector<std::string_view> argv {"my_test", "-Help"};
 
-  Output out, err;
+  test_output output;
   const auto args = magic_args::parse<BasicNormalization<
     magic_args::verbatim_names<magic_args::powershell_style_parsing_traits>>>(
-    argv, out, err);
-  CHECK(err.get() == "");
-  CHECK(out.get() == chomp(R"EOF(
+    argv, output);
+  CHECK(output.error_str().empty());
+  CHECK(output.out_str() == chomp(R"EOF(
 Usage: my_test [OPTIONS...]
 
 Options:

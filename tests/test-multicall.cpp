@@ -8,8 +8,8 @@
 
 #include <catch2/generators/catch_generators.hpp>
 #include "chomp.hpp"
-#include "output.hpp"
 #include "subcommand-definitions.hpp"
+#include "test_output.hpp"
 
 using namespace TestSubcommands;
 
@@ -54,14 +54,14 @@ TEST_CASE("invoke herp") {
 TEST_CASE("invalid command") {
   constexpr std::array argv {"mytest"};
 
-  Output out, err;
+  test_output output {};
   const auto ret = magic_args::invoke_subcommands<
     magic_args::multicall_traits<>,
     CommandFooBar,
-    CommandHerp>(argv, out, err);
+    CommandHerp>(argv, output);
   CHECK_FALSE(ret.has_value());
-  CHECK(out.empty());
-  CHECK(err.get() == chomp(R"EOF(
+  CHECK(output.out_str().empty());
+  CHECK(output.error_str() == chomp(R"EOF(
 mytest: `mytest` is not a valid COMMAND
 
 Usage: COMMAND [OPTIONS...]
@@ -82,14 +82,14 @@ For more information, run:
 TEST_CASE("foo --help") {
   constexpr std::array argv {"foo", "--help"};
 
-  Output out, err;
+  test_output output {};
   const auto ret = magic_args::invoke_subcommands<
     magic_args::multicall_traits<>,
     CommandFooBar,
-    CommandHerp>(argv, out, err);
+    CommandHerp>(argv, output);
   CHECK_FALSE(ret.has_value());
-  CHECK(err.empty());
-  CHECK(out.get() == chomp(R"EOF(
+  CHECK(output.error_str().empty());
+  CHECK(output.out_str() == chomp(R"EOF(
 Usage: foo [OPTIONS...]
 
 Options:

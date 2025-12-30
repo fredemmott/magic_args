@@ -14,16 +14,15 @@ template <
   root_command_traits Traits,
   invocable_subcommand First,
   compatible_invocable_subcommand<First>... Rest,
+  console_output TOut = print_console_output,
   class TSuccess = std::
     invoke_result_t<decltype(First::main), typename First::arguments_type&&>,
   class TIncomplete = incomplete_command_parse_reason_t<First, Rest...>,
   class TExpected = std::expected<TSuccess, TIncomplete>>
 TExpected invoke_subcommands(
   detail::argv_range auto&& argv,
-  FILE* outputStream = stdout,
-  FILE* errorStream = stderr) {
-  auto result = parse_subcommands<Traits, First, Rest...>(
-    argv, outputStream, errorStream);
+  TOut&& output = {}) {
+  auto result = parse_subcommands<Traits, First, Rest...>(argv, output);
   if (!result) [[unlikely]] {
     return std::unexpected {std::move(result).error()};
   }
@@ -42,13 +41,11 @@ TExpected invoke_subcommands(
 
 template <
   invocable_subcommand First,
-  compatible_invocable_subcommand<First>... Rest>
-auto invoke_subcommands(
-  detail::argv_range auto&& argv,
-  FILE* outputStream = stdout,
-  FILE* errorStream = stderr) {
+  compatible_invocable_subcommand<First>... Rest,
+  console_output TOut = print_console_output>
+auto invoke_subcommands(detail::argv_range auto&& argv, TOut&& output = {}) {
   return invoke_subcommands<gnu_style_parsing_traits, First, Rest...>(
-    std::forward<decltype(argv)>(argv), outputStream, errorStream);
+    std::forward<decltype(argv)>(argv), output);
 }
 
 }// namespace magic_args::inline public_api

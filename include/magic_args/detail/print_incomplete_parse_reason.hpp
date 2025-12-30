@@ -4,8 +4,8 @@
 #define MAGIC_ARGS_DETAIL_PRINT_INCOMPLETE_PARSE_REASON_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
+#include <magic_args/console_output.hpp>
 #include <magic_args/incomplete_parse_reason.hpp>
-#include "print.hpp"
 #include "usage.hpp"
 #endif
 
@@ -14,19 +14,17 @@ template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const help_requested&,
   argv_range auto&& argv,
-  FILE* outputStream,
-  [[maybe_unused]] FILE* errorStream) {
-  show_usage<Traits, T>(outputStream, argv);
+  console_output auto& output) {
+  show_usage<Traits, T>(output.out, argv);
 }
 
 template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const version_requested&,
   [[maybe_unused]] argv_range auto&& argv,
-  [[maybe_unused]] FILE* outputStream,
-  [[maybe_unused]] FILE* errorStream) {
+  [[maybe_unused]] console_output auto& output) {
   if constexpr (has_version<T>) {
-    detail::println(outputStream, "{}", T::version);
+    output.out.println("{}", T::version);
   } else {
     throw std::logic_error(
       "magic_args: somehow got version_requested without a version");
@@ -36,10 +34,8 @@ template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const missing_required_argument& r,
   argv_range auto&& argv,
-  [[maybe_unused]] FILE* outputStream,
-  FILE* errorStream) {
-  detail::print(
-    errorStream,
+  console_output auto& output) {
+  output.error.print(
     "{}: Missing required argument `{}`",
     get_prefix_for_user_messages<Traits>(argv),
     r.mSource.mName);
@@ -48,10 +44,8 @@ template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const missing_argument_value& r,
   argv_range auto&& argv,
-  [[maybe_unused]] FILE* outputStream,
-  FILE* errorStream) {
-  detail::print(
-    errorStream,
+  console_output auto& output) {
+  output.error.print(
     "{}: option `{}` requires a value",
     get_prefix_for_user_messages<Traits>(argv),
     r.mSource.mArgvMember);
@@ -60,10 +54,8 @@ template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const unrecognized_option& arg,
   argv_range auto&& argv,
-  [[maybe_unused]] FILE* outputStream,
-  FILE* errorStream) {
-  detail::print(
-    errorStream,
+  console_output auto& output) {
+  output.error.print(
     "{}: Unrecognized option: {}",
     get_prefix_for_user_messages<Traits>(argv),
     arg.mSource.mArg);
@@ -72,10 +64,8 @@ template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const too_many_arguments& arg,
   argv_range auto&& argv,
-  [[maybe_unused]] FILE* outputStream,
-  FILE* errorStream) {
-  detail::print(
-    errorStream,
+  console_output auto& output) {
+  output.error.print(
     "{}: Unexpected argument: {}",
     get_prefix_for_user_messages<Traits>(argv),
     arg.mSource.mArg);
@@ -84,10 +74,8 @@ template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const invalid_argument_value& r,
   argv_range auto&& argv,
-  [[maybe_unused]] FILE* outputStream,
-  FILE* errorStream) {
-  detail::print(
-    errorStream,
+  console_output auto& output) {
+  output.error.print(
     "{}: `{}` is not a valid value for `{}` (seen: `{}`)",
     get_prefix_for_user_messages<Traits>(argv),
     r.mSource.mValue,
@@ -103,15 +91,14 @@ template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
   const incomplete_parse_reason_t& reason,
   argv_range auto&& argv,
-  FILE* outputStream,
-  FILE* errorStream) {
+  console_output auto& output) {
   std::visit(
-    [=]<class R>(R&& it) {
+    [&]<class R>(R&& it) {
       detail::print_incomplete_parse_reason<Traits, T>(
-        std::forward<R>(it), argv, outputStream, errorStream);
+        std::forward<R>(it), argv, output);
       if constexpr (std::decay_t<R>::is_error) {
-        detail::print(errorStream, "\n\n");
-        show_usage<Traits, T>(errorStream, argv);
+        output.error.print("\n\n");
+        show_usage<Traits, T>(output.error, argv);
       }
     },
     reason);

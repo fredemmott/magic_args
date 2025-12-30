@@ -10,11 +10,12 @@
 
 namespace magic_args::inline public_api {
 
-template <root_command_traits Traits, subcommand First, subcommand... Rest>
-auto parse_subcommands(
-  detail::argv_range auto&& argv,
-  FILE* outputStream = stdout,
-  FILE* errorStream = stderr) {
+template <
+  root_command_traits Traits,
+  subcommand First,
+  subcommand... Rest,
+  class TOutput = print_console_output>
+auto parse_subcommands(detail::argv_range auto&& argv, TOutput&& output = {}) {
   const auto ret = parse_subcommands_silent<Traits, First, Rest...>(argv);
   if (ret) [[likely]] {
     return ret;
@@ -24,10 +25,11 @@ auto parse_subcommands(
     detail::overloaded {
       [&]<incomplete_parse_reason T>(const T& reason) {
         detail::print_incomplete_command_parse_reason<Traits, First, Rest...>(
-          reason, argv, outputStream, errorStream);
+          reason, argv, output);
         if constexpr (T::is_error) {
-          detail::print(errorStream, "\n\n");
-          detail::show_command_usage<Traits, First, Rest...>(argv, errorStream);
+          output.error.print("\n\n");
+          detail::show_command_usage<Traits, First, Rest...>(
+            argv, output.error);
         }
       },
       [&]<subcommand T>(const incomplete_subcommand_parse_reason_t<T>& reason) {
@@ -36,20 +38,20 @@ auto parse_subcommands(
         using SubcommandTraits
           = detail::subcommand_parsing_traits_t<ParsingTraits, SubcommandArgs>;
         detail::print_incomplete_parse_reason<SubcommandTraits, SubcommandArgs>(
-          reason.value(), argv, outputStream, errorStream);
+          reason.value(), argv, output);
       },
     },
     ret.error());
   return ret;
 }
 
-template <subcommand First, subcommand... Rest>
-auto parse_subcommands(
-  detail::argv_range auto&& argv,
-  FILE* outputStream = stdout,
-  FILE* errorStream = stderr) {
+template <
+  subcommand First,
+  subcommand... Rest,
+  console_output TOut = print_console_output>
+auto parse_subcommands(detail::argv_range auto&& argv, TOut&& output = {}) {
   return parse_subcommands<gnu_style_parsing_traits, First, Rest...>(
-    argv, outputStream, errorStream);
+    argv, output);
 }
 
 }// namespace magic_args::inline public_api

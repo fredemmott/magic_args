@@ -5,9 +5,9 @@
 #include <fcntl.h>
 #include <io.h>
 
-#include "output.hpp"
+#include "test_output.hpp"
 
-void Output::reset() {
+void test_file_stream::reset() {
   this->wait();
   mData.clear();
 
@@ -21,5 +21,5 @@ void Output::reset() {
     = _open_osfhandle(reinterpret_cast<intptr_t>(write), _O_APPEND);
   mRead = _fdopen(readFd, "r");
   mWrite = _fdopen(writeFd, "w");
-  mFuture = std::async(std::launch::async, &Output::run, this);
+  mFuture = std::async(std::launch::async, &test_file_stream::run, this);
 }

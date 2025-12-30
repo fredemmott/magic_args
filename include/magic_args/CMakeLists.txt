@@ -12,10 +12,10 @@ set(
   detail/reflection.hpp
   gnu_style_parsing_traits.hpp
   detail/parsing_traits_for_args.hpp
-  detail/print.hpp
   argument_definitions.hpp
   detail/get_argument_definition.hpp
   detail/validation.hpp
+  console_output.hpp
   incomplete_parse_reason.hpp
   detail/from_string.hpp
   detail/to_formattable.hpp

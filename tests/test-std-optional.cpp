@@ -3,29 +3,22 @@
 #include <magic_args/magic_args.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include "arg-type-definitions.hpp"
-#include "output.hpp"
+#include "test_output.hpp"
 
 TEST_CASE("std::optional") {
   std::vector<std::string_view> argv {"my_test"};
-  Output out, err;
-  auto args = magic_args::parse<Optional>(argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  auto args = magic_args::parse_silent<Optional>(argv);
   REQUIRE(args.has_value());
   CHECK_FALSE(args->mValue.has_value());
 
   argv.push_back("--value=");
-  args = magic_args::parse<Optional>(argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  args = magic_args::parse_silent<Optional>(argv);
   REQUIRE(args.has_value());
   CHECK(args->mValue.has_value());
   CHECK(args->mValue.value() == "");
 
   argv.push_back("--value=foo");
-  args = magic_args::parse<Optional>(argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  args = magic_args::parse_silent<Optional>(argv);
   REQUIRE(args.has_value());
   CHECK(args->mValue.has_value());
   CHECK(args->mValue.value() == "foo");
@@ -33,25 +26,18 @@ TEST_CASE("std::optional") {
 
 TEST_CASE("option<std::optional>") {
   std::vector<std::string_view> argv {"my_test"};
-  Output out, err;
-  auto args = magic_args::parse<Optional>(argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  auto args = magic_args::parse_silent<Optional>(argv);
   REQUIRE(args.has_value());
   CHECK_FALSE(args->mDocumentedValue.has_value());
 
   argv.push_back("--documented-value=");
-  args = magic_args::parse<Optional>(argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  args = magic_args::parse_silent<Optional>(argv);
   REQUIRE(args.has_value());
   CHECK(args->mDocumentedValue.has_value());
   CHECK(args->mDocumentedValue.value() == "");
 
   argv.push_back("--documented-value=foo");
-  args = magic_args::parse<Optional>(argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  args = magic_args::parse_silent<Optional>(argv);
   REQUIRE(args.has_value());
   CHECK(args->mDocumentedValue.has_value());
   CHECK(args->mDocumentedValue.value() == "foo");
@@ -63,17 +49,12 @@ TEST_CASE("option<std::optional>") {
 
 TEST_CASE("optional_positional_argument<std::optional>") {
   std::vector<std::string_view> argv {"my_test"};
-  Output out, err;
-  auto args = magic_args::parse<Optional>(argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  auto args = magic_args::parse_silent<Optional>(argv);
   REQUIRE(args.has_value());
   CHECK_FALSE(args->mPositional.has_value());
 
   argv.emplace_back("");
-  args = magic_args::parse<Optional>(argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  args = magic_args::parse_silent<Optional>(argv);
   REQUIRE(args.has_value());
   REQUIRE(args->mPositional.has_value());
   CHECK(args->mPositional.value() == "");
@@ -81,9 +62,7 @@ TEST_CASE("optional_positional_argument<std::optional>") {
   argv.pop_back();
   argv.push_back("foo");
   CHECK(args->mPositional.value() == "");
-  args = magic_args::parse<Optional>(argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  args = magic_args::parse_silent<Optional>(argv);
   REQUIRE(args.has_value());
   REQUIRE(args->mPositional.has_value());
   CHECK(args->mPositional.value() == "foo");

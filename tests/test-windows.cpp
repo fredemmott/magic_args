@@ -11,7 +11,7 @@
 #include <string>
 
 #include "chomp.hpp"
-#include "output.hpp"
+#include "test_output.hpp"
 
 namespace TestWindows {
 struct MyArgs {
@@ -83,10 +83,7 @@ TEST_CASE("wWinMain", "[windows]") {
       "test",
     }));
 
-  Output out, err;
-  const auto args = magic_args::parse<MyArgs>(*argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  const auto args = magic_args::parse_silent<MyArgs>(*argv);
   REQUIRE(args.has_value());
   CHECK(args->mFoo == "💩");
   CHECK(args->mBar == "Dzień dobry");
@@ -115,10 +112,7 @@ TEST_CASE("winMain", "[windows]") {
       "test",
     }));
 
-  Output out, err;
-  const auto args = magic_args::parse<MyArgs>(*argv, out, err);
-  CHECK(out.empty());
-  CHECK(err.empty());
+  const auto args = magic_args::parse_silent<MyArgs>(*argv);
   REQUIRE(args.has_value());
   CHECK(args->mFoo == "💩");
   CHECK(args->mBar == "Dzień dobry");
