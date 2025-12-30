@@ -4,8 +4,13 @@
 
 #include <cstdio>
 #include <future>
-#include <magic_args/console_output.hpp>
 #include <string>
+
+#ifdef TEST_SINGLE_HEADER
+#include <magic_args/magic_args.hpp>
+#else
+#include <magic_args/console_output.hpp>
+#endif
 
 using test_output = magic_args::capture_console_output;
 
