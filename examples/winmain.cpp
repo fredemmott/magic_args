@@ -21,40 +21,27 @@ static void utf8_messagebox(const std::string& utf8, const unsigned int flags) {
   MessageBoxW(nullptr, wide.c_str(), L"magic_args sample", MB_OK | flags);
 }
 
-struct MyApp {
-  struct arguments_type {
-    bool mFoo {false};
-    std::string mBar;
-    std::string mBaz;
-  };
+struct MyArgs {
+  bool mFoo {false};
+  std::string mBar;
+  std::string mBaz;
+};
 
-  static int
-  main(const arguments_type& args, const HINSTANCE, const int /*nCmdShow*/) {
+// Could also use `magic_args::winmain_expected_t<MyArgs>, but this is clearer
+MAGIC_ARGS_WINMAIN(
+  const std::expected<MyArgs, magic_args::winmain_unexpected_t>& args,
+  HINSTANCE,
+  const int /*nCmdShow*/) {
+  if (args) [[likely]] {
     magic_args::capturing_console_output output;
-    magic_args::dump(args, output.out);
-
+    magic_args::dump(*args, output.out);
     utf8_messagebox(std::move(output).out_str(), MB_ICONINFORMATION);
     return EXIT_SUCCESS;
   }
 
-  static int unparsed_arguments_main(
-    const magic_args::incomplete_parse_reason_t& reason,
-    const std::string& output,
-    const HINSTANCE,
-    const int /*nCmdShow*/) {
-    utf8_messagebox(
-      output, is_error(reason) ? MB_ICONERROR : MB_ICONINFORMATION);
-    return is_error(reason) ? EXIT_FAILURE : EXIT_SUCCESS;
-  }
-
-  static int argv_encoding_error_main(
-    const magic_args::make_utf8_argv_error_t&,
-    const std::string& output,
-    const HINSTANCE,
-    const int /* nCmdShow */) {
-    utf8_messagebox(output, MB_ICONERROR);
-    return EXIT_FAILURE;
-  }
-};
-
-MAGIC_ARGS_WINMAIN(MyApp)
+  // `--version` and `--help` hit this path, but aren't errors
+  const auto isError = magic_args::is_error(args.error());
+  utf8_messagebox(
+    args.error().output, isError ? MB_ICONERROR : MB_ICONINFORMATION);
+  return isError ? EXIT_FAILURE : EXIT_SUCCESS;
+}
