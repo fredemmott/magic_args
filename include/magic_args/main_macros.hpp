@@ -4,10 +4,10 @@
 #define MAGIC_ARGS_MAIN_MACROS_HPP
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
-#include "detail/overloaded.hpp"
+#include "detail/print_utf8_error.hpp"
 #include "iconv.hpp"
 #include "parse.hpp"
-#include "windows.hpp"
+#include "windows/encoding.hpp"
 #endif
 
 namespace magic_args::detail {
@@ -16,58 +16,29 @@ using utf8_argv_t = decltype(public_api::make_utf8_argv(
   0,
   static_cast<const TChar* const*>(nullptr)))::value_type;
 
-template <auto TImpl, class TChar>
-int utf8_main(int argc, const TChar* const* argv) {
+template <auto TImpl>
+int utf8_main(const int argc, const auto* const* argv) {
   auto utf8 = public_api::make_utf8_argv(argc, argv);
-  if (!utf8) {
-    const auto handler = overloaded {
-      [](const invalid_parameter_t&) {
-        std::println(
-          stderr,
-          "Unable to convert argv to UTF-8 because an invalid argc/argv were "
-          "passed to the program by the operating system");
-      },
-      [](const only_utf8_supported_t& e) {
-        std::println(
-          stderr,
-          "This program requires input in UTF-8, however the input is in "
-          "`{}`",
-          e.mDetectedEncoding);
-      },
-      [](const encoding_not_supported_t& e) {
-        std::println(
-          stderr,
-          "argv is in `{0}`, but this program does not support converting "
-          "from `{0}` to UTF-8",
-          e.mDetectedEncoding);
-      },
-      [](const encoding_conversion_failed_t& e) {
-        std::println(
-          stderr,
-          "Converting from `{}` to UTF-8 failed ({})",
-          e.mDetectedEncoding,
-          e.mPlatformErrorCode.message());
-      },
-      [](const range_construction_failed_t& e) {
-        std::println(
-          stderr,
-          "Unable to create argv from command line: {}",
-          e.mPlatformErrorCode.message());
-      },
-    };
-    auto& error = utf8.error();
-    std::visit(handler, error);
+  if (!utf8) [[unlikely]] {
+    print_utf8_error(utf8.error(), print_text_sink {stderr});
     return EXIT_FAILURE;
   }
   return TImpl(*std::move(utf8));
 }
 
-template <class T>
-struct function_argument_type_t {
-  constexpr explicit function_argument_type_t(int (*)(T)) {
-  }
-  using type = std::remove_cvref_t<T>;
+template <auto V>
+struct function_meta;
+
+template <class R, class... Args, R (*F)(Args...)>
+struct function_meta<F> {
+  using return_type = R;
+  template <std::size_t N>
+  using argument_type = std::tuple_element_t<N, std::tuple<Args...>>;
+  static constexpr auto argument_count = sizeof...(Args);
 };
+
+template <auto V, std::size_t N = 0>
+using function_argument_type_t = function_meta<V>::template argument_type<N>;
 
 template <class T>
 struct argument_parsing_traits {
@@ -87,7 +58,7 @@ using argument_parsing_traits_t = argument_parsing_traits<T>::type;
 
 template <auto TImpl, class TArgv>
 int parsed_main(TArgv&& argv) {
-  using Parsed = decltype(function_argument_type_t {TImpl})::type;
+  using Parsed = std::remove_cvref_t<function_argument_type_t<TImpl>>;
   static_assert(
     std::same_as<std::invoke_result_t<decltype(TImpl), Parsed>, int>);
 

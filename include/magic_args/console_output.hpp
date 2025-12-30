@@ -80,7 +80,7 @@ class format_to_text_sink {
   }
 };
 
-class capture_console_output {
+class capturing_console_output {
   using iterator_type = std::back_insert_iterator<std::string>;
   using sink_type = format_to_text_sink<iterator_type>;
 
@@ -88,18 +88,21 @@ class capture_console_output {
   std::string mError;
 
  public:
-  capture_console_output() = default;
+  capturing_console_output() = default;
 
   sink_type out {std::back_inserter(mOut)};
   sink_type error {std::back_inserter(mError)};
 
+  template <class Self>
   [[nodiscard]]
-  const std::string& out_str() const noexcept {
-    return mOut;
+  decltype(auto) out_str(this Self&& self) noexcept {
+    return std::forward_like<Self>(self.mOut);
   }
+
+  template <class Self>
   [[nodiscard]]
-  const std::string& error_str() const noexcept {
-    return mError;
+  decltype(auto) error_str(this Self&& self) noexcept {
+    return std::forward_like<Self>(self.mError);
   }
 
   [[nodiscard]]
@@ -107,7 +110,7 @@ class capture_console_output {
     return mOut.empty() && mError.empty();
   }
 };
-static_assert(console_output<capture_console_output>);
+static_assert(console_output<capturing_console_output>);
 
 struct drop_console_output {
   struct sink {

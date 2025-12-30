@@ -12,7 +12,7 @@
 #include <magic_args/console_output.hpp>
 #endif
 
-using test_output = magic_args::capture_console_output;
+using test_output = magic_args::capturing_console_output;
 
 class test_file_stream {
  public:

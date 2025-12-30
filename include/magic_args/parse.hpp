@@ -13,14 +13,15 @@
 
 namespace magic_args::inline public_api {
 
-template <class T, console_output TOut = print_console_output>
+template <class T, console_output TConsole = print_console_output>
 std::expected<T, incomplete_parse_reason_t> parse(
   detail::argv_range auto&& argv,
-  TOut&& output = {}) {
+  TConsole&& console = {}) {
   const auto ret = parse_silent<T>(std::forward<decltype(argv)>(argv));
   if (!ret) [[unlikely]] {
     using Traits = detail::parsing_traits_for_args_t<T>;
-    detail::print_incomplete_parse_reason<Traits, T>(ret.error(), argv, output);
+    detail::print_incomplete_parse_reason<Traits, T>(
+      ret.error(), argv, console);
   }
   return ret;
 }

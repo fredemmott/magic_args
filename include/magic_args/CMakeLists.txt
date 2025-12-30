@@ -30,6 +30,7 @@ set(
   parse_silent.hpp
   parse.hpp
   magic_args.hpp
+  detail/print_utf8_error.hpp
   # Extensions that build on top of the core functionality
   ## Subcommands
   value_wrapper_t.hpp
@@ -43,13 +44,15 @@ set(
   subcommands/inspection.hpp
   subcommands.hpp
   ## Other extensions
+  enum.hpp
   powershell_style_parsing_traits.hpp
   verbatim_names.hpp
-  detail/win32_api.hpp
-  windows.hpp
+  windows/win32_api.hpp
+  windows/encoding.hpp
   iconv.hpp
-  enum.hpp
   main_macros.hpp
+  windows/winmain.hpp
+  windows.hpp
 )
 
 # Safety check: verify all .hpp files are listed in HEADER_FILES, so the header-only

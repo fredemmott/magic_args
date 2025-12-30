@@ -54,6 +54,8 @@ inline const WIN32_HANDLE WIN32_INVALID_HANDLE_VALUE
 
 }// namespace magic_args::detail::inline win32_definitions
 
+struct HINSTANCE__;
+
 extern "C" __declspec(dllimport) unsigned long __stdcall GetLastError();
 extern "C" __declspec(dllimport) int __stdcall WideCharToMultiByte(
   unsigned int CodePage,
