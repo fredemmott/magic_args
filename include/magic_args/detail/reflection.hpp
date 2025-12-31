@@ -324,6 +324,13 @@ consteval auto demangle_type() {
 #endif
 }
 
+// Apple Clang 16.0 (XCode 16.2, latest as of 2025-01-03) won't allow
+// a raw T* as a template parameter, but it will allow one of these
+template <class T>
+struct apple_workaround_t {
+  T* ptr {nullptr};
+};
+
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wundefined-var-template"
@@ -334,16 +341,13 @@ consteval auto demangle_type() {
 template <class T>
 extern T external;
 
-// Apple Clang 16.0 (XCode 16.2, latest as of 2025-01-03) won't allow
-// a raw T* as a template parameter, but it will allow one of these
-template <class T>
-struct apple_workaround_t {
-  T* ptr {nullptr};
-};
-
 template <class T, std::size_t N>
 constexpr auto mangled_name_by_index
   = mangled_name<apple_workaround_t {&std::get<N>(tie_struct(external<T>))}>();
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 template <class T, std::size_t N>
 constexpr auto member_name_by_index
@@ -360,10 +364,6 @@ template <class T, std::size_t I>
 constexpr auto default_value_by_index() {
   return std::get<I>(tie_struct(T {}));
 }
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 }// namespace magic_args::detail
 
