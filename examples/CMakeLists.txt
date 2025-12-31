@@ -22,6 +22,8 @@ function(add_example PRIMARY_SOURCE)
   set_target_properties("${TARGET}" PROPERTIES OUTPUT_NAME "${EXAMPLE_NAME}")
 
   if (ARG_SUBCOMMANDS AND BUILD_UTILITIES)
+    # Links are only actually usable for multicall executables, but build them
+    # for all subcommands to check that subcommand introspection works
     magic_args_enumerate_subcommands(
       "${TARGET}"
       HARDLINKS_DIR "${CMAKE_CURRENT_BINARY_DIR}/$<TARGET_FILE_BASE_NAME:${TARGET}>-links"
