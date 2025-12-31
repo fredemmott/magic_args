@@ -2,7 +2,10 @@ if (APPLE)
   find_package(Iconv REQUIRED)
 endif ()
 
-set(SUBCOMMAND_EXAMPLES)
+if (BUILD_UTILITIES)
+  # Needs the 'enumerate-subcommands' utility
+  include(MagicArgs)
+endif ()
 
 function(add_example PRIMARY_SOURCE)
   cmake_path(GET PRIMARY_SOURCE STEM EXAMPLE_NAME)
@@ -13,21 +16,21 @@ function(add_example PRIMARY_SOURCE)
   set(multiValueArgs LINK_LIBRARIES)
   cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-  if (ARG_SUBCOMMANDS)
-    list(APPEND SUBCOMMAND_EXAMPLES "${TARGET}")
-  endif ()
-
-
   add_executable("${TARGET}" ${ARG_UNPARSED_ARGUMENTS} "${PRIMARY_SOURCE}")
   target_link_libraries("${TARGET}" PRIVATE magic_args "${ARG_LINK_LIBRARIES}")
 
   set_target_properties("${TARGET}" PROPERTIES OUTPUT_NAME "${EXAMPLE_NAME}")
 
+  if (ARG_SUBCOMMANDS AND BUILD_UTILITIES)
+    magic_args_enumerate_subcommands(
+      "${TARGET}"
+      HARDLINKS_DIR "${CMAKE_CURRENT_BINARY_DIR}/$<TARGET_FILE_BASE_NAME:${TARGET}>-links"
+    )
+  endif ()
+
   if (APPLE)
     target_link_libraries("${TARGET}" PRIVATE Iconv::Iconv)
   endif ()
-
-  return(PROPAGATE SUBCOMMAND_EXAMPLES)
 endfunction()
 
 add_example(minimal.cpp)
@@ -60,15 +63,7 @@ if (WIN32)
   )
 endif ()
 
-# The cmake command needs the 'enumerate-subcommands' utility
 if (BUILD_UTILITIES)
-  include(MagicArgs)
-  foreach (TARGET IN LISTS SUBCOMMAND_EXAMPLES)
-    magic_args_enumerate_subcommands(
-      "${TARGET}"
-      HARDLINKS_DIR "${CMAKE_CURRENT_BINARY_DIR}/$<TARGET_FILE_BASE_NAME:${TARGET}>-links"
-    )
-  endforeach ()
   option(INSTALL_MULTICALL_EXAMPLE "Install the multi-call example and symlinks" OFF)
   if (INSTALL_MULTICALL_EXAMPLE)
     install(TARGETS example-multicall)
