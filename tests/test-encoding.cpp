@@ -70,7 +70,7 @@ static bool IsInvalidByteSequence(const magic_args::make_utf8_argv_error_t& e) {
   if (!p) {
     return false;
   }
-  return p->mPlatformErrorCode.value() == InvalidBytes;
+  return p->error_code.value() == InvalidBytes;
 }
 
 TEST_CASE("invalid UTF-8") {

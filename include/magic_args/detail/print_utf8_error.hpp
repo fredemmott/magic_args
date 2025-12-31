@@ -21,7 +21,7 @@ void print_utf8_error(
   console.println(
     "This program requires input in UTF-8, however the input is in "
     "`{}`",
-    e.mDetectedEncoding);
+    e.detected_encoding);
 }
 
 void print_utf8_error(
@@ -30,7 +30,7 @@ void print_utf8_error(
   console.println(
     "argv is in `{0}`, but this program does not support converting "
     "from `{0}` to UTF-8",
-    e.mDetectedEncoding);
+    e.detected_encoding);
 }
 
 void print_utf8_error(
@@ -38,16 +38,15 @@ void print_utf8_error(
   text_sink auto&& console) {
   console.println(
     "Converting from `{}` to UTF-8 failed ({})",
-    e.mDetectedEncoding,
-    e.mPlatformErrorCode.message());
+    e.detected_encoding,
+    e.error_code.message());
 }
 
 void print_utf8_error(
   const range_construction_failed_t& e,
   text_sink auto&& console) {
   console.println(
-    "Unable to create argv from command line: {}",
-    e.mPlatformErrorCode.message());
+    "Unable to create argv from command line: {}", e.error_code.message());
 }
 
 void print_utf8_error(

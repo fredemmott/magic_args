@@ -47,23 +47,23 @@ struct invalid_parameter_t {
     = default;
 };
 struct only_utf8_supported_t {
-  std::string mDetectedEncoding;
+  std::string detected_encoding;
   bool operator==(const only_utf8_supported_t&) const noexcept = default;
 };
 struct encoding_not_supported_t {
-  std::string mDetectedEncoding;
-  std::error_code mPlatformErrorCode;
+  std::string detected_encoding;
+  std::error_code error_code;
   bool operator==(const encoding_not_supported_t&) const noexcept = default;
 };
 
 struct encoding_conversion_failed_t {
-  std::string mDetectedEncoding;
-  std::error_code mPlatformErrorCode;
+  std::string detected_encoding;
+  std::error_code error_code;
   bool operator==(const encoding_conversion_failed_t&) const noexcept = default;
 };
 // e.g. CommandLineToArgvW()
 struct range_construction_failed_t {
-  std::error_code mPlatformErrorCode;
+  std::error_code error_code;
   bool operator==(const range_construction_failed_t&) const noexcept = default;
 };
 

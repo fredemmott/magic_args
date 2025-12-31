@@ -30,8 +30,7 @@ std::optional<DWORD> GetEncodingError(
   if (!p) {
     return std::nullopt;
   }
-  if (const auto code = p->mPlatformErrorCode.value();
-      std::in_range<DWORD>(code)) {
+  if (const auto code = p->error_code.value(); std::in_range<DWORD>(code)) {
     return static_cast<DWORD>(code);
   }
   return std::nullopt;
