@@ -57,14 +57,6 @@ using winmain_unexpected_t = with_output<
 template <class T>
 using winmain_expected_t = std::expected<T, winmain_unexpected_t>;
 
-inline bool is_error(const winmain_unexpected_t& unexpected) noexcept {
-  return std::visit(
-    detail::overloaded {
-      []<incomplete_parse_reason T>(const T&) { return T::is_error; },
-      [](const auto&) { return true; }},
-    unexpected.value);
-}
-
 template <auto T>
 concept winmain_handler = detail::matches_signature<
   T,

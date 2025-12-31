@@ -41,7 +41,6 @@ set(
   subcommands/invocable_declarations.hpp
   subcommands/invoke_subcommands.hpp
   subcommands/invoke_multicall.hpp
-  subcommands/is_error.hpp
   subcommands/inspection.hpp
   subcommands/main_macros.hpp
   ## Other extensions

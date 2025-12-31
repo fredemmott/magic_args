@@ -7,7 +7,6 @@
 #include <magic_args/main_macros.hpp>
 #include "subcommands/inspection.hpp"
 #include "subcommands/invoke_subcommands.hpp"
-#include "subcommands/is_error.hpp"
 #endif
 
 namespace magic_args::inline public_api {
