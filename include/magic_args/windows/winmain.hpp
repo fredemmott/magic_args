@@ -153,9 +153,6 @@ struct winmain_impl {
 
 }// namespace magic_args::detail
 
-#endif
-#endif
-
 #define MAGIC_ARGS_UTF8_WINMAIN(...) \
   static int magic_args_utf8_winmain(__VA_ARGS__); \
   int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow) { \
@@ -174,3 +171,6 @@ struct winmain_impl {
       std::move(args), hInstance, nCmdShow); \
   } \
   int magic_args_winmain(__VA_ARGS__)
+
+#endif
+#endif
