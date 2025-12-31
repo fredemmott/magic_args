@@ -26,20 +26,6 @@ int utf8_main(const int argc, const auto* const* argv) {
   return TImpl(*std::move(utf8));
 }
 
-template <auto V>
-struct function_meta;
-
-template <class R, class... Args, R (*F)(Args...)>
-struct function_meta<F> {
-  using return_type = R;
-  template <std::size_t N>
-  using argument_type = std::tuple_element_t<N, std::tuple<Args...>>;
-  static constexpr auto argument_count = sizeof...(Args);
-};
-
-template <auto V, std::size_t N = 0>
-using function_argument_type_t = function_meta<V>::template argument_type<N>;
-
 template <class T>
 struct argument_parsing_traits {
   using type = gnu_style_parsing_traits;

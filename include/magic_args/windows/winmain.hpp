@@ -5,27 +5,30 @@
 #ifdef _WIN32
 
 #ifndef MAGIC_ARGS_SINGLE_FILE
-#include <magic_args/main_macros.hpp>
+#include <magic_args/detail/reflection.hpp>
 #include "encoding.hpp"
 #include "win32_api.hpp"
 #endif
 
-#include <concepts>
+namespace magic_args::detail {
+template <class T, class U>
+struct variant_cat {};
+
+template <class... Ts, class... Us>
+struct variant_cat<std::variant<Ts...>, std::variant<Us...>> {
+  using type = std::variant<Ts..., Us...>;
+};
+
+template <class... Ts>
+using variant_cat_t = variant_cat<Ts...>::type;
+
+}// namespace magic_args::detail
 
 namespace magic_args::inline public_api {
 
-template <class F, class Signature>
-struct matches_signature_t : std::false_type {};
-template <class F, class Ret, class... Args>
-struct matches_signature_t<F, Ret(Args...)> {
-  static constexpr bool value = std::is_invocable_r_v<Ret, F, Args...>;
-};
-template <auto F, class Signature>
-concept matches_signature = matches_signature_t<decltype(F), Signature>::value;
-
 template <class T, class Signature>
 concept with_main
-  = requires { &T::main; } && matches_signature<&T::main, Signature>;
+  = requires { &T::main; } && detail::matches_signature<&T::main, Signature>;
 
 template <class T>
 struct with_output {
@@ -45,23 +48,12 @@ using utf8_winmain_expected_t
   = std::expected<utf8_winmain_argv_t, utf8_winmain_unexpected_t>;
 
 template <auto T>
-concept utf8_winmain_handler = matches_signature<
+concept utf8_winmain_handler = detail::matches_signature<
   T,
   int(utf8_winmain_expected_t argv, HINSTANCE__* instance, int nCmdShow)>;
 
-template <class T, class U>
-struct variant_cat {};
-
-template <class... Ts, class... Us>
-struct variant_cat<std::variant<Ts...>, std::variant<Us...>> {
-  using type = std::variant<Ts..., Us...>;
-};
-
-template <class... Ts>
-using variant_cat_t = variant_cat<Ts...>::type;
-
 using winmain_unexpected_t = with_output<
-  variant_cat_t<make_utf8_argv_error_t, incomplete_parse_reason_t>>;
+  detail::variant_cat_t<make_utf8_argv_error_t, incomplete_parse_reason_t>>;
 template <class T>
 using winmain_expected_t = std::expected<T, winmain_unexpected_t>;
 
@@ -74,7 +66,7 @@ inline bool is_error(const winmain_unexpected_t& unexpected) noexcept {
 }
 
 template <auto T>
-concept winmain_handler = matches_signature<
+concept winmain_handler = detail::matches_signature<
   T,
   int(
     winmain_expected_t<typename std::remove_cvref_t<

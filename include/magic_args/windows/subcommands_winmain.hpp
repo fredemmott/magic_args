@@ -17,7 +17,7 @@ struct subcommands_winmain_unexpected {};
 template <class First, class... Rest>
 struct subcommands_winmain_unexpected<
   invocable_subcommands_list<First, Rest...>> {
-  using type = with_output<variant_cat_t<
+  using type = with_output<detail::variant_cat_t<
     make_utf8_argv_error_t,
     incomplete_command_parse_reason_t<First, Rest...>>>;
 };

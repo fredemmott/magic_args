@@ -365,6 +365,29 @@ constexpr auto default_value_by_index() {
   return std::get<I>(tie_struct(T {}));
 }
 
+template <class F, class Signature>
+struct matches_signature_t : std::false_type {};
+template <class F, class Ret, class... Args>
+struct matches_signature_t<F, Ret(Args...)> {
+  static constexpr bool value = std::is_invocable_r_v<Ret, F, Args...>;
+};
+template <auto F, class Signature>
+concept matches_signature = matches_signature_t<decltype(F), Signature>::value;
+
+template <auto V>
+struct function_meta;
+
+template <class R, class... Args, R (*F)(Args...)>
+struct function_meta<F> {
+  using return_type = R;
+  template <std::size_t N>
+  using argument_type = std::tuple_element_t<N, std::tuple<Args...>>;
+  static constexpr auto argument_count = sizeof...(Args);
+};
+
+template <auto V, std::size_t N = 0>
+using function_argument_type_t = function_meta<V>::template argument_type<N>;
+
 }// namespace magic_args::detail
 
 #endif
