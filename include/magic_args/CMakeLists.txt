@@ -68,6 +68,11 @@ foreach (HPP_FILE ${ALL_HPP_FILES})
     message(FATAL_ERROR "Header file '${HPP_FILE}' is not listed in HEADER_FILES in ${CMAKE_CURRENT_LIST_FILE}")
   endif ()
 endforeach ()
+foreach (FILE IN LISTS HEADER_FILES)
+  if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${FILE}")
+    message(FATAL_ERROR "'${FILE}' is listed in HEADER_SOURCES, but does not exist")
+  endif ()
+endforeach ()
 
 
 target_sources(
