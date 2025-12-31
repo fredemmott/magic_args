@@ -32,17 +32,20 @@ struct with_output {
   T value {};
   std::string output;
 };
-using utf8_winmain_unexpected_t = with_output<make_utf8_argv_error_t>;
-using utf8_winmain_expected_t = std::expected<
-  std::remove_cvref_t<decltype(make_utf8_argv())>::value_type,
-  utf8_winmain_unexpected_t>;
-
-constexpr bool is_error(const utf8_winmain_unexpected_t&) noexcept {
-  return true;
-}
 
 template <class T>
-concept utf8_winmain_handler = with_main<
+constexpr bool is_error(const with_output<T>& reason) {
+  return is_error(reason.value);
+}
+
+using utf8_winmain_argv_t
+  = std::remove_cvref_t<decltype(make_utf8_argv())>::value_type;
+using utf8_winmain_unexpected_t = with_output<make_utf8_argv_error_t>;
+using utf8_winmain_expected_t
+  = std::expected<utf8_winmain_argv_t, utf8_winmain_unexpected_t>;
+
+template <auto T>
+concept utf8_winmain_handler = matches_signature<
   T,
   int(utf8_winmain_expected_t argv, HINSTANCE__* instance, int nCmdShow)>;
 
@@ -83,17 +86,18 @@ concept winmain_handler = matches_signature<
 
 namespace magic_args::detail {
 
-template <utf8_winmain_handler T>
+template <auto TMain>
+  requires utf8_winmain_handler<TMain>
 [[nodiscard]]
 int utf8_winmain(HINSTANCE__* hInstance, int nCmdShow) {
   auto utf8 = make_utf8_argv();
   if (utf8) [[likely]] {
-    return T::main(*std::move(utf8), hInstance, nCmdShow);
+    return TMain(*std::move(utf8), hInstance, nCmdShow);
   }
 
   capturing_console_output console;
   print_utf8_error(utf8.error(), console.error);
-  return T::main(
+  return TMain(
     std::unexpected {utf8_winmain_unexpected_t {
       std::move(utf8).error(),
       std::move(console).error_str(),
@@ -152,13 +156,21 @@ struct winmain_impl {
 #endif
 #endif
 
-#define MAGIC_ARGS_UTF8_WINMAIN(HANDLER) \
+#define MAGIC_ARGS_UTF8_WINMAIN(...) \
+  static int magic_args_utf8_winmain(__VA_ARGS__); \
   int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow) { \
-    return magic_args::detail::utf8_winmain<HANDLER>(hInstance, nCmdShow); \
-  }
+    return magic_args::detail::utf8_winmain<&magic_args_utf8_winmain>( \
+      hInstance, nCmdShow); \
+  } \
+  int magic_args_utf8_winmain(__VA_ARGS__)
 
 #define MAGIC_ARGS_WINMAIN(...) \
   static int magic_args_winmain(__VA_ARGS__); \
   MAGIC_ARGS_UTF8_WINMAIN( \
-    magic_args::detail::winmain_impl<&magic_args_winmain>) \
+    magic_args::utf8_winmain_expected_t&& args, \
+    HINSTANCE hInstance, \
+    int nCmdShow) { \
+    return magic_args::detail::winmain_impl<&magic_args_winmain>::main( \
+      std::move(args), hInstance, nCmdShow); \
+  } \
   int magic_args_winmain(__VA_ARGS__)

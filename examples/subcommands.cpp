@@ -28,7 +28,7 @@ struct CommandHerp {
   };
 
   static int main(arguments_type&& args) {
-    std::println("in CommandFooBar::main");
+    std::println("in CommandHerp::main");
     magic_args::dump(args);
     return EXIT_SUCCESS;
   }

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22..4.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.25..4.20 FATAL_ERROR)
 
 if (CMAKE_TOOLCHAIN_FILE)
   # Suppress bogus unused variable warning

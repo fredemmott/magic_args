@@ -14,14 +14,13 @@ template <
   root_command_traits Traits,
   invocable_subcommand First,
   compatible_invocable_subcommand<First>... Rest,
-  console_output TOut = print_console_output,
-  class TSuccess = std::
-    invoke_result_t<decltype(First::main), typename First::arguments_type&&>,
+  console_output TConsole = print_console_output,
+  class TSuccess = subcommand_return_t<First>,
   class TIncomplete = incomplete_command_parse_reason_t<First, Rest...>,
   class TExpected = std::expected<TSuccess, TIncomplete>>
 TExpected invoke_subcommands(
   detail::argv_range auto&& argv,
-  TOut&& output = {}) {
+  TConsole&& output = {}) {
   auto result = parse_subcommands<Traits, First, Rest...>(argv, output);
   if (!result) [[unlikely]] {
     return std::unexpected {std::move(result).error()};
@@ -42,28 +41,41 @@ TExpected invoke_subcommands(
 template <
   invocable_subcommand First,
   compatible_invocable_subcommand<First>... Rest,
-  console_output TOut = print_console_output>
-auto invoke_subcommands(detail::argv_range auto&& argv, TOut&& output = {}) {
+  detail::argv_range TArgv,
+  console_output TConsole = print_console_output>
+auto invoke_subcommands(TArgv&& argv, TConsole&& console = {}) {
   return invoke_subcommands<gnu_style_parsing_traits, First, Rest...>(
-    std::forward<decltype(argv)>(argv), output);
+    std::forward<TArgv>(argv), std::forward<TConsole>(console));
 }
 
+/** Invoke using a subcommands list from the root.
+ *
+ * e.g.
+ *
+ * ```
+ * struct Root {
+ *   using subcommands = magic_args::subcommands_list<Foo, Bar>;
+ * };
+ * ```
+ */
 template <
-  root_command_traits Traits,
-  invocable_subcommand First,
-  compatible_invocable_subcommand<First>... Rest>
-auto invoke_subcommands_silent(detail::argv_range auto&& argv) {
-  return invoke_subcommands<Traits, First, Rest...>(
-    argv, drop_console_output {});
+  root_command_traits Root,
+  detail::argv_range TArgv,
+  console_output TConsole = print_console_output>
+  requires requires { typename Root::subcommands; }
+auto invoke_subcommands(TArgv&& argv, TConsole&& console) {
+  return [&]<
+           invocable_subcommand First,
+           compatible_invocable_subcommand<First>... Rest>(
+           invocable_subcommands_list<First, Rest...>) {
+    return invoke_subcommands<Root, First, Rest...>(
+      std::forward<TArgv>(argv), std::forward<TConsole>(console));
+  }(typename Root::subcommands {});
 }
 
-// Convenience helper, assuming gnu_style_parsing_traits
-template <
-  invocable_subcommand First,
-  compatible_invocable_subcommand<First>... Rest>
+template <class... Ts>
 auto invoke_subcommands_silent(detail::argv_range auto&& argv) {
-  return invoke_subcommands_silent<gnu_style_parsing_traits, First, Rest...>(
-    std::forward<decltype(argv)>(argv));
+  return invoke_subcommands<Ts...>(argv, drop_console_output {});
 }
 
 }// namespace magic_args::inline public_api

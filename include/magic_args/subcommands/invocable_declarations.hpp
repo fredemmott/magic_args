@@ -13,14 +13,20 @@ template <class T>
 concept invocable_subcommand = subcommand<T>
   && requires(typename T::arguments_type&& args) { T::main(std::move(args)); };
 
-template <class T, class TOther>
+template <invocable_subcommand T>
+using subcommand_return_t = std::remove_cvref_t<
+  std::invoke_result_t<decltype(T::main), typename T::arguments_type&&>>;
+
+template <class T, class U>
 concept compatible_invocable_subcommand
-  = invocable_subcommand<T> && invocable_subcommand<TOther>
-  && std::same_as<
-      std::invoke_result_t<decltype(T::main), typename T::arguments_type&&>,
-      std::invoke_result_t<
-        decltype(TOther::main),
-        typename TOther::arguments_type&&>>;
+  = invocable_subcommand<T> && invocable_subcommand<U>
+  && std::same_as<subcommand_return_t<T>, subcommand_return_t<U>>;
+
+template <subcommand First, compatible_invocable_subcommand<First>... Rest>
+struct invocable_subcommands_list {
+  using return_type = std::remove_cvref_t<subcommand_return_t<First>>;
+};
+
 }// namespace magic_args::inline public_api
 
 #endif

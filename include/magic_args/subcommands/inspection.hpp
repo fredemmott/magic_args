@@ -7,6 +7,7 @@
 #ifndef MAGIC_ARGS_SINGLE_FILE
 #include <magic_args/detail/constexpr_strings.hpp>
 #include "declarations.hpp"
+#include "invocable_declarations.hpp"
 #endif
 
 #ifdef _WIN32
@@ -45,6 +46,18 @@ struct subcommands_list_t<Traits, First, Rest...> {
 template <subcommand First, subcommand... Rest>
 struct subcommands_list_t<First, Rest...>
   : subcommands_list_t<gnu_style_parsing_traits, First, Rest...> {};
+
+template <class Traits>
+  requires requires { typename Traits::subcommands; }
+struct subcommands_list_t<Traits> {
+  static constexpr auto value
+    = []<
+        invocable_subcommand First,
+        compatible_invocable_subcommand<First>... Rest>(
+        invocable_subcommands_list<First, Rest...>) {
+        return subcommands_list_t<Traits, First, Rest...>::value;
+      }(typename Traits::subcommands {});
+};
 
 template <class... Args>
 struct introspectable_subcommands_list_t {

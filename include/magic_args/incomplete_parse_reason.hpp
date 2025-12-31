@@ -140,17 +140,21 @@ using incomplete_parse_reason_t = detail::constrained_pack<
     too_many_arguments,
     invalid_argument_value>;
 
-template <incomplete_parse_reason T>
+template <class T>
+  requires requires {
+    T::is_error;
+    { T::is_error } -> std::convertible_to<bool>;
+  }
 [[nodiscard]]
-constexpr bool is_error(T&&) noexcept {
-  return std::decay_t<T>::is_error;
+constexpr bool is_error(const T&) noexcept {
+  return std::remove_cvref_t<T>::is_error;
 }
 
-template <incomplete_parse_reason... Ts>
+template <class... Ts>
+  requires requires(Ts... vs) { (is_error(vs) && ...); }
 [[nodiscard]]
 constexpr bool is_error(const std::variant<Ts...>& reason) {
-  return std::visit(
-    []<class T>(T&&) { return std::decay_t<T>::is_error; }, reason);
+  return std::visit([](const auto& v) { return is_error(v); }, reason);
 }
 
 }// namespace magic_args::inline public_api

@@ -11,7 +11,7 @@
 #include <type_traits>
 
 namespace magic_args::detail {
-struct empty_t final {};
+struct empty_t {};
 }// namespace magic_args::detail
 
 namespace magic_args::inline public_api {

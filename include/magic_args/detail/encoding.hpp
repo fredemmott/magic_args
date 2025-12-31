@@ -74,6 +74,12 @@ using make_utf8_argv_error_t = std::variant<
   encoding_conversion_failed_t,
   range_construction_failed_t>;
 static_assert(std::equality_comparable<make_utf8_argv_error_t>);
+
+constexpr bool is_error(
+  const std::convertible_to<make_utf8_argv_error_t> auto&) {
+  return true;
+}
+
 }// namespace magic_args::inline public_api
 
 namespace magic_args::detail {

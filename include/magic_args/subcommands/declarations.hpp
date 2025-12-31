@@ -125,6 +125,11 @@ struct incomplete_subcommand_parse_reason_t : TParent {
   using TParent::operator*;
 };
 
+template <subcommand T>
+constexpr bool is_error(const incomplete_subcommand_parse_reason_t<T>& v) {
+  return is_error(v.value());
+}
+
 template <subcommand First, subcommand... Rest>
 using incomplete_command_parse_reason_t = std::variant<
   help_requested,

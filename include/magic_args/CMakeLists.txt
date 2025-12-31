@@ -40,9 +40,10 @@ set(
   subcommands/parse_subcommands.hpp
   subcommands/invocable_declarations.hpp
   subcommands/invoke_subcommands.hpp
+  subcommands/invoke_multicall.hpp
   subcommands/is_error.hpp
   subcommands/inspection.hpp
-  subcommands.hpp
+  subcommands/main_macros.hpp
   ## Other extensions
   enum.hpp
   powershell_style_parsing_traits.hpp
@@ -52,6 +53,10 @@ set(
   iconv.hpp
   main_macros.hpp
   windows/winmain.hpp
+  windows/subcommands_winmain.hpp
+  windows/multicall_winmain.hpp
+  # Top-level headers that should only include other headers
+  subcommands.hpp
   windows.hpp
 )
 
