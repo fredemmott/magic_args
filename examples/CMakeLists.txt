@@ -4,58 +4,58 @@ endif ()
 
 set(SUBCOMMAND_EXAMPLES)
 
-function(add_example TARGET)
+function(add_example PRIMARY_SOURCE)
+  cmake_path(GET PRIMARY_SOURCE STEM EXAMPLE_NAME)
+  set(TARGET "example-${EXAMPLE_NAME}")
+
   set(options SUBCOMMANDS)
   set(oneValueArgs "")
-  set(multiValueArgs LIBRARIES)
+  set(multiValueArgs LINK_LIBRARIES)
   cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if (ARG_SUBCOMMANDS)
     list(APPEND SUBCOMMAND_EXAMPLES "${TARGET}")
   endif ()
 
-  add_executable("${TARGET}" ${ARG_UNPARSED_ARGUMENTS})
-  target_link_libraries("${TARGET}" PRIVATE magic_args)
+
+  add_executable("${TARGET}" ${ARG_UNPARSED_ARGUMENTS} "${PRIMARY_SOURCE}")
+  target_link_libraries("${TARGET}" PRIVATE magic_args "${ARG_LINK_LIBRARIES}")
+
+  set_target_properties("${TARGET}" PROPERTIES OUTPUT_NAME "${EXAMPLE_NAME}")
+
   if (APPLE)
     target_link_libraries("${TARGET}" PRIVATE Iconv::Iconv)
   endif ()
 
-  foreach (LIBRARY IN LISTS ARG_LIBRARIES)
-    target_link_libraries("${TARGET}" PRIVATE "${LIBRARY}")
-  endforeach ()
-
   return(PROPAGATE SUBCOMMAND_EXAMPLES)
 endfunction()
 
-add_example(example-minimal minimal.cpp)
-add_example(example-minimal-powershell-style minimal-powershell-style.cpp)
-add_example(example-everything everything.cpp)
-add_example(example-subcommands subcommands.cpp)
-add_example(example-multicall SUBCOMMANDS multicall.cpp)
-add_example(example-multicall-powershell-style SUBCOMMANDS multicall-powershell-style.cpp)
+add_example(minimal.cpp)
+add_example(minimal-powershell-style.cpp)
+add_example(everything.cpp)
+add_example(subcommands.cpp)
+add_example(multicall.cpp SUBCOMMANDS)
+add_example(multicall-powershell-style.cpp SUBCOMMANDS)
 
 if (WIN32)
   add_library(win32-utf8-messagebox OBJECT win32_utf8_messagebox.cpp win32_utf8_messagebox.hpp)
   target_compile_features(win32-utf8-messagebox PUBLIC cxx_std_23)
   add_example(
-    example-winmain
-    WIN32
     winmain.cpp
-    LIBRARIES
+    WIN32
+    LINK_LIBRARIES
     win32-utf8-messagebox
   )
   add_example(
-    example-winmain-subcommands
-    WIN32 SUBCOMMANDS
     winmain-subcommands.cpp
-    LIBRARIES
+    WIN32 SUBCOMMANDS
+    LINK_LIBRARIES
     win32-utf8-messagebox
   )
   add_example(
-    example-winmain-multicall
-    WIN32 SUBCOMMANDS
     winmain-multicall.cpp
-    LIBRARIES
+    WIN32 SUBCOMMANDS
+    LINK_LIBRARIES
     win32-utf8-messagebox
   )
 endif ()
@@ -66,7 +66,7 @@ if (BUILD_UTILITIES)
   foreach (TARGET IN LISTS SUBCOMMAND_EXAMPLES)
     magic_args_enumerate_subcommands(
       "${TARGET}"
-      HARDLINKS_DIR "${CMAKE_CURRENT_BINARY_DIR}/$<TARGET_NAME:${TARGET}>-links"
+      HARDLINKS_DIR "${CMAKE_CURRENT_BINARY_DIR}/$<TARGET_FILE_BASE_NAME:${TARGET}>-links"
     )
   endforeach ()
   option(INSTALL_MULTICALL_EXAMPLE "Install the multi-call example and symlinks" OFF)
