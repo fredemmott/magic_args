@@ -63,4 +63,4 @@ struct Root {
   }
 };
 
-MAGIC_ARGS_MULTI_CALL_WINMAIN(Root);
+MAGIC_ARGS_MULTICALL_WINMAIN(Root);

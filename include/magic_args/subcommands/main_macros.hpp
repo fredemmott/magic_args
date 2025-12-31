@@ -20,7 +20,7 @@
     return magic_args::is_error(ok.error()) ? EXIT_FAILURE : EXIT_SUCCESS; \
   }
 
-#define MAGIC_ARGS_MULTI_CALL_MAIN(...) \
+#define MAGIC_ARGS_MULTICALL_MAIN(...) \
   MAGIC_ARGS_MAKE_SUBCOMMANDS_INSPECTABLE(__VA_ARGS__) \
   MAGIC_ARGS_UTF8_MAIN(argv) { \
     const auto ok = magic_args::invoke_multicall<__VA_ARGS__>( \

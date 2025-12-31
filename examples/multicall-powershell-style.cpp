@@ -39,4 +39,4 @@ struct RootInfo {
 };
 
 // Invoke as `foo` or `herp`, *not* `example-multicall foo`
-MAGIC_ARGS_MULTI_CALL_MAIN(RootInfo, CommandFooBar, CommandHerp);
+MAGIC_ARGS_MULTICALL_MAIN(RootInfo, CommandFooBar, CommandHerp);

@@ -27,7 +27,7 @@ auto multicall_winmain(
 
 }// namespace magic_args::detail
 
-#define MAGIC_ARGS_MULTI_CALL_WINMAIN(ROOT) \
+#define MAGIC_ARGS_MULTICALL_WINMAIN(ROOT) \
   MAGIC_ARGS_MAKE_SUBCOMMANDS_INSPECTABLE(ROOT) \
   MAGIC_ARGS_UTF8_WINMAIN( \
     magic_args::utf8_winmain_expected_t&& args, \

@@ -21,7 +21,7 @@ parent: Features
 - use the main macros:
   - `MAGIC_ARGS_MAIN(MyArgs&& args) { return 0; }`
   - `MAGIC_ARGS_SUBCOMMANDS_MAIN(CommandFoo, CommandBar, ...);`
-  - `MAGIC_ARGS_MULTI_CALL_MAIN(CommandFoo, CommandBar, ...);`
+  - `MAGIC_ARGS_MULTICALL_MAIN(CommandFoo, CommandBar, ...);`
   - or, the lower-level `MAGIC_ARGS_UTF8_MAIN(utf8_argv) { ... }` macro
 - with Visual Studio, pass `/utf-8`
 

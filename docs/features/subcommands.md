@@ -94,7 +94,7 @@ MAGIC_ARGS_SUBCOMMANDS_MAIN(MyRootInfo, CommandFoo, CommandBar);
 
 End users can get a list of subcommands by invoking with `--help`, or by providing an invalid subcommand name.
 
-Especially with [multi-call binaries](multi-call.md), it can be useful to get them in a more-machine-readable way; to achieve this, executables using the `MAGIC_ARGS_SUBCOMMANDS_MAIN(...)`, `MAGIC_ARGS_MULTI_CALL_MAIN(...)`, or `MAGIC_ARGS_MAKE_SUBCOMMANDS_INSPECTABLE(...)` macros export a `magic_args_subcommands_list` constant.
+Especially with [multi-call binaries](multi-call.md), it can be useful to get them in a more-machine-readable way; to achieve this, executables using the `MAGIC_ARGS_SUBCOMMANDS_MAIN(...)`, `MAGIC_ARGS_MULTICALL_MAIN(...)`, or `MAGIC_ARGS_MAKE_SUBCOMMANDS_INSPECTABLE(...)` macros export a `magic_args_subcommands_list` constant.
 
 This constant contains a list of C strings, terminated with the empty string (i.e. two nulls in a row). For example, if you define the subcommands `foo` and `bar`, it will contain `"foo\0bar\0\0"`.
 

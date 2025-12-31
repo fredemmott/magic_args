@@ -17,9 +17,9 @@ A multi-call binary is a single executable that changes its behavior based on th
 - TOC
 {:toc}
 
-## Quick Start: `MAGIC_ARGS_MULTI_CALL_MAIN`
+## Quick Start: `MAGIC_ARGS_MULTICALL_MAIN`
 
-For most users, the easiest and best way to create a multi-call binary is the `MAGIC_ARGS_MULTI_CALL_MAIN` macro. Each "command" is defined exactly like a [subcommand](subcommands.md#defining-subcommands).
+For most users, the easiest and best way to create a multi-call binary is the `MAGIC_ARGS_MULTICALL_MAIN` macro. Each "command" is defined exactly like a [subcommand](subcommands.md#defining-subcommands).
 
 ```c++
 #include <magic_args/magic_args.hpp>
@@ -59,7 +59,7 @@ struct CommandBar {
 
 // If this binary is named `foo`, CommandFoo::main is called.
 // If it's named `bar`, CommandBar::main is called.
-MAGIC_ARGS_MULTI_CALL_MAIN(CommandFoo, CommandBar);
+MAGIC_ARGS_MULTICALL_MAIN(CommandFoo, CommandBar);
 ```
 
 {: .note }
@@ -79,7 +79,7 @@ struct MyRootInfo {
   using parsing_traits = magic_args::powershell_style_parsing_traits;
 };
 
-MAGIC_ARGS_MULTI_CALL_MAIN(MyRootInfo, CommandFoo, CommandBar);
+MAGIC_ARGS_MULTICALL_MAIN(MyRootInfo, CommandFoo, CommandBar);
 ```
 
 ## Automatically creating links
