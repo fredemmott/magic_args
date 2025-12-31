@@ -53,8 +53,8 @@ TEST_CASE("invalid COMMAND -> invalid_argument_value error on COMMAND") {
   REQUIRE_FALSE(ret.has_value());
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(ret.error()));
   const auto& e = get<magic_args::invalid_argument_value>(ret.error());
-  CHECK(e.mSource.mName == std::string {"COMMAND"});
-  CHECK(e.mSource.mValue == std::string {"unknown"});
+  CHECK(e.source.name == std::string {"COMMAND"});
+  CHECK(e.source.value == std::string {"unknown"});
 }
 
 struct RootCommandDescription {
@@ -109,7 +109,7 @@ TEST_CASE("match first, but pass invalid arguments (silent)") {
       ret.error());
   REQUIRE(holds_alternative<magic_args::unrecognized_option>(tagged.value()));
   const auto e = get<magic_args::unrecognized_option>(tagged.value());
-  CHECK(e.mSource.mArg == "--INVALID");
+  CHECK(e.source.arg == "--INVALID");
 }
 
 TEST_CASE("match second, but pass invalid arguments (silent)") {
@@ -126,7 +126,7 @@ TEST_CASE("match second, but pass invalid arguments (silent)") {
       ret.error());
   REQUIRE(holds_alternative<magic_args::unrecognized_option>(tagged.value()));
   const auto e = get<magic_args::unrecognized_option>(tagged.value());
-  CHECK(e.mSource.mArg == "--INVALID");
+  CHECK(e.source.arg == "--INVALID");
 }
 
 TEST_CASE("powershell-style") {

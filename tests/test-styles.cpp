@@ -19,8 +19,8 @@ struct BasicArgs {
   std::string mString;
   bool mFlag {false};
   magic_args::flag mDocumentedFlag {
-    .mHelp = "This flag is documented",
-    .mShortName = "d",
+    .help = "This flag is documented",
+    .short_name = "d",
   };
 };
 using GNUArgs = BasicArgs<magic_args::gnu_style_parsing_traits>;
@@ -109,8 +109,8 @@ Arguments:
   REQUIRE_FALSE(args.has_value());
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
   const auto& e = get<magic_args::invalid_argument_value>(args.error());
-  CHECK(e.mSource.mName == "-Raw");
-  CHECK(e.mSource.mValue == MyValueType::InvalidValue);
+  CHECK(e.source.name == "-Raw");
+  CHECK(e.source.value == MyValueType::InvalidValue);
 }
 
 TEST_CASE("PowerShell-style normalization") {

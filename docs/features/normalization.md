@@ -22,13 +22,13 @@ parent: Features
 
 ## Overriding for specific fields
 
-Instead of using raw value types for your arguments, you can use the *magic_args* wrapper types, like `magic_args::option`; these have a `mName` member that can be used to override the default type:
+Instead of using raw value types for your arguments, you can use the *magic_args* wrapper types, like `magic_args::option`; these have a `name` member that can be used to override the default type:
 
 ```c++
 struct MyArgs {
     magic_args::option<std::string> mFoo {
-        .mName = "other", // --other=VALUE
-        .mShortName = "o", // -o VALUE
+        .name = "other", // --other=VALUE
+        .short_name = "o", // -o VALUE
     };
 };
 

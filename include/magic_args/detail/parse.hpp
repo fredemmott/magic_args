@@ -87,14 +87,14 @@ auto map_value_parse_error(
   std::span<const std::string_view> args,
   const std::string_view value,
   invalid_argument_value e) {
-  if (!e.mSource.empty()) {
+  if (!e.source.empty()) {
     throw std::logic_error(
       "argument value parsers should not set error source");
   }
-  e.mSource = {
-    .mArgvSlice = std::ranges::to<std::vector<std::string>>(args),
-    .mName = provided_argument_name<Traits, TDef>(*std::ranges::begin(args)),
-    .mValue = std::string {value},
+  e.source = {
+    .argv_slice = std::ranges::to<std::vector<std::string>>(args),
+    .name = provided_argument_name<Traits, TDef>(*std::ranges::begin(args)),
+    .value = std::string {value},
   };
   return std::move(e);
 }
@@ -166,9 +166,9 @@ struct match_long_option_t {
     if (tail.empty()) {
       if (std::ranges::size(args) == 1) {
         return missing_argument_value {
-          .mSource = {
-            .mName = std::string { name->head },
-            .mArgvMember = std::string { arg },
+          .source = {
+            .name = std::string { name->head },
+            .argv_element = std::string { arg },
           },
         };
       }
@@ -321,9 +321,9 @@ option_match_result match_short_option(
   } else {
     if (std::ranges::size(args) == 1) {
       return missing_argument_value {
-        .mSource = {
-        .mName = std::string { TDef::short_name },
-          .mArgvMember = std::string { args[0] },
+        .source = {
+        .name = std::string { TDef::short_name },
+          .argv_element = std::string { args[0] },
         },
       };
     }
@@ -374,10 +374,10 @@ parse_argument_result parse_positional_argument(
   }
 }
 
-auto& project_value(auto& member) {
+auto& project_storage(auto& member) {
   using member_type = std::remove_cvref_t<decltype(member)>;
   if constexpr (basic_argument<member_type>) {
-    return member.mValue;
+    return member.storage;
   } else {
     return member;
   }
@@ -390,7 +390,7 @@ parse_argument_result parse_option_impl(
   option_match_result match {};
   std::ignore = visit_options<Traits>(
     [&]<class TDef>(const TDef&, auto& memberOut) {
-      auto& out = project_value(memberOut);
+      auto& out = project_storage(memberOut);
 
       const auto result
         = TFnIt(std::type_identity<TDef> {}, remainingArgv, out);
@@ -411,7 +411,7 @@ parse_argument_result parse_option_impl(
       },
       [=](const argument_not_matched&) -> parse_argument_result {
         return std::unexpected {unrecognized_option {
-          .mSource = {std::string {remainingArgv.front()}},
+          .source = {std::string {remainingArgv.front()}},
         }};
       },
       [](const incomplete_parse_reason auto& r) -> parse_argument_result {
@@ -465,7 +465,7 @@ parse_argument_result parse_short_option(
               return false;
             }
 
-            auto& valueOut = project_value(memberOut);
+            auto& valueOut = project_storage(memberOut);
             apply_as_flag<TArgDef>(valueOut);
             return true;
           },

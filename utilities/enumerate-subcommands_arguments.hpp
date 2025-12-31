@@ -43,32 +43,32 @@ auto to_argument_value(const OutputStyle& m) {
 
 struct arguments {
   magic_args::flag mForce {
-    .mHelp = "Overwrite link if it already exists",
-    .mShortName = "f",
+    .help = "Overwrite link if it already exists",
+    .short_name = "f",
   };
 
   magic_args::option<std::string> mTextFile {
-    .mHelp = "Write list to text file; you might also want --quiet",
+    .help = "Write list to text file; you might also want --quiet",
   };
   magic_args::option<std::string> mSymlinks {
-    .mHelp = "Create symlinks in this directory",
+    .help = "Create symlinks in this directory",
   };
   magic_args::flag mRelativeSymlinks {
-    .mHelp
+    .help
     = "Create symlinks with a relative path to EXECUTABLE, instead of an "
       "absolute path",
   };
   magic_args::option<std::string> mHardlinks {
-    .mHelp = "Create hard links in this directory",
+    .help = "Create hard links in this directory",
   };
   magic_args::option<std::string> mStampFile {
-    .mHelp
+    .help
     = "File to create/touch every time the command completes without failure",
   };
 
   OutputStyle mOutputStyle {};
 
   magic_args::mandatory_positional_argument<std::string> mExecutable {
-    .mHelp = "A magic_args subcommands executable to inspect",
+    .help = "A magic_args subcommands executable to inspect",
   };
 };

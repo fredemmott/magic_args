@@ -27,7 +27,7 @@ struct BasicCustomArgs {
   using parsing_traits = T;
   MyValueType mRaw;
   magic_args::option<MyValueType> mOption {
-    .mHelp = "std::optional",
+    .help = "std::optional",
   };
   magic_args::optional_positional_argument<MyValueType> mPositional;
 
@@ -58,11 +58,11 @@ using NormalizationPS
 struct Optional {
   std::optional<std::string> mValue;
   magic_args::option<std::optional<std::string>> mDocumentedValue {
-    .mHelp = "documented value",
+    .help = "documented value",
   };
   magic_args::optional_positional_argument<std::optional<std::string>>
     mPositional {
-      .mHelp = "absent != empty",
+      .help = "absent != empty",
     };
 };
 
@@ -80,9 +80,9 @@ struct FlagsOnly {
 };
 
 struct ShortFlags {
-  magic_args::flag mFlagA {.mShortName = "a"};
-  magic_args::flag mFlagB {.mShortName = "b"};
-  magic_args::flag mFlagC {.mShortName = "c"};
+  magic_args::flag mFlagA {.short_name = "a"};
+  magic_args::flag mFlagB {.short_name = "b"};
+  magic_args::flag mFlagC {.short_name = "c"};
 };
 using arg_def_0 = magic_args::detail::
   argument_definition_t<ShortFlags, 0, magic_args::gnu_style_parsing_traits>;
@@ -106,7 +106,7 @@ struct FlagsAndPositionalArguments {
   bool mFlag {false};
   magic_args::optional_positional_argument<std::string> mInput;
   magic_args::optional_positional_argument<std::string> mOutput {
-    .mHelp = "file to create",
+    .help = "file to create",
   };
 };
 
@@ -114,14 +114,14 @@ struct MandatoryPositionalArgument {
   bool mFlag {false};
   magic_args::mandatory_positional_argument<std::string> mInput;
   magic_args::optional_positional_argument<std::string> mOutput {
-    .mHelp = "file to create",
+    .help = "file to create",
   };
 };
 
 struct MultiValuePositionalArgument {
   bool mFlag {false};
   magic_args::optional_positional_argument<std::string> mOutput {
-    .mHelp = "file to create",
+    .help = "file to create",
   };
   magic_args::optional_positional_argument<std::vector<std::string>> mInputs;
 };
@@ -129,7 +129,7 @@ struct MultiValuePositionalArgument {
 struct MandatoryMultiValuePositionalArgument {
   bool mFlag {false};
   magic_args::mandatory_positional_argument<std::string> mOutput {
-    .mHelp = "file to create",
+    .help = "file to create",
   };
   magic_args::mandatory_positional_argument<std::vector<std::string>> mInputs;
 };

@@ -34,11 +34,11 @@ struct Args {
   std::optional<int> mOptionalInt;
   MyEnum mEnum;
   magic_args::option<std::string> mOption {
-    .mShortName = "o",
+    .short_name = "o",
   };
   magic_args::flag mFlag;
   magic_args::counted_flag mVerbose {
-    .mShortName = "v",
+    .short_name = "v",
   };
   MyCustomType mCustomType;
   magic_args::optional_positional_argument<std::string> mPositional;

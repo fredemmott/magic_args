@@ -119,7 +119,7 @@ TExpected parse_subcommands_silent(detail::argv_range auto&& argv) {
   const auto commandIndex = detail::skip_args_count<ParsingTraits>();
   if (argv.size() <= commandIndex) {
     return std::unexpected {missing_required_argument {
-      .mSource = {.mName = "COMMAND"},
+      .source = {.name = "COMMAND"},
     }};
   }
   const std::string_view commandArg {
@@ -155,10 +155,10 @@ TExpected parse_subcommands_silent(detail::argv_range auto&& argv) {
   }
 
   return std::unexpected {invalid_argument_value {
-        .mSource = {
-          .mArgvSlice = std::vector { std::string { commandArg } },
-          .mName = "COMMAND",
-          .mValue = std::string { command },
+        .source = {
+          .argv_slice = std::vector { std::string { commandArg } },
+          .name = "COMMAND",
+          .value = std::string { command },
         },
       }};
 }

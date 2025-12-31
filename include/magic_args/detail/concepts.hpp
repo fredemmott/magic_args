@@ -13,16 +13,16 @@ namespace magic_args::inline public_api {
 template <class T>
 concept basic_argument = requires(T v) {
   typename std::decay_t<T>::value_type;
-  { v.mName } -> std::convertible_to<std::string_view>;
-  { v.mHelp } -> std::convertible_to<std::string_view>;
+  { v.name } -> std::convertible_to<std::string_view>;
+  { v.help } -> std::convertible_to<std::string_view>;
 };
 
 template <class T>
 concept basic_option = requires(T v) {
   typename std::decay_t<T>::value_type;
-  { v.mName } -> std::convertible_to<std::string_view>;
-  { v.mHelp } -> std::convertible_to<std::string_view>;
-  { v.mShortName } -> std::convertible_to<std::string_view>;
+  { v.name } -> std::convertible_to<std::string_view>;
+  { v.help } -> std::convertible_to<std::string_view>;
+  { v.short_name } -> std::convertible_to<std::string_view>;
 };
 
 template <class T>

@@ -107,8 +107,8 @@ TEST_CASE("invalid value - C enum") {
     if (std::holds_alternative<magic_args::invalid_argument_value>(
           args.error())) {
       const auto& e = get<magic_args::invalid_argument_value>(args.error());
-      CHECK(e.mSource.mName == "--c-enum");
-      CHECK(e.mSource.mValue == "INVALID");
+      CHECK(e.source.name == "--c-enum");
+      CHECK(e.source.value == "INVALID");
     }
   }
   CHECK(output.out_str().empty());

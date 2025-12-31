@@ -113,7 +113,7 @@ TEMPLATE_TEST_CASE(
   // Positional because of `--`
   REQUIRE(holds_alternative<magic_args::too_many_arguments>(args.error()));
   const auto& e = get<magic_args::too_many_arguments>(args.error());
-  CHECK(e.mSource.mArg == "--not-a-valid-arg");
+  CHECK(e.source.arg == "--not-a-valid-arg");
 }
 
 struct EmptyWithVersion {
@@ -173,7 +173,7 @@ TEMPLATE_TEST_CASE(
   REQUIRE(
     std::holds_alternative<magic_args::unrecognized_option>(args.error()));
   const auto& e = get<magic_args::unrecognized_option>(args.error());
-  CHECK(e.mSource.mArg == invalid);
+  CHECK(e.source.arg == invalid);
 }
 
 TEST_CASE("multiple short flags") {
@@ -283,7 +283,7 @@ TEST_CASE("parameters, omitted optional") {
   REQUIRE(args.has_value());
   CHECK_FALSE(args->mFlag);
   CHECK(args->mInput == "in");
-  CHECK(args->mOutput.mValue.empty());
+  CHECK(args->mOutput.storage.empty());
 }
 
 TEST_CASE("parameters, extra") {
@@ -398,8 +398,8 @@ TEST_CASE("custom arguments") {
   const auto args = magic_args::parse_silent<CustomArgs>(argv);
   REQUIRE(args.has_value());
   CHECK(args->mRaw.mValue == "123");
-  CHECK(args->mOption.mValue.mValue == "456");
-  CHECK(args->mPositional.mValue.mValue == "789");
+  CHECK(args->mOption.storage.mValue == "456");
+  CHECK(args->mPositional.storage.mValue == "789");
 }
 
 TEST_CASE("invalid value") {
@@ -418,8 +418,8 @@ Usage: my_test [OPTIONS...] [--] [POSITIONAL]
 
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
   const auto& e = get<magic_args::invalid_argument_value>(args.error());
-  CHECK(e.mSource.mName == "--raw");
-  CHECK(e.mSource.mValue == MyValueType::InvalidValue);
+  CHECK(e.source.name == "--raw");
+  CHECK(e.source.value == MyValueType::InvalidValue);
 }
 
 TEST_CASE("positional argument with custom type") {
@@ -427,7 +427,7 @@ TEST_CASE("positional argument with custom type") {
 
   const auto args = magic_args::parse_silent<CustomPositionalArgument>(argv);
   REQUIRE(args.has_value());
-  CHECK(args->mFoo.mValue.mValue == "ABC");
+  CHECK(args->mFoo.storage.mValue == "ABC");
 }
 
 TEST_CASE("invalid value for positional argument") {
@@ -445,8 +445,8 @@ Usage: my_test [OPTIONS...] [--] [FOO]
 
   REQUIRE(holds_alternative<magic_args::invalid_argument_value>(args.error()));
   const auto& e = get<magic_args::invalid_argument_value>(args.error());
-  CHECK(e.mSource.mName == "FOO");
-  CHECK(e.mSource.mValue == MyValueType::InvalidValue);
+  CHECK(e.source.name == "FOO");
+  CHECK(e.source.value == MyValueType::InvalidValue);
 }
 
 TEST_CASE("missing argument value") {
@@ -462,8 +462,8 @@ Usage: my_test [OPTIONS...] [--] [POSITIONAL]
   REQUIRE_FALSE(args.has_value());
   REQUIRE(holds_alternative<magic_args::missing_argument_value>(args.error()));
   const auto& e = get<magic_args::missing_argument_value>(args.error());
-  CHECK(e.mSource.mName == "raw");
-  CHECK(e.mSource.mArgvMember == "--raw");
+  CHECK(e.source.name == "raw");
+  CHECK(e.source.argv_element == "--raw");
 }
 
 TEST_CASE("print_text_sink (FILE*)") {

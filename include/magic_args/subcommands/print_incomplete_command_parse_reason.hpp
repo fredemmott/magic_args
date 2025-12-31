@@ -123,7 +123,7 @@ void print_incomplete_command_parse_reason(
   output.error.print(
     "{}: `{}` is not a valid COMMAND",
     get_prefix_for_user_messages<ParsingTraits>(argv),
-    r.mSource.mValue);
+    r.source.value);
 }
 
 }// namespace magic_args::detail

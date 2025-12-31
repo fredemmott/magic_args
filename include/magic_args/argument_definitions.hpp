@@ -26,7 +26,7 @@ namespace magic_args::inline public_api {
  * - initializer lists work, e.g
  *   `option<std::string> foo { defaultValue, "name", "helpText" };`
  * - designated initializers work, e.g.
- *   `option<std::string> foo { .mShortName = "f" };`
+ *   `option<std::string> foo { .short_name = "f" };`
  *
  * The main alternative was using macros :'(
  */
@@ -46,9 +46,9 @@ struct decorated_argument final {
     = detail::definition_tags::any_positional_argument<TTag>;
   static_assert(is_option == !is_positional_argument);
 
-  T mValue {};
-  std::string_view mName;
-  std::string_view mHelp;
+  T storage {};
+  std::string_view name;
+  std::string_view help;
 
   // MS attribute takes priority because under MSVC, [[no_unique_address]
   // is recognized but a no-op, to avoid breaking ABI with libraries compiled
@@ -59,26 +59,26 @@ struct decorated_argument final {
 #elif __has_cpp_attribute(no_unique_address)
   [[no_unique_address]]
 #endif
-  std::conditional_t<is_option, std::string_view, detail::empty_t> mShortName;
+  std::conditional_t<is_option, std::string_view, detail::empty_t> short_name;
 
   template <class Self>
   [[nodiscard]] constexpr decltype(auto) value(this Self&& self) noexcept(
     !is_std_optional) {
     if constexpr (is_std_optional) {
-      return std::forward<Self>(self).mValue.value();
+      return std::forward<Self>(self).storage.value();
     } else {
-      return std::forward<Self>(self).mValue;
+      return std::forward<Self>(self).storage;
     }
   }
 
   operator T() const noexcept {
-    return mValue;
+    return storage;
   }
 
   template <class U>
     requires std::assignable_from<T&, U>
   auto& operator=(U&& rhs) {
-    mValue = std::forward<U>(rhs);
+    storage = std::forward<U>(rhs);
     return *this;
   }
 
@@ -87,7 +87,7 @@ struct decorated_argument final {
     requires(!detail::same_as_ignoring_cvref<decorated_argument, U>)
     && std::equality_comparable_with<T, U>
   constexpr bool operator==(U&& rhs) const noexcept {
-    return mValue == std::forward<U>(rhs);
+    return storage == std::forward<U>(rhs);
   }
 
   template <class Self>
@@ -99,16 +99,16 @@ struct decorated_argument final {
   template <class Self>
   decltype(auto) operator->(this Self&& self) {
     if constexpr (is_std_optional) {
-      return std::forward<Self>(self).mValue;
+      return std::forward<Self>(self).storage;
     } else {
-      return &std::forward<Self>(self).mValue;
+      return &std::forward<Self>(self).storage;
     }
   }
 
   [[nodiscard]] constexpr bool has_value() const noexcept
     requires is_std_optional
   {
-    return mValue.has_value();
+    return storage.has_value();
   };
 
   /** "Was the argument provided?" for common types.
@@ -132,7 +132,7 @@ struct decorated_argument final {
     || std::same_as<TTag, detail::definition_tags::flag_t>
     || std::same_as<TTag, detail::definition_tags::counted_flag_t>
   {
-    return static_cast<bool>(mValue);
+    return static_cast<bool>(storage);
   }
 };
 

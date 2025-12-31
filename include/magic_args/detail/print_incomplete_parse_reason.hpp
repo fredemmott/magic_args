@@ -38,7 +38,7 @@ void print_incomplete_parse_reason(
   output.error.print(
     "{}: Missing required argument `{}`",
     get_prefix_for_user_messages<Traits>(argv),
-    r.mSource.mName);
+    r.source.name);
 }
 template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
@@ -48,7 +48,7 @@ void print_incomplete_parse_reason(
   output.error.print(
     "{}: option `{}` requires a value",
     get_prefix_for_user_messages<Traits>(argv),
-    r.mSource.mArgvMember);
+    r.source.argv_element);
 }
 template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
@@ -58,7 +58,7 @@ void print_incomplete_parse_reason(
   output.error.print(
     "{}: Unrecognized option: {}",
     get_prefix_for_user_messages<Traits>(argv),
-    arg.mSource.mArg);
+    arg.source.arg);
 }
 template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
@@ -68,7 +68,7 @@ void print_incomplete_parse_reason(
   output.error.print(
     "{}: Unexpected argument: {}",
     get_prefix_for_user_messages<Traits>(argv),
-    arg.mSource.mArg);
+    arg.source.arg);
 }
 template <parsing_traits Traits, class T>
 void print_incomplete_parse_reason(
@@ -78,12 +78,12 @@ void print_incomplete_parse_reason(
   output.error.print(
     "{}: `{}` is not a valid value for `{}` (seen: `{}`)",
     get_prefix_for_user_messages<Traits>(argv),
-    r.mSource.mValue,
-    r.mSource.mName,
+    r.source.value,
+    r.source.name,
     // 2025-12-13: no join_with on Apple Clang
     std::ranges::fold_left(
-      std::views::drop(r.mSource.mArgvSlice, 1),
-      r.mSource.mArgvSlice.front(),
+      std::views::drop(r.source.argv_slice, 1),
+      r.source.argv_slice.front(),
       [](auto acc, auto it) { return std::format("{} {}", acc, it); }));
 }
 

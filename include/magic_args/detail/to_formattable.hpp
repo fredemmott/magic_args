@@ -64,14 +64,14 @@ struct to_formattable_t<T> {
 template <>
 struct to_formattable_t<const flag&> {
   static constexpr auto operator()(const flag& v) {
-    return v.mValue ? "true" : "false";
+    return v.storage ? "true" : "false";
   }
 };
 
 template <>
 struct to_formattable_t<const counted_flag&> {
   static constexpr auto operator()(const counted_flag& v) {
-    return v.mValue;
+    return v.storage;
   }
 };
 

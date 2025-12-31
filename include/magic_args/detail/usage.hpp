@@ -29,7 +29,7 @@ static auto get_argument_help_by_index() {
   if constexpr (!basic_argument<member_type>) {
     return generate_argument_help_t<member_type> {}();
   } else {
-    constexpr auto value = std::get<I>(tie_struct(TArgs {})).mHelp;
+    constexpr auto value = std::get<I>(tie_struct(TArgs {})).help;
     if constexpr (!value.empty()) {
       return value;
     } else {

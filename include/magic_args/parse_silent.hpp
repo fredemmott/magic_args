@@ -120,7 +120,7 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
   std::ignore = visit_positional_arguments<Traits>(
     [&]<static_basic_positional_argument TArgDef>(
       const TArgDef&, auto& memberOut) {
-      auto& valueOut = project_value(memberOut);
+      auto& valueOut = project_storage(memberOut);
 
       const auto result
         = parse_positional_argument<Traits, TArgDef>(remainingArgs, valueOut);
@@ -141,7 +141,7 @@ std::expected<T, incomplete_parse_reason_t> parse_silent(
   }
 
   return std::unexpected {too_many_arguments {
-    .mSource = {std::string {remainingArgs.front()}},
+    .source = {std::string {remainingArgs.front()}},
   }};
 }
 

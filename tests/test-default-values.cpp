@@ -22,8 +22,8 @@ auto to_argument_value(const MyCustomType& value) {
 struct WithDefaults {
   std::string mMyArg {"testValue"};
   magic_args::option<std::string> mMyArgWithHelp {
-    .mValue = "testValue2",
-    .mHelp = "Test help text",
+    .storage = "testValue2",
+    .help = "Test help text",
   };
   MyCustomType mMyCustomType {"testValue3"};
 };

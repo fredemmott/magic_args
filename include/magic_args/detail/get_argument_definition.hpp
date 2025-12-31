@@ -60,7 +60,7 @@ static constexpr auto make_argument_name_by_index() {
       return Traits::template normalize_option_name<
         member_name_by_index<TArgs, I>>();
     } else {
-      constexpr auto value = std::get<I>(tie_struct(TArgs {})).mName;
+      constexpr auto value = std::get<I>(tie_struct(TArgs {})).name;
       if constexpr (!value.empty()) {
         return value;
       } else if constexpr (is_option(member_type::behavior)) {
@@ -126,7 +126,7 @@ struct argument_definition_t<T, I, Traits> {
   using value_type = member_type::value_type;
 
   static constexpr value_type default_value() {
-    return default_value_by_index<T, I>().mValue;
+    return default_value_by_index<T, I>().storage;
   }
 
   static constexpr auto behavior = member_type::behavior;
@@ -134,7 +134,7 @@ struct argument_definition_t<T, I, Traits> {
     get_argument_name_by_index<T, I, Traits>()};
 
   static constexpr auto short_name = [] -> std::string_view {
-    constexpr auto Raw = default_value_by_index<T, I>().mShortName;
+    constexpr auto Raw = default_value_by_index<T, I>().short_name;
     if constexpr (Raw.empty()) {
       return {};
     } else {
@@ -160,7 +160,7 @@ struct argument_definition_t<T, I, Traits> {
   using value_type = member_type::value_type;
 
   static constexpr value_type default_value() {
-    return default_value_by_index<T, I>().mValue;
+    return default_value_by_index<T, I>().storage;
   }
 
   static constexpr auto behavior = member_type::behavior;

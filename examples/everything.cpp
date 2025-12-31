@@ -31,7 +31,7 @@ struct MyArgs {
   bool mFlag {false};
   std::string mString;
   option<std::string> mWithDocs {
-    .mHelp = "Here's some help",
+    .help = "Here's some help",
   };
   std::optional<std::string> mOptionalString;
   int mNotAString {};
@@ -43,10 +43,10 @@ struct MyArgs {
     "c",
   };
   option<std::optional<std::string>> mConfiguredOptionalString {
-    .mValue = "default",
-    .mName = "configured-optional-string",
-    .mHelp = "A parameter with documentation, where empty != absent",
-    .mShortName = "o",
+    .storage = "default",
+    .name = "configured-optional-string",
+    .help = "A parameter with documentation, where empty != absent",
+    .short_name = "o",
   };
   mandatory_positional_argument<std::string> mMandatoryPositional {
     {/* default */},

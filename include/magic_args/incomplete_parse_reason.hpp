@@ -29,13 +29,13 @@ struct missing_required_argument {
   static constexpr bool user_requested = false;
 
   struct source_t {
-    std::string mName;
+    std::string name;
     constexpr bool empty() const noexcept {
-      return mName.empty();
+      return name.empty();
     }
     constexpr bool operator==(const source_t&) const = default;
   };
-  source_t mSource;
+  source_t source;
   constexpr bool operator==(const missing_required_argument&) const = default;
 };
 struct missing_argument_value {
@@ -43,16 +43,16 @@ struct missing_argument_value {
   static constexpr bool user_requested = false;
 
   struct source_t {
-    std::string mName;
-    std::string mArgvMember;
+    std::string name;
+    std::string argv_element;
 
     constexpr bool empty() const noexcept {
-      return mName.empty() && mArgvMember.empty();
+      return name.empty() && argv_element.empty();
     }
     constexpr bool operator==(const source_t&) const = default;
   };
 
-  source_t mSource;
+  source_t source;
   constexpr bool operator==(const missing_argument_value&) const = default;
 };
 struct unrecognized_option {
@@ -60,11 +60,11 @@ struct unrecognized_option {
   static constexpr bool user_requested = false;
 
   struct source_t {
-    std::string mArg;
+    std::string arg;
     constexpr bool operator==(const source_t&) const = default;
   };
 
-  source_t mSource;
+  source_t source;
   constexpr bool operator==(const unrecognized_option&) const = default;
 };
 struct too_many_arguments {
@@ -73,7 +73,7 @@ struct too_many_arguments {
 
   using source_t = unrecognized_option::source_t;
 
-  source_t mSource;
+  source_t source;
   constexpr bool operator==(const too_many_arguments&) const = default;
 };
 
@@ -82,19 +82,19 @@ struct invalid_argument_value {
   static constexpr bool user_requested = false;
 
   struct source_t {
-    std::vector<std::string> mArgvSlice;
-    std::string mName;
-    std::string mValue;
+    std::vector<std::string> argv_slice;
+    std::string name;
+    std::string value;
 
     constexpr bool empty() const noexcept {
-      return mArgvSlice.empty() && mName.empty() && mValue.empty();
+      return argv_slice.empty() && name.empty() && value.empty();
     }
     constexpr bool operator==(const source_t&) const = default;
   };
 
   // Automatically populated by the framework; if you fill this out, an
   // exception will be thrown
-  source_t mSource;
+  source_t source;
   constexpr bool operator==(const invalid_argument_value&) const = default;
 };
 
