@@ -171,6 +171,6 @@ TEST_CASE("std::optional<enum> help") {
     std::array {"myapp", "--help"}, output);
   CHECK(output.error_str().empty());
   CHECK_THAT(output.out_str(), Catch::Matchers::ContainsSubstring(R"EOF(
-      --value=VALUE            `herp` or `derp`
+      --value=VALUE            `Herp` or `Derp`
 )EOF"));
 }
