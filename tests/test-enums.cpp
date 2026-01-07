@@ -4,6 +4,8 @@
 #include <magic_args/magic_args.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include "chomp.hpp"
 #include "test_output.hpp"
 
@@ -20,6 +22,10 @@ enum class ScopedEnum {
 struct PlainEnumArgs {
   CEnum mCEnum {};
   ScopedEnum mScopedEnum {};
+};
+
+struct OptionalEnumArg {
+  std::optional<ScopedEnum> mValue;
 };
 
 enum class CustomizedEnum {
@@ -157,4 +163,14 @@ TEST_CASE("enum with customized serde - parsing") {
     std::array {"myapp", "--value=derp"});
   REQUIRE(args.has_value());
   CHECK(args->mValue == decltype(CustomizedEnumArgs::mValue)::Bar);
+}
+
+TEST_CASE("std::optional<enum> help") {
+  test_output output;
+  const auto args = magic_args::parse<OptionalEnumArg>(
+    std::array {"myapp", "--help"}, output);
+  CHECK(output.error_str().empty());
+  CHECK_THAT(output.out_str(), Catch::Matchers::ContainsSubstring(R"EOF(
+      --value=VALUE            `herp` or `derp`
+)EOF"));
 }

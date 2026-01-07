@@ -23,6 +23,13 @@ struct generate_argument_help_t {
   }
 };
 
+template <class T>
+struct generate_argument_help_t<std::optional<T>> {
+  static auto operator()() {
+    return generate_argument_help_t<T> {}();
+  }
+};
+
 template <class TArgs, std::size_t I>
 static auto get_argument_help_by_index() {
   using member_type = member_type_by_index<TArgs, I>;
