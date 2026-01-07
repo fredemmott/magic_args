@@ -172,5 +172,6 @@ TEST_CASE("std::optional<enum> help") {
   CHECK(output.error_str().empty());
   CHECK_THAT(output.out_str(), Catch::Matchers::ContainsSubstring(R"EOF(
       --value=VALUE            `Herp` or `Derp`
+                               (default: [none])
 )EOF"));
 }

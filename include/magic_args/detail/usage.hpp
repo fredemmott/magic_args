@@ -54,40 +54,53 @@ template <
 void show_option_usage(text_sink auto&) {
 }
 
-template <static_basic_option TArgDef>
+template <class T>
 struct describe_default_value_t {
-  using value_type = TArgDef::value_type;
-
-  static std::string operator()(const value_type&) {
+  static std::string operator()(const T&) {
     return {};
   }
 
-  static std::string operator()(const value_type& value)
-    requires detail::formattable<value_type>
-    && std::equality_comparable<value_type>
+  static std::string operator()(const T& value)
+    requires detail::formattable<T> && std::equality_comparable<T>
   {
-    if (value == value_type {}) {
+    if (value == T {}) {
       return {};
     }
     return to_string(value);
   }
 
-  static std::string operator()(const value_type& value)
-    requires detail::formattable<value_type>
-    && (!std::equality_comparable<value_type>)
-    && std::default_initializable<value_type>
+  static std::string operator()(const T& value)
+    requires detail::formattable<T> && (!std::equality_comparable<T>)
+    && std::default_initializable<T>
   {
-    if (const auto ret = to_string(value); ret != to_string(value_type {})) {
+    if (const auto ret = to_string(value); ret != to_string(T {})) {
       return ret;
     }
     return {};
   }
 
  private:
-  static std::string to_string(const value_type& value)
-    requires detail::formattable<value_type>
+  static std::string to_string(const T& value)
+    requires detail::formattable<T>
   {
     return std::format("{}", to_formattable(value));
+  }
+};
+
+template <std_optional T>
+struct describe_default_value_t<T> {
+  static std::string operator()(const T& value)
+    requires std_optional<T>
+  {
+    using value_type = typename std::remove_cvref_t<T>::value_type;
+    const auto next = describe_default_value_t<value_type> {};
+    if (value.has_value()) {
+      return next(*value);
+    }
+    if (next(value_type {}).empty()) {
+      return {};
+    }
+    return "[none]";
   }
 };
 
@@ -162,7 +175,8 @@ void show_option_usage(text_sink auto& output) {
   }
 
   if (const auto defaultValue
-      = describe_default_value_t<TArgDef> {}(TArgDef::default_value());
+      = describe_default_value_t<typename TArgDef::value_type> {}(
+        TArgDef::default_value());
       !defaultValue.empty()) {
     extra.emplace_back(std::format("(default: {})", defaultValue));
   }

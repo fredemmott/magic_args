@@ -49,11 +49,10 @@ struct from_string_t<T> {
  * Without this specialization, the default would only be shown if
  * different to the default-constructed enum value.
  */
-template <static_basic_option TArgDef>
-  requires std::is_enum_v<typename TArgDef::value_type>
-struct describe_default_value_t<TArgDef> {
-  using value_type = typename TArgDef::value_type;
-  static std::string operator()(const value_type value) {
+template <class T>
+  requires std::is_enum_v<T>
+struct describe_default_value_t<T> {
+  static std::string operator()(const T value) {
     return std::format("{}", to_formattable(value));
   }
 };
