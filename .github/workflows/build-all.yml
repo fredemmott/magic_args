@@ -15,13 +15,21 @@ jobs:
       matrix:
         single-header: [true, false]
         target:
-          - name: Windows - MSVC
+          - name: VS 2022 - cl
             runs-on: windows-2022
-          - name: Windows - Conformant MSVC
+          - name: VS 2022 cl - conformant
             runs-on: windows-2022
             cmake-preset: Debug - conformant MSVC
-          - name: Windows - clang-cl
+          - name: VS 2022 - clang-cl
             runs-on: windows-2022
+            cmake-preset: Debug - clang-cl
+          - name: VS 2026 - cl
+            runs-on: windows-2025
+          - name: VS 2026 cl - conformant
+            runs-on: windows-2025
+            cmake-preset: Debug - conformant MSVC
+          - name: VS 2026 - clang-cl
+            runs-on: windows-2025
             cmake-preset: Debug - clang-cl
           - name: Linux - GCC 14
             runs-on: ubuntu-24.04
