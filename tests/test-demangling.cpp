@@ -30,15 +30,18 @@ struct demangled_and_mangled_name {
   const std::string_view mangled_apple_clang {};
   const std::string_view mangled_clang {};
   const std::string_view mangled_gcc {};
-  const std::string_view mangled_msvc {};
+  const std::string_view mangled_msvc_vs2022 {};
+  const std::string_view mangled_msvc_vs2026 {};
 
   constexpr std::string_view mangled() const noexcept {
 #if defined(__apple_build_version__)
     return mangled_apple_clang;
 #elif defined(__clang__)
     return mangled_clang;
-#elif defined(_MSC_VER)
-    return mangled_msvc;
+#elif defined(_MSC_VER) && _MSC_VER >= 1950
+    return mangled_msvc_vs2026;
+#elif defined(_MSC_VER) && _MSC_VER >= 1930
+    return mangled_msvc_vs2022;
 #elif defined(__GNUC__)
     return mangled_gcc;
 #else
@@ -72,8 +75,10 @@ constexpr auto type_test_data(std::type_identity<foo>) {
     = R"(auto __cdecl magic_args::detail::mangled_name_c_str(void) [T = foo])",
     .mangled_gcc
     = R"(constexpr auto magic_args::detail::mangled_name_c_str() [with T = foo])",
-    .mangled_msvc
+    .mangled_msvc_vs2022
     = R"(auto __cdecl magic_args::detail::mangled_name_c_str<struct foo>(void))",
+    .mangled_msvc_vs2026
+    = R"(const char *__cdecl magic_args::detail::mangled_name_c_str<struct foo>(void))",
   };
 }
 
@@ -86,8 +91,10 @@ constexpr auto type_test_data(std::type_identity<MyNS::bar>) {
     = R"(auto __cdecl magic_args::detail::mangled_name_c_str(void) [T = MyNS::bar])",
     .mangled_gcc
     = R"(constexpr auto magic_args::detail::mangled_name_c_str() [with T = MyNS::bar])",
-    .mangled_msvc
+    .mangled_msvc_vs2022
     = R"(auto __cdecl magic_args::detail::mangled_name_c_str<struct MyNS::bar>(void))",
+    .mangled_msvc_vs2026
+    = R"(const char *__cdecl magic_args::detail::mangled_name_c_str<struct MyNS::bar>(void))",
   };
 }
 
@@ -126,7 +133,9 @@ TEMPLATE_TEST_CASE("all type demanglers", "", foo, MyNS::bar, MyAliasCommand) {
     demangle_with<gcc_type_demangler_t, [] { return Data.mangled_gcc; }>()
     == Expected);
   CHECK(
-    demangle_with<msvc_type_demangler_t, [] { return Data.mangled_msvc; }>()
+    demangle_with<
+      msvc_type_demangler_t,
+      [] { return Data.mangled_msvc_vs2022; }>()
     == Expected);
 }
 
@@ -138,8 +147,10 @@ static constexpr auto ExampleField = demangled_and_mangled_name {
   = R"(auto __cdecl magic_args::detail::mangled_name_c_str(void) [T = apple_workaround_t<basic_string<char>>{&external.bar}])",
   .mangled_gcc
   = R"(constexpr auto magic_args::detail::mangled_name_c_str() [with auto T = apple_workaround_t<std::__cxx11::basic_string<char> >{(& external<foo>.foo::bar)}])",
-  .mangled_msvc
+  .mangled_msvc_vs2022
   = R"(auto __cdecl magic_args::detail::mangled_name_c_str<struct magic_args::detail::apple_workaround_t<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > >{class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >*:&magic_args::detail::external<struct foo>->bar}>(void))",
+  .mangled_msvc_vs2026
+  = R"(const char *__cdecl magic_args::detail::mangled_name_c_str<struct magic_args::detail::apple_workaround_t<class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > >{class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >*:&magic_args::detail::external<struct foo>->bar}>(void))",
 };
 
 TEST_CASE("mangled") {
@@ -175,6 +186,6 @@ TEST_CASE("all demanglers") {
   CHECK(
     std::string_view {demangle_with<
       msvc_member_demangler_t,
-      [] { return ExampleField.mangled_msvc; }>()}
+      [] { return ExampleField.mangled_msvc_vs2022; }>()}
     == ExampleField.demangled);
 }
